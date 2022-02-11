@@ -121,3 +121,5 @@ Compute the amplitude of radial velocity variations given orbital parameters and
 function RV_semiamplitude_K(P, e, i, m1, m2)
     return (m2*sin(i))*cbrt(2*π*cgrav/(P*day_in_sec)*m_sun/(m2+m1)^2)/sqrt(1-e^2)/1e5 #semi amplitude of RV variation in km/s
 end
+
+
