@@ -4,8 +4,11 @@ authors = ["Pablo Marchant "]
 version = "0.1.0"
 
 [deps]
+IfElse = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
 [compat]
-julia = "1.7.0"
 Turing = "0.20.0"
+julia = "1.7.0"

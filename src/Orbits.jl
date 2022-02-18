@@ -1,4 +1,6 @@
-
+using LinearAlgebra
+using Symbolics
+using IfElse
 
 """
     kepler_a_from_P(P,m1,m2)
@@ -123,3 +125,140 @@ function RV_semiamplitude_K(P, e, i, m1, m2)
 end
 
 
+function symbolic_kick_functions_energy_L()
+
+    @variables a,e,m_1,m_2,m_2f,sepν,dνdt,dsepνdν,v_x,v_y,v_z
+
+    # semi-major axis of each orbit, star 2 will be the exploding one
+    a_1 = a*m_2/(m_1+m_2)
+    a_2 = a*m_1/(m_1+m_2)
+
+    #current vector position with respect to the center of mass for each
+    r_1 = a_1*sepν*[0,1,0]#[-sin(ν),cos(ν),0]
+    r_2 = a_2*sepν*[0,-1,0]#[sin(ν),-cos(ν),0]
+
+    #velocities
+    #v_1 = a_1*dνdt*(dsepνdν*[-sin(ν),cos(ν),0]+sepν*[-cos(ν),-sin(ν),0])
+    #v_2 = a_2*dνdt*(dsepνdν*[sin(ν),-cos(ν),0]+sepν*[cos(ν),sin(ν),0])
+    v_1 = a_1*dνdt*(dsepνdν*[0,1,0]+sepν*[-1,0,0])
+    v_2 = a_2*dνdt*(dsepνdν*[0,-1,0]+sepν*[1,0,0])
+
+    #apply kick to star #2
+    #vkick = vk*(sin(θ)*[cos(ν),sin(ν),0]-cos(θ)*cos(ϕ)*[sin(ν),-cos(ν),0]+cos(θ)*cos(ϕ)*[0,0,1])
+    vkick = [v_x,v_y,v_z]#vk*(sin(θ)*[1,0,0]-cos(θ)*cos(ϕ)*[0,-1,0]+cos(θ)*cos(ϕ)*[0,0,1])
+    v_2f = v_2+vkick
+
+    #get velocities wrt to center of mass
+    v_cm = (m_2f*v_2f+m_1*v_1)/(m_2f+m_1)
+    v_1cm = v_1-v_cm
+    v_2cm = v_2f-v_cm
+
+    #get position vectors wrt center of mass
+    r_1cm = a*m_2f/(m_1+m_2f)*sepν*[0,1,0]
+    r_2cm = a*m_1/(m_1+m_2f)*sepν*[0,-1,0]
+
+    #obtain energy
+    energy = -cgrav*m_1*m_2f/(a*sepν)+m_1*v_1cm⋅v_1cm/2+m_2f*v_2cm⋅v_2cm/2
+    #obtain angular momentum
+    Lvec = m_1*r_1cm×v_1cm+m_2f*r_2cm×v_2cm
+
+    global energy_function = build_function(energy, [a, e, m_1, m_2, m_2f,sepν,dνdt,dsepνdν, v_x,v_y,v_z], expression=Val{false});
+    global L_x_function = build_function(Lvec[1], [a, e, m_1, m_2, m_2f,sepν,dνdt,dsepνdν, v_x,v_y,v_z], expression=Val{false});
+    global L_y_function = build_function(Lvec[2], [a, e, m_1, m_2, m_2f,sepν,dνdt,dsepνdν, v_x,v_y,v_z], expression=Val{false});
+    global L_z_function = build_function(Lvec[3], [a, e, m_1, m_2, m_2f,sepν,dνdt,dsepνdν, v_x,v_y,v_z], expression=Val{false});
+
+    global v_xcm_function = build_function(v_cm[1], [a, e, m_1, m_2, m_2f,sepν,dνdt,dsepνdν, v_x,v_y,v_z], expression=Val{false});
+    global v_ycm_function = build_function(v_cm[2], [a, e, m_1, m_2, m_2f,sepν,dνdt,dsepνdν, v_x,v_y,v_z], expression=Val{false});
+    global v_zcm_function = build_function(v_cm[3], [a, e, m_1, m_2, m_2f,sepν,dνdt,dsepνdν, v_x,v_y,v_z], expression=Val{false});
+
+    #used to determine if binary moves towards or away from aphelion
+    global v_1y_function = build_function(v_1cm[2], [a, e, m_1, m_2, m_2f,sepν,dνdt,dsepνdν, v_x,v_y,v_z], expression=Val{false});
+
+    return
+end
+
+function symbolic_kick_functions_vcm_and_orbital_elements()
+    @variables a,a_final,e_final,ν,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm, v_1y, Ω, ω, ι
+
+    Rω = [cos(ω+ν) -sin(ω+ν) 0;sin(ω+ν) cos(ω+ν) 0;0 0 1]
+    Rι = [cos(ι) 0 -sin(ι);0 1 0;sin(ι) 0 cos(ι)]
+    RΩ = [cos(Ω) -sin(Ω) 0;sin(Ω) cos(Ω) 0;0 0 1]
+    Rtotal  = RΩ*Rι*Rω
+
+    Lvec_rot = Rtotal*[L_x,L_y,L_z]
+
+    Nvec = Lvec_rot×[0,0,1]
+    N_norm = sqrt(Nvec⋅Nvec)
+    Nvec_norm = Nvec/N_norm
+    Ω_final = IfElse.ifelse(Nvec[1]<=0,acos(Nvec_norm[2]),2*π-acos(Nvec_norm[2]))
+
+    #angle between current position vector and periastron
+    #same as true anomaly if binary is moving towards aphelion
+    periastron_angle = acos(max(-1,min(1,1/e_final*(a_final/(a*sepν)*(1-e_final^2)-1))))
+    ν_final = IfElse.ifelse(v_1y>=0,periastron_angle,2*π-periastron_angle)
+
+    #apply rotation to unit vector pointing in direction of star #1
+    rhat_final = Rtotal*[0,1,0]
+    L_cross_L_cross_N = Lvec_rot×(Lvec_rot×[0,0,1])
+    angle_to_asc_node = acos(max(-1,min(1,rhat_final⋅Nvec_norm)))
+    uncorrected_ω_final = IfElse.ifelse(L_cross_L_cross_N⋅rhat_final>0,
+                                        angle_to_asc_node-ν_final, 2*π-(angle_to_asc_node+ν_final))
+    ω_final = IfElse.ifelse(uncorrected_ω_final>0,
+        uncorrected_ω_final, 2*π+uncorrected_ω_final)
+
+    #orbital inclination is an easy one
+    ι_final = acos(min(1,abs(Lvec_rot[3]/sqrt(L_x^2+L_y^2+L_z^2))))
+
+    #motion of the center of mass
+    v_cm_rot = Rtotal*[v_xcm,v_ycm,v_zcm]
+
+    global ι_function = build_function(ι_final, [a,a_final,e_final,ν,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, Ω, ω, ι], expression=Val{false});
+    global Ω_function = build_function(Ω_final, [a,a_final,e_final,ν,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, Ω, ω, ι], expression=Val{false});
+    global ω_function = build_function(ω_final, [a,a_final,e_final,ν,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, Ω, ω, ι], expression=Val{false});
+
+    global v_N_function = build_function(v_cm_rot[2], [a,a_final,e_final,ν,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, Ω, ω, ι], expression=Val{false});
+    global v_E_function = build_function(v_cm_rot[1], [a,a_final,e_final,ν,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, Ω, ω, ι], expression=Val{false});
+    global v_r_function = build_function(-v_cm_rot[3], [a,a_final,e_final,ν,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, Ω, ω, ι], expression=Val{false});
+
+    return
+end
+
+function generalized_post_kick_parameters_a_e(a,e,ν,m_1,m_2,m_2f,vkick,θ,ϕ,Ω,ω,ι)
+    v_x = vkick*cos(θ)
+    v_y = vkick*sin(θ)*cos(ϕ)
+    v_z = vkick*sin(θ)*sin(ϕ)
+    cosν = cos(ν)
+    sinν = sin(ν)
+    sepν = (1-e^2)/(1+e*cos(ν))
+    dsepνdν = (1-e^2)/(1+e*cos(ν))^2*(e*sin(ν))
+    dνdt = sqrt(cgrav*(m_1+m_2)/a^3)*(1+e*cos(ν))^2/sqrt((1-e^2)^3)
+    values = (a, e, m_1, m_2, m_2f,sepν,dνdt,dsepνdν, v_x,v_y,v_z)
+    energy = energy_function(values)
+    L_x = L_x_function(values)
+    L_y = L_y_function(values)
+    L_z = L_z_function(values)
+    
+    v_xcm = v_xcm_function(values)
+    v_ycm = v_ycm_function(values)
+    v_zcm = v_zcm_function(values)
+    v_1y = v_1y_function(values)
+
+    if energy > 0
+        return (NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN)
+    end
+
+    a_final = -cgrav*m_1*m_2f/(2*energy)
+    e_final = sqrt(1-(L_x^2+L_y^2+L_z^2)*(m_1+m_2f)/(cgrav*a_final*m_1^2*m_2f^2)+1e-15)
+    
+    values = (a,a_final,e_final,ν,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, Ω, ω, ι)
+
+    Ω_final = Ω_function(values)
+    ω_final = ω_function(values)
+    ι_final = ι_function(values)
+
+    v_N = v_N_function(values)
+    v_E = v_E_function(values)
+    v_r = v_r_function(values)
+
+    return (a_final, e_final, v_N, v_E, v_r, Ω_final, ω_final, ι_final)
+end
