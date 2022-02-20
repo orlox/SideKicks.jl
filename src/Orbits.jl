@@ -178,11 +178,11 @@ function symbolic_kick_functions_energy_L()
 end
 
 function symbolic_kick_functions_vcm_and_orbital_elements()
-    @variables a,a_final,e_final,ν,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm, v_1y, Ω, ω, ι
+    @variables a,a_final,e_final,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm, v_1y, sinΩ, cosΩ, sinω_plus_ν,cosω_plus_ν, sinι, cosι
 
-    Rω = [cos(ω+ν) -sin(ω+ν) 0;sin(ω+ν) cos(ω+ν) 0;0 0 1]
-    Rι = [cos(ι) 0 -sin(ι);0 1 0;sin(ι) 0 cos(ι)]
-    RΩ = [cos(Ω) -sin(Ω) 0;sin(Ω) cos(Ω) 0;0 0 1]
+    Rω = [cosω_plus_ν -sinω_plus_ν 0;sinω_plus_ν cosω_plus_ν 0;0 0 1]
+    Rι = [cosι 0 -sinι;0 1 0;sinι 0 cosι]
+    RΩ = [cosΩ -sinΩ 0;sinΩ cosΩ 0;0 0 1]
     Rtotal  = RΩ*Rι*Rω
 
     Lvec_rot = Rtotal*[L_x,L_y,L_z]
@@ -212,36 +212,49 @@ function symbolic_kick_functions_vcm_and_orbital_elements()
     #motion of the center of mass
     v_cm_rot = Rtotal*[v_xcm,v_ycm,v_zcm]
 
-    global ι_function = build_function(ι_final, [a,a_final,e_final,ν,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, Ω, ω, ι], expression=Val{false});
-    global Ω_function = build_function(Ω_final, [a,a_final,e_final,ν,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, Ω, ω, ι], expression=Val{false});
-    global ω_function = build_function(ω_final, [a,a_final,e_final,ν,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, Ω, ω, ι], expression=Val{false});
+    global Ω_function = build_function(Ω_final, 
+             [a,a_final,e_final,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, sinΩ, cosΩ, sinω_plus_ν,cosω_plus_ν, sinι, cosι], expression=Val{false});
+    global ω_function = build_function(ω_final, 
+             [a,a_final,e_final,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, sinΩ, cosΩ, sinω_plus_ν,cosω_plus_ν, sinι, cosι], expression=Val{false});
+    global ι_function = build_function(ι_final,
+             [a,a_final,e_final,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, sinΩ, cosΩ, sinω_plus_ν,cosω_plus_ν, sinι, cosι], expression=Val{false});
 
-    global v_N_function = build_function(v_cm_rot[2], [a,a_final,e_final,ν,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, Ω, ω, ι], expression=Val{false});
-    global v_E_function = build_function(v_cm_rot[1], [a,a_final,e_final,ν,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, Ω, ω, ι], expression=Val{false});
-    global v_r_function = build_function(-v_cm_rot[3], [a,a_final,e_final,ν,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, Ω, ω, ι], expression=Val{false});
+    global v_N_function = build_function(v_cm_rot[2],
+               [a,a_final,e_final,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, sinΩ, cosΩ, sinω_plus_ν,cosω_plus_ν, sinι, cosι], expression=Val{false});
+    global v_E_function = build_function(v_cm_rot[1],
+               [a,a_final,e_final,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, sinΩ, cosΩ, sinω_plus_ν,cosω_plus_ν, sinι, cosι], expression=Val{false});
+    global v_r_function = build_function(-v_cm_rot[3],
+               [a,a_final,e_final,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, sinΩ, cosΩ, sinω_plus_ν,cosω_plus_ν, sinι, cosι], expression=Val{false});
 
     return
 end
 
-function generalized_post_kick_parameters_a_e(a,e,ν,m_1,m_2,m_2f,vkick,θ,ϕ,Ω,ω,ι)
-    v_x = vkick*cos(θ)
-    v_y = vkick*sin(θ)*cos(ϕ)
-    v_z = vkick*sin(θ)*sin(ϕ)
-    cosν = cos(ν)
-    sinν = sin(ν)
-    sepν = (1-e^2)/(1+e*cos(ν))
-    dsepνdν = (1-e^2)/(1+e*cos(ν))^2*(e*sin(ν))
-    dνdt = sqrt(cgrav*(m_1+m_2)/a^3)*(1+e*cos(ν))^2/sqrt((1-e^2)^3)
-    values = (a, e, m_1, m_2, m_2f,sepν,dνdt,dsepνdν, v_x,v_y,v_z)
-    energy = energy_function(values)
-    L_x = L_x_function(values)
-    L_y = L_y_function(values)
-    L_z = L_z_function(values)
+function create_symbolic_functions_list()
+    symbolic_kick_functions_energy_L()
+    symbolic_kick_functions_vcm_and_orbital_elements()
     
-    v_xcm = v_xcm_function(values)
-    v_ycm = v_ycm_function(values)
-    v_zcm = v_zcm_function(values)
-    v_1y = v_1y_function(values)
+    global symbolic_functions_list = (energy_function,L_x_function,L_y_function,L_z_function,v_xcm_function,v_ycm_function,v_zcm_function,v_1y_function,
+                            ι_function, Ω_function, ω_function, v_N_function, v_E_function, v_r_function)
+    return nothing
+end
+
+function generalized_post_kick_parameters_a_e(a,e,sinν,cosν,m_1,m_2,m_2f,vkick,sinθ,cosθ,sinϕ,cosϕ,sinΩ,cosΩ,sinω,cosω,sinι,cosι,function_list)
+    v_x = vkick*cosθ
+    v_y = vkick*sinθ*cosϕ
+    v_z = vkick*sinθ*sinϕ
+    sepν = (1-e^2)/(1+e*cosν)
+    dsepνdν = (1-e^2)/(1+e*cosν)^2*(e*sinν)
+    dνdt = sqrt(cgrav*(m_1+m_2)/a^3)*(1+e*cosν)^2/sqrt((1-e^2)^3)
+    values1 = (a, e, m_1, m_2, m_2f,sepν,dνdt,dsepνdν, v_x,v_y,v_z)
+    energy = function_list[1](values1) #energy_function(valuesa)
+    L_x = function_list[2](values1) #L_x_function(valuesa)
+    L_y = function_list[3](values1) #L_y_function(valuesa)
+    L_z = function_list[4](values1) #L_z_function(valuesa)
+    
+    v_xcm = function_list[5](values1) #v_xcm_function(valuesa)
+    v_ycm = function_list[6](values1) #v_ycm_function(valuesa)
+    v_zcm = function_list[7](values1) #v_zcm_function(valuesa)
+    v_1y = function_list[8](values1) #v_1y_function(valuesa)
 
     if energy > 0
         return (NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN)
@@ -249,16 +262,19 @@ function generalized_post_kick_parameters_a_e(a,e,ν,m_1,m_2,m_2f,vkick,θ,ϕ,Ω
 
     a_final = -cgrav*m_1*m_2f/(2*energy)
     e_final = sqrt(1-(L_x^2+L_y^2+L_z^2)*(m_1+m_2f)/(cgrav*a_final*m_1^2*m_2f^2)+1e-15)
+
+    sinω_plus_ν = sinω*cosν+cosω*sinν
+    cosω_plus_ν = cosω*cosν-sinω*sinν
     
-    values = (a,a_final,e_final,ν,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, Ω, ω, ι)
+    values2 = (a,a_final,e_final,sepν,L_x,L_y,L_z,v_xcm,v_ycm,v_zcm,v_1y, sinΩ,cosΩ, sinω_plus_ν, cosω_plus_ν, sinι, cosι)
 
-    Ω_final = Ω_function(values)
-    ω_final = ω_function(values)
-    ι_final = ι_function(values)
+    Ω_final = function_list[9](values2) #Ω_function(values2)
+    ω_final = function_list[10](values2) #ω_function(values2)
+    ι_final = function_list[11](values2) #ι_function(values2)
 
-    v_N = v_N_function(values)
-    v_E = v_E_function(values)
-    v_r = v_r_function(values)
+    v_N = function_list[12](values2) #v_N_function(values2)
+    v_E = function_list[13](values2) #v_E_function(values2)
+    v_r = function_list[14](values2) #v_r_function(values2)
 
     return (a_final, e_final, v_N, v_E, v_r, Ω_final, ω_final, ι_final)
 end
