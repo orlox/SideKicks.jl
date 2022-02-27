@@ -1,12 +1,6 @@
 using Turing
 using Distributions
 
-#struct WrappedCauchy <: ContinuousUnivariateDistribution
-#    mu::T
-#    sigma::Float64
-#    WrappedCauchy(mu, sigma) = new(Float64(mu), Float64(sigma))
-#end
-#
 struct WrappedCauchy{T1<:Real, T2<:Real} <: ContinuousUnivariateDistribution
     μ::T1
     σ::T2
@@ -93,7 +87,6 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
                         a_i,e,sinν,cosν,m1_i*m_sun,m2_i*m_sun,m2_f*m_sun,vkick*1e7,sinθ,cosθ,sinϕ,cosϕ,sinΩ,cosΩ,sinω,cosω,sinι,cosι,functions_list)
         P_f = kepler_P_from_a(a_f,m1_i,m2_f)
         
-        #@show "in model", (P_f,e_f)
         K1 = RV_semiamplitude_K(P_f, e_f, ι_f, m1_i, m2_f)
         K2 = RV_semiamplitude_K(P_f, e_f, ι_f, m2_f, m1_i)
 
@@ -126,10 +119,135 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
                 obs_vals[i] ~ Cauchy(v_r, obs_errs[i])
             end
         end
-
-        return m1_i, m2_i, m2_f, P_i, vkick, P_f, e_f, K1, K2, v_N, v_E, v_r, Ω_f, ω_f, ι_f
     end
 
     return kick_model(observations, observed_values, observed_errors)
 
+end
+
+function extract_chain(chain, observations, observed_values, observed_errors, functions_list)
+    #simple function to change ranges from [-π,π] to [0,2π]
+    shift_range = x-> x<0 ? x+2*π : x
+
+    res = Dict()
+    res[:logm1_i] = reduce(vcat,chain[:logm1_i])
+    res[:m1_i] = 10 .^ res[:logm1_i]
+    res[:logm2_i] = reduce(vcat,chain[:logm2_i])
+    res[:m2_i] = 10 .^ res[:logm2_i]
+    res[:logP_i] = reduce(vcat,chain[:logP_i])
+    res[:P_i] = 10 .^ res[:logP_i]
+    res[:a_i] = kepler_a_from_P.(res[:P_i],res[:m1_i],res[:m2_i])
+    res[:e] = reduce(vcat,chain[:e])
+    res[:ι] = reduce(vcat,[acos(x) for x in chain[:cosι]])
+    res[:ν] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xν],chain[:yν])]))
+    res[:Ω] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xΩ],chain[:yΩ])]))
+    res[:ω] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xω],chain[:yω])]))
+    res[:frac] = reduce(vcat,chain[:frac])
+    res[:m2_f] = res[:m2_i].*res[:frac]
+    res[:vkick] = reduce(vcat,chain[:vkick])*100 # MCMC is done in units of 100 km/s, turn into km/s
+    res[:theta] = reduce(vcat,[acos(x) for x in chain[:cosθ]])
+    res[:ϕ] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xϕ],chain[:yϕ])]))
+
+    #m1 is assumed to remain constant
+    res[:a_f] = Vector{Float64}(undef,length(chain))
+    res[:e_f] = Vector{Float64}(undef,length(chain))
+    res[:v_N] = Vector{Float64}(undef,length(chain))
+    res[:v_E] = Vector{Float64}(undef,length(chain))
+    res[:v_r] = Vector{Float64}(undef,length(chain))
+    res[:Ω_f] = Vector{Float64}(undef,length(chain))
+    res[:ω_f] = Vector{Float64}(undef,length(chain))
+    res[:ι_f] = Vector{Float64}(undef,length(chain))
+    for i in 1:length(chain)
+        a_f, e_f, v_N, v_E, v_r, Ω_f, ω_f, ι_f = 
+        generalized_post_kick_parameters_a_e(res[:a_i][i],res[:e][i],sin(res[:ν][i]),cos(res[:ν][i]),res[:m1_i][i]*m_sun,res[:m2_i][i]*m_sun,res[:m2_f][i]*m_sun,
+                                             res[:vkick][i]*1e5,sin(res[:theta][i]),cos(res[:theta][i]),sin(res[:ϕ][i]),cos(res[:ϕ][i]),
+                                             sin(res[:Ω][i]),cos(res[:Ω][i]),sin(res[:ω][i]),cos(res[:ω][i]),sin(res[:ι][i]),cos(res[:ι][i]),functions_list)
+        res[:a_f][i] = a_f
+        res[:e_f][i] = e_f
+        res[:v_N][i] = v_N
+        res[:v_E][i] = v_E
+        res[:v_r][i] = v_r
+        res[:Ω_f][i] = Ω_f
+        res[:ω_f][i] = ω_f
+        res[:ι_f][i] = ι_f
+    end
+    res[:P_f] = kepler_P_from_a.(res[:a_f],res[:m1_i],res[:m2_f])
+    
+    res[:K1] = RV_semiamplitude_K.(res[:P_f], res[:e_f], res[:ι_f], res[:m1_i], res[:m2_f])
+    res[:K2] = RV_semiamplitude_K.(res[:P_f], res[:e_f], res[:ι_f], res[:m2_f], res[:m1_i])
+
+    #compute weights in log first
+    res[:weight] = zeros(Float64,length(chain))
+    for j in 1:length(chain)
+        for (i, obs_symbol) in enumerate(observations)
+            if obs_symbol == :P
+                dist1 = Cauchy(res[:P_f][j], observed_errors[i])
+                dist2 = Normal(res[:P_f][j], observed_errors[i])
+                res[:weight][j] += logpdf(dist2,observed_values[i])-logpdf(dist1,observed_values[i])
+            elseif obs_symbol == :e
+                dist1 = Cauchy(res[:e_f][j], observed_errors[i])
+                dist2 = Normal(res[:e_f][j], observed_errors[i])
+                res[:weight][j] += logpdf(dist2,observed_values[i])-logpdf(dist1,observed_values[i])
+            elseif obs_symbol == :K1
+                dist1 = Cauchy(res[:K1][j], observed_errors[i])
+                dist2 = Normal(res[:K1][j], observed_errors[i])
+                res[:weight][j] += logpdf(dist2,observed_values[i])-logpdf(dist1,observed_values[i])
+            elseif obs_symbol == :K2
+                dist1 = Cauchy(res[:K2][j], observed_errors[i])
+                dist2 = Normal(res[:K2][j], observed_errors[i])
+                res[:weight][j] += logpdf(dist2,observed_values[i])-logpdf(dist1,observed_values[i])
+            elseif obs_symbol == :m1
+                dist1 = Cauchy(res[:m1_i][j], observed_errors[i])
+                dist2 = Normal(res[:m1_i][j], observed_errors[i])
+                res[:weight][j] += logpdf(dist2,observed_values[i])-logpdf(dist1,observed_values[i])
+            elseif obs_symbol == :m2
+                dist1 = Cauchy(res[:m2_f][j], observed_errors[i])
+                dist2 = Normal(res[:m2_f][j], observed_errors[i])
+                res[:weight][j] += logpdf(dist2,observed_values[i])-logpdf(dist1,observed_values[i])
+            elseif obs_symbol == :Ω
+                dist1 = WrappedCauchy(res[:Ω_f][j], observed_errors[i])
+                dist2 = VonMises(res[:Ω_f][j], 1/observed_errors[i]^2)
+                # VonMises works only between μ-π and μ+π, so need to adjust accordingly
+                diff = observed_values[i]-res[:Ω_f][j]
+                if diff<-π
+                    diff += 2*π
+                elseif diff>π
+                    diff -= 2*π
+                end
+                res[:weight][j] += logpdf(dist2,res[:Ω_f][j]+diff)-logpdf(dist1,observed_values[i])
+            elseif obs_symbol == :ω
+                dist1 = WrappedCauchy(res[:ω_f][j], observed_errors[i])
+                dist2 = VonMises(res[:ω_f][j], 1/observed_errors[i]^2)
+                # VonMises works only between μ-π and μ+π, so need to adjust accordingly
+                diff = observed_values[i]-res[:ω_f][j]
+                if diff<-π
+                    diff += 2*π
+                elseif diff>π
+                    diff -= 2*π
+                end
+                res[:weight][j] += logpdf(dist2,res[:ω_f][j]+diff)-logpdf(dist1,observed_values[i])
+            elseif obs_symbol == :ι
+                dist1 = Cauchy(res[:ι_f][j], observed_errors[i])
+                dist2 = Normal(res[:ι_f][j], observed_errors[i])
+                res[:weight][j] += logpdf(dist2,observed_values[i])-logpdf(dist1,observed_values[i])
+            elseif obs_symbol == :v_N
+                dist1 = Cauchy(res[:v_N][j], observed_errors[i])
+                dist2 = Normal(res[:v_N][j], observed_errors[i])
+                res[:weight][j] += logpdf(dist2,observed_values[i])-logpdf(dist1,observed_values[i])
+            elseif obs_symbol == :v_E
+                dist1 = Cauchy(res[:v_E][j], observed_errors[i])
+                dist2 = Normal(res[:v_E][j], observed_errors[i])
+                res[:weight][j] += logpdf(dist2,observed_values[i])-logpdf(dist1,observed_values[i])
+            elseif obs_symbol == :v_r
+                dist1 = Cauchy(res[:v_r][j], observed_errors[i])
+                dist2 = Normal(res[:v_r][j], observed_errors[i])
+                res[:weight][j] += logpdf(dist2,observed_values[i])-logpdf(dist1,observed_values[i])
+            end
+        end
+    end
+    #adjust weights so that maximum weight is unity
+    res[:weight] .= res[:weight] .- maximum(res[:weight]) #weights are still in log here
+    res[:weight] .= exp.(res[:weight])
+
+    return res
 end

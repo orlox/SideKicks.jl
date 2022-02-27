@@ -1,7 +1,7 @@
 name = "SideKicks"
 uuid = "ae7baef6-f8d7-4188-9988-8bf5c4952615"
 authors = ["Pablo Marchant "]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 IfElse = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
@@ -12,3 +12,4 @@ Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 [compat]
 Turing = "0.20.0"
 julia = "1.7.0"
+Distributions = "0.24"

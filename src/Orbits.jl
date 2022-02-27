@@ -234,7 +234,7 @@ function create_symbolic_functions_list()
     symbolic_kick_functions_vcm_and_orbital_elements()
     
     global symbolic_functions_list = (energy_function,L_x_function,L_y_function,L_z_function,v_xcm_function,v_ycm_function,v_zcm_function,v_1y_function,
-                            ι_function, Ω_function, ω_function, v_N_function, v_E_function, v_r_function)
+                            Ω_function, ω_function, ι_function, v_N_function, v_E_function, v_r_function)
     return nothing
 end
 
