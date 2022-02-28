@@ -22,6 +22,7 @@ pre-explosion and kick properties of a system
 """
 function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values::Vector{Float64}, observed_errors::Vector{Float64},
     functions_list;
+    bhModel = arbitraryEjectaBH,
     logm1_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), 
     logm2_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3),
     logP_i_dist::ContinuousUnivariateDistribution = Uniform(-1,3),
@@ -69,7 +70,7 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
 
         #Post-explosion masses
         frac ~ frac_dist
-        m2_f = m2_i*frac # star 2 explodes, star 1 is kept fixed
+        m2_f = bhModel(m2_i, frac) # star 2 explodes, star 1 is kept fixed
 
         #Kick parameters
         vkick ~ vkick_dist
@@ -125,7 +126,7 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
 
 end
 
-function extract_chain(chain, observations, observed_values, observed_errors, functions_list)
+function extract_chain(chain, observations, observed_values, observed_errors, functions_list; bhModel = arbitraryEjectaBH)
     #simple function to change ranges from [-π,π] to [0,2π]
     shift_range = x-> x<0 ? x+2*π : x
 
@@ -143,7 +144,8 @@ function extract_chain(chain, observations, observed_values, observed_errors, fu
     res[:Ω] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xΩ],chain[:yΩ])]))
     res[:ω] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xω],chain[:yω])]))
     res[:frac] = reduce(vcat,chain[:frac])
-    res[:m2_f] = res[:m2_i].*res[:frac]
+    res[:m2_f] = bhModel.(res[:m2_i],res[:frac])
+    res[:ejecta_mass] = res[:m2_i] .- res[:m2_f]
     res[:vkick] = reduce(vcat,chain[:vkick])*100 # MCMC is done in units of 100 km/s, turn into km/s
     res[:theta] = reduce(vcat,[acos(x) for x in chain[:cosθ]])
     res[:ϕ] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xϕ],chain[:yϕ])]))
