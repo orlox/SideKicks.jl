@@ -28,6 +28,7 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
     logP_i_dist::ContinuousUnivariateDistribution = Uniform(-1,3),
     e_dist::ContinuousUnivariateDistribution = Uniform(0,0.01),
     vkick_dist::ContinuousUnivariateDistribution = FlatPos(0),
+    vsys_i_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
     frac_dist::ContinuousUnivariateDistribution = Uniform(0,1.0))
 
     # provided observed values
@@ -82,6 +83,11 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
         cosϕ = xϕ*normϕ
         sinϕ = yϕ*normϕ
 
+        #Initial systemic velocity parameters
+        v_i_N ~ vsys_i_dist
+        v_i_E ~ vsys_i_dist
+        v_i_r ~ vsys_i_dist
+
         #m1 is assumed to remain constant
         a_f, e_f, v_N, v_E, v_r, Ω_f, ω_f, ι_f = 
             generalized_post_kick_parameters_a_e(
@@ -113,11 +119,11 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
             elseif obs_symbol == :ι
                 obs_vals[i] ~ Cauchy(ι_f, obs_errs[i])
             elseif obs_symbol == :v_N
-                obs_vals[i] ~ Cauchy(v_N, obs_errs[i])
+                obs_vals[i] ~ Cauchy(v_N + v_i_N*1e7, obs_errs[i]) # in cm/s
             elseif obs_symbol == :v_E
-                obs_vals[i] ~ Cauchy(v_E, obs_errs[i])
+                obs_vals[i] ~ Cauchy(v_E + v_i_E*1e7, obs_errs[i]) # in cm/s
             elseif obs_symbol == :v_r
-                obs_vals[i] ~ Cauchy(v_r, obs_errs[i])
+                obs_vals[i] ~ Cauchy(v_r + v_i_r*1e7, obs_errs[i]) # in cm/s
             end
         end
     end
