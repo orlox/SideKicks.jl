@@ -151,15 +151,16 @@ function extract_chain(chain, observations, observed_values, observed_errors, fu
     res[:ϕ] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xϕ],chain[:yϕ])]))
 
     #m1 is assumed to remain constant
-    res[:a_f] = Vector{Float64}(undef,length(chain))
-    res[:e_f] = Vector{Float64}(undef,length(chain))
-    res[:v_N] = Vector{Float64}(undef,length(chain))
-    res[:v_E] = Vector{Float64}(undef,length(chain))
-    res[:v_r] = Vector{Float64}(undef,length(chain))
-    res[:Ω_f] = Vector{Float64}(undef,length(chain))
-    res[:ω_f] = Vector{Float64}(undef,length(chain))
-    res[:ι_f] = Vector{Float64}(undef,length(chain))
-    for i in 1:length(chain)
+    sample_num = length(res[:logm1_i])
+    res[:a_f] = Vector{Float64}(undef,sample_num)
+    res[:e_f] = Vector{Float64}(undef,sample_num)
+    res[:v_N] = Vector{Float64}(undef,sample_num)
+    res[:v_E] = Vector{Float64}(undef,sample_num)
+    res[:v_r] = Vector{Float64}(undef,sample_num)
+    res[:Ω_f] = Vector{Float64}(undef,sample_num)
+    res[:ω_f] = Vector{Float64}(undef,sample_num)
+    res[:ι_f] = Vector{Float64}(undef,sample_num)
+    for i in 1:sample_num
         a_f, e_f, v_N, v_E, v_r, Ω_f, ω_f, ι_f = 
         generalized_post_kick_parameters_a_e(res[:a_i][i],res[:e][i],sin(res[:ν][i]),cos(res[:ν][i]),res[:m1_i][i]*m_sun,res[:m2_i][i]*m_sun,res[:m2_f][i]*m_sun,
                                              res[:vkick][i]*1e5,sin(res[:theta][i]),cos(res[:theta][i]),sin(res[:ϕ][i]),cos(res[:ϕ][i]),
@@ -179,8 +180,8 @@ function extract_chain(chain, observations, observed_values, observed_errors, fu
     res[:K2] = RV_semiamplitude_K.(res[:P_f], res[:e_f], res[:ι_f], res[:m2_f], res[:m1_i])
 
     #compute weights in log first
-    res[:weight] = zeros(Float64,length(chain))
-    for j in 1:length(chain)
+    res[:weight] = zeros(Float64,sample_num)
+    for j in 1:sample_num
         for (i, obs_symbol) in enumerate(observations)
             if obs_symbol == :P
                 dist1 = Cauchy(res[:P_f][j], observed_errors[i])
