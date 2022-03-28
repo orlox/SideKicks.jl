@@ -28,7 +28,9 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
     logP_i_dist::ContinuousUnivariateDistribution = Uniform(-1,3),
     e_dist::ContinuousUnivariateDistribution = Uniform(0,0.01),
     vkick_dist::ContinuousUnivariateDistribution = FlatPos(0),
-    vsys_i_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
+    vsys_N_i_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
+    vsys_E_i_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
+    vsys_r_i_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
     frac_dist::ContinuousUnivariateDistribution = Uniform(0,1.0))
 
     # provided observed values
@@ -84,9 +86,9 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
         sinϕ = yϕ*normϕ
 
         #Initial systemic velocity parameters
-        v_i_N ~ vsys_i_dist
-        v_i_E ~ vsys_i_dist
-        v_i_r ~ vsys_i_dist
+        v_N_i ~ vsys_N_i_dist*1e7         # in cm/s
+        v_E_i ~ vsys_E_i_dist*1e7         # in cm/s
+        v_r_i ~ vsys_r_i_dist*1e7         # in cm/s
 
         #m1 is assumed to remain constant
         a_f, e_f, v_N, v_E, v_r, Ω_f, ω_f, ι_f = 
@@ -119,11 +121,11 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
             elseif obs_symbol == :ι
                 obs_vals[i] ~ Cauchy(ι_f, obs_errs[i])
             elseif obs_symbol == :v_N
-                obs_vals[i] ~ Cauchy(v_N + v_i_N*1e7, obs_errs[i]) # in cm/s
+                obs_vals[i] ~ Cauchy(v_N + v_N_i, obs_errs[i])
             elseif obs_symbol == :v_E
-                obs_vals[i] ~ Cauchy(v_E + v_i_E*1e7, obs_errs[i]) # in cm/s
+                obs_vals[i] ~ Cauchy(v_E + v_E_i, obs_errs[i])
             elseif obs_symbol == :v_r
-                obs_vals[i] ~ Cauchy(v_r + v_i_r*1e7, obs_errs[i]) # in cm/s
+                obs_vals[i] ~ Cauchy(v_r + v_r_i, obs_errs[i])
             end
         end
     end
@@ -155,6 +157,9 @@ function extract_chain(chain, observations, observed_values, observed_errors, fu
     res[:vkick] = reduce(vcat,chain[:vkick])*100 # MCMC is done in units of 100 km/s, turn into km/s
     res[:theta] = reduce(vcat,[acos(x) for x in chain[:cosθ]])
     res[:ϕ] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xϕ],chain[:yϕ])]))
+    res[:v_N_i] = reduce(vcat,chain[:v_N_i])
+    res[:v_E_i] = reduce(vcat,chain[:v_E_i])
+    res[:v_r_i] = reduce(vcat,chain[:v_r_i])
 
     #m1 is assumed to remain constant
     sample_num = length(res[:logm1_i])
@@ -173,9 +178,9 @@ function extract_chain(chain, observations, observed_values, observed_errors, fu
                                              sin(res[:Ω][i]),cos(res[:Ω][i]),sin(res[:ω][i]),cos(res[:ω][i]),sin(res[:ι][i]),cos(res[:ι][i]),functions_list)
         res[:a_f][i] = a_f
         res[:e_f][i] = e_f
-        res[:v_N][i] = v_N
-        res[:v_E][i] = v_E
-        res[:v_r][i] = v_r
+        res[:v_N][i] = v_N + res[:v_N_i][i]
+        res[:v_E][i] = v_E + res[:v_E_i][i]
+        res[:v_r][i] = v_r + res[:v_r_i][i]
         res[:Ω_f][i] = Ω_f
         res[:ω_f][i] = ω_f
         res[:ι_f][i] = ι_f
