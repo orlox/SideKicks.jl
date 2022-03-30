@@ -27,7 +27,7 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
     logm2_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3),
     logP_i_dist::ContinuousUnivariateDistribution = Uniform(-1,3),
     e_dist::ContinuousUnivariateDistribution = Uniform(0,0.01),
-    vkick_dist::ContinuousUnivariateDistribution = FlatPos(0),
+    vkick_dist::ContinuousUnivariateDistribution = Exponential(1),
     vsys_N_i_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
     vsys_E_i_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
     vsys_r_i_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
@@ -121,11 +121,11 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
             elseif obs_symbol == :ι
                 obs_vals[i] ~ Cauchy(ι_f, obs_errs[i])
             elseif obs_symbol == :v_N
-                obs_vals[i] ~ Cauchy(v_N + v_N_i, obs_errs[i])
+                obs_vals[i] ~ Cauchy(v_N - v_N_i, obs_errs[i])
             elseif obs_symbol == :v_E
-                obs_vals[i] ~ Cauchy(v_E + v_E_i, obs_errs[i])
+                obs_vals[i] ~ Cauchy(v_E - v_E_i, obs_errs[i])
             elseif obs_symbol == :v_r
-                obs_vals[i] ~ Cauchy(v_r + v_r_i, obs_errs[i])
+                obs_vals[i] ~ Cauchy(v_r - v_r_i, obs_errs[i])
             end
         end
     end
