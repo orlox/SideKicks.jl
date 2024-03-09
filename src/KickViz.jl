@@ -1,11 +1,14 @@
 using StatsBase
 using CairoMakie
-using Turing
 
-export create_corner_plot, create_2D_density, create_1D_density, get_star_corner_plot
+export create_corner_plot, create_2D_density, create_1D_density
 
-function create_corner_plot(chain_values,names,label_names, chain_weights, fractions, fraction_1D, figure; show_CIs = false)
+function create_corner_plot(chain_values,names,label_names, fractions, fraction_1D, figure; show_CIs = false, ranges=missing, nbins=100)
     ga = figure[1, 1] = GridLayout()
+
+    if ismissing(ranges)
+        ranges = [missing for i in 1:length(names)]
+    end
    
     num_col = length(names)-1
     for i in 1:num_col
@@ -13,7 +16,7 @@ function create_corner_plot(chain_values,names,label_names, chain_weights, fract
             axis = Axis(ga[j,i],xtickalign=1,xtickcolor = :white,ytickalign=1,ytickcolor = :white, 
                    xlabel=label_names[i], ylabel=label_names[j] )
             
-            create_2D_density(chain_values[names[i]], chain_values[names[j]], chain_weights,fractions, axis)
+            create_2D_density(chain_values[names[i]], ranges[i], chain_values[names[j]], ranges[j], chain_values[:weight],fractions, axis, nbins)
             if i>1
                 hideydecorations!(axis, ticks=false, minorticks=false)
             end
@@ -26,7 +29,7 @@ function create_corner_plot(chain_values,names,label_names, chain_weights, fract
     for i in 1:num_col+1
         axis = Axis(ga[i,i], xgridvisible = false, ygridvisible = false,xtickalign=1,
                xlabel=label_names[i])
-        (xmin, xmode, xmax) = create_1D_density(chain_values[names[i]], chain_weights,fraction_1D,axis)
+        (xmin, xmode, xmax) = create_1D_density(chain_values[names[i]], ranges[i], chain_values[:weight],fraction_1D,axis, nbins)
         hideydecorations!(axis)
         if i !=num_col+1
             hidexdecorations!(axis,ticks=false, minorticks=false)
@@ -42,9 +45,16 @@ function create_corner_plot(chain_values,names,label_names, chain_weights, fract
     return figure 
 end
 
-function create_2D_density(values1,values2, chain_weights,fractions,axis)
+function create_2D_density(values1, ranges1,values2, ranges2, chain_weights,fractions,axis, nbins)
+    if !ismissing(ranges1)
+        filter = values1 .> ranges1[1] .&& values1 .< ranges1[2] .&&
+                    values2 .> ranges2[1] .&& values2 .< ranges2[2]
+        values1 = values1[filter]
+        values2 = values2[filter]
+        chain_weights = chain_weights[filter]
+    end
 
-    h = fit(Histogram,(values1,values2),weights(chain_weights),nbins=100)
+    h = fit(Histogram,(values1,values2),weights(chain_weights),nbins=nbins)
     x= (h.edges[2][2:end].+h.edges[2][1:end-1])./2
     y =(h.edges[1][2:end].+h.edges[1][1:end-1])./2
     heatmap!(axis,y,x, h.weights)
@@ -55,7 +65,6 @@ end
 
 function get_bounds_for_fractions(h,fractions)
     integral = sum(h.weights)
-    #smartely decide when the bisection is ended 
     bounds =zeros(length(fractions))
     for (j,fraction) in enumerate(fractions)
         minbound = 0
@@ -78,8 +87,14 @@ function get_bounds_for_fractions(h,fractions)
     return bounds
 end
 
-function create_1D_density(values, chain_weights,fraction_1D,axis)
-    h = fit(Histogram,(values),weights(chain_weights),nbins=200)
+function create_1D_density(values, range, chain_weights,fraction_1D,axis, nbins)
+    if !ismissing(range)
+        filter = values .> range[1] .&& values .< range[2]
+        values = values[filter]
+        chain_weights = chain_weights[filter]
+    end
+
+    h = fit(Histogram,(values),weights(chain_weights),nbins=nbins)
     x =(h.edges[1][2:end].+h.edges[1][1:end-1])./2
     bound = get_bounds_for_fractions(h,[fraction_1D])[1]
 
@@ -97,12 +112,4 @@ function create_1D_density(values, chain_weights,fraction_1D,axis)
     return (xmin, xmode, xmax)
    
 end
-
-function concatenate_chains(star_chains)
-    concatenated_chains = Dict()
-    for name in Base.names(star_chains)
-        concatenated_chains[name] = star_chains[:,name,:][:]
-    end
-    return concatenated_chains
- end
  

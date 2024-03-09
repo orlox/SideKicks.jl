@@ -210,7 +210,8 @@ function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_va
 
 end
 
-function extract_chain(chain, observations, observed_values, observed_errors, functions_list; bhModel = arbitraryEjectaBH)
+function extract_chain(chain, observations, observed_values, observed_errors, functions_list,
+        model_type; bhModel = arbitraryEjectaBH)
     #simple function to change ranges from [-π,π] to [0,2π]
     shift_range = x-> x<0 ? x+2*π : x
 
@@ -222,44 +223,67 @@ function extract_chain(chain, observations, observed_values, observed_errors, fu
     res[:logP_i] = reduce(vcat,chain[:logP_i])
     res[:P_i] = 10 .^ res[:logP_i]
     res[:a_i] = kepler_a_from_P.(res[:P_i],res[:m1_i],res[:m2_i])
-    res[:e] = reduce(vcat,chain[:e])
-    res[:ι] = reduce(vcat,[acos(x) for x in chain[:cosι]])
-    res[:ν] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xν],chain[:yν])]))
-    res[:Ω] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xΩ],chain[:yΩ])]))
-    res[:ω] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xω],chain[:yω])]))
+    if model_type==:simple
+        res[:e_i] = zeros(length(res[:a_i]))
+    elseif model_type==:general
+        res[:e_i] = reduce(vcat,chain[:e])
+    else
+        throw(ArgumentError("model_type=:$model_type is an invalid option"))
+    end
+    if model_type==:general_model
+        res[:ν_i] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xν],chain[:yν])]))
+        res[:Ω_i] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xΩ],chain[:yΩ])]))
+        res[:ω_i] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xω],chain[:yω])]))
+        res[:ι_i] = reduce(vcat,[acos(x) for x in chain[:cosι]])
+    end
     res[:frac] = reduce(vcat,chain[:frac])
     res[:m2_f] = bhModel.(res[:m2_i],res[:frac])
     res[:ejecta_mass] = res[:m2_i] .- res[:m2_f]
     res[:vkick] = reduce(vcat,chain[:vkick])*100 # MCMC is done in units of 100 km/s, turn into km/s
-    res[:theta] = reduce(vcat,[acos(x) for x in chain[:cosθ]])
+    res[:θ] = reduce(vcat,[acos(x) for x in chain[:cosθ]])
     res[:ϕ] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xϕ],chain[:yϕ])]))
-    res[:v_N_i] = reduce(vcat,chain[:v_N_i])
-    res[:v_E_i] = reduce(vcat,chain[:v_E_i])
-    res[:v_r_i] = reduce(vcat,chain[:v_r_i])
+    if model_type==:general_model
+        res[:v_N_i] = reduce(vcat,chain[:v_N_i])
+        res[:v_E_i] = reduce(vcat,chain[:v_E_i])
+        res[:v_r_i] = reduce(vcat,chain[:v_r_i])
+    end 
 
-    #m1 is assumed to remain constant
-    sample_num = length(res[:logm1_i])
-    res[:a_f] = Vector{Float64}(undef,sample_num)
-    res[:e_f] = Vector{Float64}(undef,sample_num)
-    res[:v_N] = Vector{Float64}(undef,sample_num)
-    res[:v_E] = Vector{Float64}(undef,sample_num)
-    res[:v_r] = Vector{Float64}(undef,sample_num)
-    res[:Ω_f] = Vector{Float64}(undef,sample_num)
-    res[:ω_f] = Vector{Float64}(undef,sample_num)
-    res[:ι_f] = Vector{Float64}(undef,sample_num)
-    for i in 1:sample_num
-        a_f, e_f, v_N, v_E, v_r, Ω_f, ω_f, ι_f = 
-        generalized_post_kick_parameters_a_e(res[:a_i][i],res[:e][i],sin(res[:ν][i]),cos(res[:ν][i]),res[:m1_i][i]*m_sun,res[:m2_i][i]*m_sun,res[:m2_f][i]*m_sun,
-                                             res[:vkick][i]*1e5,sin(res[:theta][i]),cos(res[:theta][i]),sin(res[:ϕ][i]),cos(res[:ϕ][i]),
-                                             sin(res[:Ω][i]),cos(res[:Ω][i]),sin(res[:ω][i]),cos(res[:ω][i]),sin(res[:ι][i]),cos(res[:ι][i]),functions_list)
-        res[:a_f][i] = a_f
-        res[:e_f][i] = e_f
-        res[:v_N][i] = v_N + res[:v_N_i][i]
-        res[:v_E][i] = v_E + res[:v_E_i][i]
-        res[:v_r][i] = v_r + res[:v_r_i][i]
-        res[:Ω_f][i] = Ω_f
-        res[:ω_f][i] = ω_f
-        res[:ι_f][i] = ι_f
+    sample_num = length(res[:a_i])
+    if model_type==:general
+        res[:a_f] = Vector{Float64}(undef,sample_num)
+        res[:e_f] = Vector{Float64}(undef,sample_num)
+        res[:v_N] = Vector{Float64}(undef,sample_num)
+        res[:v_E] = Vector{Float64}(undef,sample_num)
+        res[:v_r] = Vector{Float64}(undef,sample_num)
+        res[:Ω_f] = Vector{Float64}(undef,sample_num)
+        res[:ω_f] = Vector{Float64}(undef,sample_num)
+        res[:ι_f] = Vector{Float64}(undef,sample_num)
+        for i in 1:sample_num
+            a_f, e_f, v_N, v_E, v_r, Ω_f, ω_f, ι_f = 
+            generalized_post_kick_parameters_a_e(res[:a_i][i],res[:e][i],sin(res[:ν][i]),cos(res[:ν][i]),res[:m1_i][i]*m_sun,res[:m2_i][i]*m_sun,res[:m2_f][i]*m_sun,
+                                                res[:vkick][i]*1e5,sin(res[:theta][i]),cos(res[:theta][i]),sin(res[:ϕ][i]),cos(res[:ϕ][i]),
+                                                sin(res[:Ω][i]),cos(res[:Ω][i]),sin(res[:ω][i]),cos(res[:ω][i]),sin(res[:ι][i]),cos(res[:ι][i]),functions_list)
+            res[:a_f][i] = a_f
+            res[:e_f][i] = e_f
+            res[:v_N][i] = v_N + res[:v_N_i][i]
+            res[:v_E][i] = v_E + res[:v_E_i][i]
+            res[:v_r][i] = v_r + res[:v_r_i][i]
+            res[:Ω_f][i] = Ω_f
+            res[:ω_f][i] = ω_f
+            res[:ι_f][i] = ι_f
+        end
+    elseif model_type==:simple
+        res[:a_f] = Vector{Float64}(undef,sample_num)
+        res[:e_f] = Vector{Float64}(undef,sample_num)
+        for i in 1:sample_num
+            mtilde = (res[:m1_i][i]+res[:m2_f][i])/(res[:m1_i][i]+res[:m2_i][i])
+            vkick_div_vrel = res[:vkick][i]*1e5/sqrt(cgrav*(res[:m1_i][i]+res[:m2_i][i])*m_sun/res[:a_i][i])
+            a_f, e_f =
+                post_kick_parameters_a(res[:a_i][i],mtilde,vkick_div_vrel,res[:θ][i],res[:θ][i])
+            res[:a_f][i] = a_f
+            res[:e_f][i] = e_f
+        end
+        res[:ι_f] = reduce(vcat,[acos(x) for x in chain[:cosι]])
     end
     res[:P_f] = kepler_P_from_a.(res[:a_f],res[:m1_i],res[:m2_f])
     
