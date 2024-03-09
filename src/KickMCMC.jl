@@ -99,7 +99,8 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
         K1 = RV_semiamplitude_K(P_f, e_f, ι_f, m1_i, m2_f)
         K2 = RV_semiamplitude_K(P_f, e_f, ι_f, m2_f, m1_i)
 
-        for (i, obs_symbol) in enumerate(obs)
+        for i in eachindex(obs)
+            obs_symbol = obs[i]
             if obs_symbol == :P
                 obs_vals[i] ~ Cauchy(P_f, obs_errs[i])
             elseif obs_symbol == :e
@@ -126,6 +127,81 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
                 obs_vals[i] ~ Cauchy(v_E - v_E_i, obs_errs[i])
             elseif obs_symbol == :v_r
                 obs_vals[i] ~ Cauchy(v_r - v_r_i, obs_errs[i])
+            end
+        end
+    end
+    
+    return kick_model(observations, observed_values, observed_errors)
+    
+end
+    
+function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_values::Vector{Float64}, observed_errors::Vector{Float64};
+    bhModel = arbitraryEjectaBH,
+    logm1_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), 
+    logm2_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3),
+    logP_i_dist::ContinuousUnivariateDistribution = Uniform(-1,3),
+    vkick_dist::ContinuousUnivariateDistribution = Exponential(1),
+    frac_dist::ContinuousUnivariateDistribution = Uniform(0,1.0))
+
+    # provided observed values
+    valid_values = [:P, :e, :K1, :K2, :m1, :m2]
+    for obs ∈ observations
+        if obs ∉ valid_values
+            throw(DomainError(obs, "Allowed observations are only [:P, :e, :K1, :K2, :m1, :m2]"))
+        end
+    end
+
+    @model function kick_model(obs::Vector{Symbol}, obs_vals::Vector{Float64}, obs_errs::Vector{Float64})
+        # set priors
+        #Pre-explosion masses and orbital period
+        logm1_i ~ logm1_i_dist
+        m1_i = 10^(logm1_i)
+        logm2_i ~ logm2_i_dist
+        m2_i = 10^(logm2_i)
+        logP_i ~ logP_i_dist
+        P_i = 10^(logP_i)
+        a_i = kepler_a_from_P(P_i,m1_i,m2_i)
+        cosι ~ Uniform(0,1)
+        ι_f = acos(cosι)
+
+        #Post-explosion masses
+        frac ~ frac_dist
+        m2_f = bhModel(m2_i, frac) # star 2 explodes, star 1 is kept fixed
+
+        #Kick parameters
+        vkick ~ vkick_dist
+        cosθ ~ Uniform(-1,1)
+        θ = acos(cosθ)
+        xϕ ~ Normal(0,1)
+        yϕ ~ Normal(0,1)
+        normϕ = 1/sqrt(xϕ^2+yϕ^2)
+        cosϕ = xϕ*normϕ
+        ϕ = acos(cosϕ)
+
+        mtilde = (m1_i+m2_f)/(m1_i+m2_i)
+        vkick_div_vrel = vkick*1e7/sqrt(cgrav*(m1_i+m2_i)*m_sun/a_i)
+
+        #m1 is assumed to remain constant
+        a_f, e_f =
+            post_kick_parameters_a(a_i,mtilde,vkick_div_vrel,θ,ϕ)
+        P_f = kepler_P_from_a(a_f,m1_i,m2_f)
+        
+        K1 = RV_semiamplitude_K(P_f, e_f, ι_f, m1_i, m2_f)
+
+        for i in eachindex(obs)
+            obs_symbol = obs[i]
+            if obs_symbol == :P
+                obs_vals[i] ~ Cauchy(P_f, obs_errs[i])
+            elseif obs_symbol == :e
+                obs_vals[i] ~ Cauchy(e_f, obs_errs[i])
+            elseif obs_symbol == :K1
+                obs_vals[i] ~ Cauchy(K1, obs_errs[i])
+            elseif obs_symbol == :K2
+                obs_vals[i] ~ Cauchy(K2, obs_errs[i])
+            elseif obs_symbol == :m1
+                obs_vals[i] ~ Cauchy(m1_i, obs_errs[i])
+            elseif obs_symbol == :m2
+                obs_vals[i] ~ Cauchy(m2_f, obs_errs[i])
             end
         end
     end

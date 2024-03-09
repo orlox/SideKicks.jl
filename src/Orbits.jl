@@ -44,10 +44,12 @@ end
 Compute post-kick properties using equations from Tauris et al. (1999)
 #Arguments:
 - a:     pre-explosion orbital separation            [cm]
-- m1:    mass of non-exploding component             [Msun]
-- m2i:   mass of exploding component                 [Msun]
-- m2f:   post explosion mass of exploding component  [Msun]
-- vkick_kms: kick velocity given to m1               [km/s]
+- mtilde: (m1_i+m2_f)/(m1_i+m2_i) [unitless], here we have
+    - m1:    mass of non-exploding component
+    - m2i:   mass of exploding component
+    - m2f:   post explosion mass of exploding component
+- vkick_div_vrel: kick velocity in units of the pre-explosion relative velocity    [unitless]
+    - vrel = sqrt(G(m1_i + m2_i)/a)
 - theta: polar angle indicating kick direction       [rad]
 - phi:   azimuthal angle indicating kick direction   [rad]
     
@@ -75,10 +77,12 @@ Compute post-kick properties using equations from Tauris et al. (1999), but usin
 
 #Arguments:
 - P:     pre-explosion orbital period               [d]
-- m1:    mass of non-exploding component            [Msun]
-- m2i:   mass of exploding component                [Msun]
-- m2f:   post-explosion mass of exploding component [Msun]
-- vkick_kms: kick velocity given to m1              [km/s]
+- mtilde: (m1_i+m2_f)/(m1_i+m2_i) [unitless], here we have
+    - m1:    mass of non-exploding component
+    - m2i:   mass of exploding component
+    - m2f:   post explosion mass of exploding component
+- vkick_div_vrel: kick velocity in units of the pre-explosion relative velocity    [unitless]
+    - vrel = sqrt(G(m1_i + m2_i)/a)
 - theta: polar angle indicating kick direction      [rad]
 - phi:   azimuthal angle indicating kick direction  [rad]
 
