@@ -90,10 +90,13 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
         v_E_i ~ vsys_E_i_dist*1e7         # in cm/s
         v_r_i ~ vsys_r_i_dist*1e7         # in cm/s
 
-        #m1 is assumed to remain constant
+        #m1 is assumed to remain constant, no impact velocity
+        m1_f = m1_i
+        vim = 0
         a_f, e_f, v_N, v_E, v_r, Ω_f, ω_f, ι_f = 
-            generalized_post_kick_parameters_a_e(
-                        a_i,e,sinν,cosν,m1_i*m_sun,m2_i*m_sun,m2_f*m_sun,vkick*1e7,sinθ,cosθ,sinϕ,cosϕ,sinΩ,cosΩ,sinω,cosω,sinι,cosι,functions_list)
+            post_kick_parameters_a_e(a_i,e,m1_i*m_sun,m2_i*m_sun,cosν,sinν,vkick*1e7,
+                cosθ, sinθ, cosϕ, sinϕ,vim, m1_f*m_sun, m2_f*m_sun,
+                cosΩ, sinΩ, cosω, sinω, cosι, sinι)
         P_f = kepler_P_from_a(a_f,m1_i,m2_f)
         
         K1 = RV_semiamplitude_K(P_f, e_f, ι_f, m1_i, m2_f)
@@ -260,7 +263,8 @@ function extract_chain(chain, observations, observed_values, observed_errors,
         res[:ι_f] = Vector{Float64}(undef,sample_num)
         for i in 1:sample_num
             a_f, e_f, v_N, v_E, v_r, Ω_f, ω_f, ι_f = 
-                
+                wrapped_post_kick_parameters_a_e(res[:a_i][i],res[:e_i][i],res[:m1_i][i]*m_sun,res[:m2_i][i]*m_sun,res[:ν_i][i],
+                    res[:vkick][i]*1e5, res[:θ][i], res[:ϕ][i],0, res[:m1_i][i]*m_sun, res[:m2_f][i]*m_sun, res[:Ω_i][i], res[:ω_i][i], res[:ι_i][i])
             res[:a_f][i] = a_f
             res[:e_f][i] = e_f
             res[:v_N][i] = v_N + res[:v_N_i][i]
@@ -363,8 +367,7 @@ function extract_chain(chain, observations, observed_values, observed_errors,
 
     # if we did a general model, we need to weight the true anomaly
     if model_type==:general
-        res[:weight] .= res[:weight]*sqrt.(1 .- res[:e_f].^2).^3
-                            ./(1 .+ res[:e_f].*cos.(res[:ν_i])).^2
+        res[:weight] .= res[:weight].*sqrt.(1 .- res[:e_f].^2).^3 ./ (1 .+ res[:e_f].*cos.(res[:ν_i])).^2
     end
 
     return res

@@ -8,13 +8,13 @@ observed_errors2 = [0.01, 0.012, 2.3, 1.3]
 obs2 = [:P,:e,:m1, :K1]
 
 ##
-example_model2 = SideKicks.createSimpleCircularMCMCModel(obs2, observed_values2, observed_errors2);
-iterations = 200_000
+example_model2 = SideKicks.createEccentricMCMCModel(obs2, observed_values2, observed_errors2;e_dist = Uniform(0,0.1));
+iterations = 20_000
 @time chain2 = sample(example_model2, NUTS(5_000,0.8), MCMCThreads(), iterations, 8);
+#@time chain2 = sample(example_model2, NUTS(5_000,0.8), iterations);
 
 ##
-result = SideKicks.extract_chain(chain2, obs2, observed_values2, observed_errors2,
-                                    SideKicks.symbolic_functions_list, :simple)
+result = SideKicks.extract_chain(chain2, obs2, observed_values2, observed_errors2, :general)
 
 ##
 using CairoMakie

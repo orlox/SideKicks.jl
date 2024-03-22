@@ -128,13 +128,9 @@ function RV_semiamplitude_K(P, e, i, m1, m2)
     return (m2*sin(i))*cbrt(2*π*cgrav/(P*day_in_sec)*m_sun/(m2+m1)^2)/sqrt(1-e^2)/1e5 #semi amplitude of RV variation in km/s
 end
 
-function post_kick_parameters_a_e(a,e,m1,m2,ν,vkick, θ, ϕ,vim, m1f, m2f, Ω, ω, i)
-    cosν = cos(ν)
-    sinν = sin(ν)
-    cosθ = cos(θ)
-    sinθ = sin(θ)
-    cosϕ = cos(ϕ)
-    sinϕ = sin(ϕ)
+function post_kick_parameters_a_e(a,e,m1,m2,cosν,sinν,vkick,
+    cosθ, sinθ, cosϕ, sinϕ,vim, m1f, m2f,
+    cosΩ, sinΩ, cosω, sinω, cosi, sini)
 
     f_ν = (1-e^2)/(1+e*cosν)
     g_ν = sqrt((1+2*e*cosν+e^2)/(1-e^2))
@@ -151,7 +147,7 @@ function post_kick_parameters_a_e(a,e,m1,m2,ν,vkick, θ, ϕ,vim, m1f, m2f, Ω, 
     ξ = f_ν*g_ν^2*M/Mf*(1+α^2+β^2+2*(-h_ν*β*(1+α*cosθ)+α*cosθ-j_ν*β*α*sinθ*cosϕ))
 
     if ξ>2
-        return (NaN, NaN)
+        return (NaN, NaN, NaN, NaN, NaN, NaN,NaN,NaN)
     end
 
     a_f = f_ν*a/(2-ξ)
@@ -162,19 +158,18 @@ function post_kick_parameters_a_e(a,e,m1,m2,ν,vkick, θ, ϕ,vim, m1f, m2f, Ω, 
     e_f = sqrt(1+(ξ-2)*η)
 
     #angle between x and direction of motion
-    τ = acos(j_ν)
-    if (ν > π)
+    # perhaps can be skipped to save some time, just get directly cos and sin
+    τ = acos(max(-1,min(1,j_ν)))
+    if (sinν < 0)
         τ = -τ
     end
-    δ = ω + ν - τ
+    #δ = ω + ν - τ
+    cosτ = cos(τ)
+    sinτ = sin(τ)
+    cosδ = cosν*sinτ*sinω-sinν*cosτ*sinω+sinν*sinτ*cosω+cosν*cosτ*cosω
+    sinδ = sinν*sinτ*sinω+cosν*cosτ*sinω-cosν*sinτ*cosω+sinν*cosτ*cosω
 
     # Elements of rotation matrix
-    cosi = cos(i)
-    sini = sin(i)
-    cosδ = cos(δ)
-    sinδ = sin(δ)
-    cosΩ = cos(Ω)
-    sinΩ = sin(Ω)
     R_e_par =cosi*cosΩ*cosδ-sinΩ*sinδ
     R_e_per = -(cosi*cosΩ*sinδ)-sinΩ*cosδ
     R_e_z = -(sini*cosΩ)
@@ -212,7 +207,7 @@ function post_kick_parameters_a_e(a,e,m1,m2,ν,vkick, θ, ϕ,vim, m1f, m2f, Ω, 
     n_e = -L_n
     n_n = L_e
     n_norm = sqrt(n_e^2+n_n^2)
-    Ω_f = acos(n_n/n_norm)
+    Ω_f = acos(max(-1,min(1,n_n/n_norm)))
     if n_e>0
         Ω_f = 2π - Ω_f
     end
@@ -256,6 +251,26 @@ function post_kick_parameters_a_e(a,e,m1,m2,ν,vkick, θ, ϕ,vim, m1f, m2f, Ω, 
     end
 
     return (a_f, e_f, v_n, v_e, -v_o, Ω_f,ω_f,i_f)
+end
+
+function wrapped_post_kick_parameters_a_e(a,e,m1,m2,ν,vkick, θ, ϕ,vim, m1f, m2f, Ω, ω, i)
+    cosν = cos(ν)
+    sinν = sin(ν)
+    cosθ = cos(θ)
+    sinθ = sin(θ)
+    cosϕ = cos(ϕ)
+    sinϕ = sin(ϕ)
+
+    cosi = cos(i)
+    sini = sin(i)
+    cosω = cos(ω)
+    sinω = sin(ω)
+    cosΩ = cos(Ω)
+    sinΩ = sin(Ω)
+
+    return post_kick_parameters_a_e(a,e,m1,m2,cosν,sinν,vkick,
+        cosθ, sinθ, cosϕ, sinϕ,vim, m1f, m2f,
+        cosΩ, sinΩ, cosω, sinω, cosi, sini)
 end
 
 function symbolic_kick_functions_energy_L()
