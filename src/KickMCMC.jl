@@ -20,8 +20,7 @@ pre-explosion and kick properties of a system
 #Output:
 - model: A Turing model for sampling
 """
-function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values::Vector{Float64}, observed_errors::Vector{Float64},
-    functions_list;
+function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values::Vector{Float64}, observed_errors::Vector{Float64};
     bhModel = arbitraryEjectaBH,
     logm1_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), 
     logm2_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3),
@@ -55,6 +54,7 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
         cosι ~ Uniform(0,1)
         sinι = sqrt(1-cosι^2)
         #azimuthal angles are computed by sampling random points with a circularly symmetric distribution
+        #we take all true anomalies to be equally likely. This is corrected by weighting later
         xν ~ Normal()
         yν ~ Normal()
         normν = 1/sqrt(xν^2+yν^2)
@@ -210,7 +210,7 @@ function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_va
 
 end
 
-function extract_chain(chain, observations, observed_values, observed_errors, functions_list,
+function extract_chain(chain, observations, observed_values, observed_errors,
         model_type; bhModel = arbitraryEjectaBH)
     #simple function to change ranges from [-π,π] to [0,2π]
     shift_range = x-> x<0 ? x+2*π : x
@@ -230,7 +230,7 @@ function extract_chain(chain, observations, observed_values, observed_errors, fu
     else
         throw(ArgumentError("model_type=:$model_type is an invalid option"))
     end
-    if model_type==:general_model
+    if model_type==:general
         res[:ν_i] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xν],chain[:yν])]))
         res[:Ω_i] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xΩ],chain[:yΩ])]))
         res[:ω_i] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xω],chain[:yω])]))
@@ -242,7 +242,7 @@ function extract_chain(chain, observations, observed_values, observed_errors, fu
     res[:vkick] = reduce(vcat,chain[:vkick])*100 # MCMC is done in units of 100 km/s, turn into km/s
     res[:θ] = reduce(vcat,[acos(x) for x in chain[:cosθ]])
     res[:ϕ] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xϕ],chain[:yϕ])]))
-    if model_type==:general_model
+    if model_type==:general
         res[:v_N_i] = reduce(vcat,chain[:v_N_i])
         res[:v_E_i] = reduce(vcat,chain[:v_E_i])
         res[:v_r_i] = reduce(vcat,chain[:v_r_i])
@@ -260,9 +260,7 @@ function extract_chain(chain, observations, observed_values, observed_errors, fu
         res[:ι_f] = Vector{Float64}(undef,sample_num)
         for i in 1:sample_num
             a_f, e_f, v_N, v_E, v_r, Ω_f, ω_f, ι_f = 
-            generalized_post_kick_parameters_a_e(res[:a_i][i],res[:e][i],sin(res[:ν][i]),cos(res[:ν][i]),res[:m1_i][i]*m_sun,res[:m2_i][i]*m_sun,res[:m2_f][i]*m_sun,
-                                                res[:vkick][i]*1e5,sin(res[:theta][i]),cos(res[:theta][i]),sin(res[:ϕ][i]),cos(res[:ϕ][i]),
-                                                sin(res[:Ω][i]),cos(res[:Ω][i]),sin(res[:ω][i]),cos(res[:ω][i]),sin(res[:ι][i]),cos(res[:ι][i]),functions_list)
+                
             res[:a_f][i] = a_f
             res[:e_f][i] = e_f
             res[:v_N][i] = v_N + res[:v_N_i][i]
@@ -362,6 +360,12 @@ function extract_chain(chain, observations, observed_values, observed_errors, fu
     #adjust weights so that maximum weight is unity
     res[:weight] .= res[:weight] .- maximum(res[:weight]) #weights are still in log here
     res[:weight] .= exp.(res[:weight])
+
+    # if we did a general model, we need to weight the true anomaly
+    if model_type==:general
+        res[:weight] .= res[:weight]*sqrt.(1 .- res[:e_f].^2).^3
+                            ./(1 .+ res[:e_f].*cos.(res[:ν_i])).^2
+    end
 
     return res
 end
