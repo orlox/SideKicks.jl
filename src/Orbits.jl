@@ -220,7 +220,7 @@ function post_kick_parameters_a_e(a,e,m1,m2,cosν,sinν,vkick,
     # the periastron angle is the same as the true anomaly if the star is moving
     # away from periastron. We need to compute the component of velocity
     # amont the line joining both objects (in the COM frame).
-    v1y_cm = h_ν*(m2/M*vrel - v_par) - j_ν*v_per
+    v1y_cm = vim + h_ν*(m2/M*vrel - v_par) - j_ν*v_per
     if v1y_cm>0
         periastron_angle = 2π-periastron_angle
     end
