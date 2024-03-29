@@ -14,3 +14,8 @@ Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
 [compat]
 StatsBase = "0.34"
+Distributions = "0.25"
+Symbolics = "5"
+Turing = "0.30"
+IfElse = "0.1"
+CairoMakie = "0.11"
