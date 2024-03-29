@@ -1,0 +1,3 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+SideKicks = "ae7baef6-f8d7-4188-9988-8bf5c4952615"
