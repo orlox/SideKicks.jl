@@ -9,7 +9,7 @@ obs2 = [:P,:e,:m1, :K1]
 
 ##
 example_model2 = SideKicks.createSimpleCircularMCMCModel(obs2, observed_values2, observed_errors2);
-iterations = 2000
+iterations = 200_000
 @time chain2 = sample(example_model2, NUTS(5_000,0.8), MCMCThreads(), iterations, 8);
 
 ##
