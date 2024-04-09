@@ -7,12 +7,12 @@ using IfElse
 
 Obtain semimajor axis from period using Kepler's third law
 
-#Arguments:
+# Arguments:
 - P:  orbital period           [d]
 - m1: mass of first companion [Msun]
 - m2: mass of 2nd companion   [Msun]
 
-#Output:
+# Output:
 - a: semi-major axis of the orbit [cm]
 """
 function kepler_a_from_P(P,m1,m2)
