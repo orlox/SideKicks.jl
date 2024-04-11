@@ -1,12 +1,35 @@
 using Turing
 using Distributions
 
+"""
+    WrappedCauchy(μ, γ)
+
+The *Wrapped Cauchy distribution* with location `μ` and scale `γ` has probability density function
+
+```math
+f(x; \\mu, \\gamma) = \\frac{1}{2\\pi} \\frac{sinh(\\gamma)}{cosh(\\gamma)-cos(\\theta - \\mu)}
+```
+
+```julia
+Cauchy(u, b)     # Cauchy distribution with location u and scale b
+```
+
+External links
+
+* [Wrapped Cauchy distribution on Wikipedia]( https://en.wikipedia.org/wiki/Wrapped_Cauchy_distribution)
+
+"""
 struct WrappedCauchy{T1<:Real, T2<:Real} <: ContinuousUnivariateDistribution
     μ::T1
-    σ::T2
+    γ::T2
 end
-Distributions.logpdf(d::WrappedCauchy, x::Real) = log(1/(2*π)*(sinh(d.σ)))-log(cosh(d.σ)-cos(x-d.μ))
-Distributions.pdf(d::WrappedCauchy, x::Real) = 1/(2*π)*(sinh(d.σ))/(cosh(d.σ)-cos(x-d.μ))
+
+"""
+    AVG: do we need first define logpdf and then define pdf, which is repeating text/code from the previous item?
+"""
+Distributions.logpdf(d::WrappedCauchy, x::Real) = log(1/(2*π)*(sinh(d.γ)))-log(cosh(d.γ)-cos(x-d.μ))
+Distributions.pdf(d::WrappedCauchy, x::Real) = 1/(2*π)*(sinh(d.γ))/(cosh(d.γ)-cos(x-d.μ))
+
 
 """
     createEccentricMCMCModel()
@@ -16,21 +39,27 @@ pre-explosion and kick properties of a system
 
 #Arguments:
 - props: a KickProps variable with necessary prior information
+- observations:
+- observed_values
+- observed_errors
 
 #Output:
 - model: A Turing model for sampling
+
+AVG: shouldn't there only be one MCMC model, regardless of circular/eccentric?
 """
 function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values::Vector{Float64}, observed_errors::Vector{Float64};
-    bhModel = arbitraryEjectaBH,
-    logm1_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), 
-    logm2_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3),
-    logP_i_dist::ContinuousUnivariateDistribution = Uniform(-1,3),
-    e_dist::ContinuousUnivariateDistribution = Uniform(0,0.01),
-    vkick_dist::ContinuousUnivariateDistribution = Exponential(1),
-    vsys_N_i_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
-    vsys_E_i_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
-    vsys_r_i_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
-    frac_dist::ContinuousUnivariateDistribution = Uniform(0,1.0))
+    # Create prior distributions of the pre-collapse orbital parameters (AVG: someone confirm this is right... and then delete this parenthesis)
+    bhModel =   arbitraryEjectaBH, # Where does the arbitraryEjectaBH value/distribution is initialized/called?
+                logm1_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), 
+                logm2_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3),
+                logP_i_dist::ContinuousUnivariateDistribution = Uniform(-1,3),
+                e_dist::ContinuousUnivariateDistribution = Uniform(0,0.01),
+                vkick_dist::ContinuousUnivariateDistribution = Exponential(1),
+                vsys_N_i_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
+                vsys_E_i_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
+                vsys_r_i_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
+                frac_dist::ContinuousUnivariateDistribution = Uniform(0,1.0))
 
     # provided observed values
     valid_values = [:P, :e, :K1, :K2, :m1, :m2, :Ω, :ω, :ι, :v_N, :v_E, :v_r]
@@ -40,6 +69,10 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
         end
     end
 
+    """
+    kick_model(observations, observed_values, observed_errors) 
+        AVG: to fill later
+    """
     @model function kick_model(obs::Vector{Symbol}, obs_vals::Vector{Float64}, obs_errs::Vector{Float64})
         # set priors
         #Pre-explosion masses and orbital period
@@ -55,6 +88,7 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
         sinι = sqrt(1-cosι^2)
         #azimuthal angles are computed by sampling random points with a circularly symmetric distribution
         #we take all true anomalies to be equally likely. This is corrected by weighting later
+        # AVG: would be good to point out to where is this corrected later
         xν ~ Normal()
         yν ~ Normal()
         normν = 1/sqrt(xν^2+yν^2)
@@ -89,6 +123,8 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
         v_N_i ~ vsys_N_i_dist*1e7         # in cm/s
         v_E_i ~ vsys_E_i_dist*1e7         # in cm/s
         v_r_i ~ vsys_r_i_dist*1e7         # in cm/s
+        # AVG: shall we be explicit about converting the 100s km/s to cm/s?
+        # AVG: I generally prefer to avoid random numbers and prefer to introduce them as constants (see also in arguments of `post_kick_parameters_a_e`)
 
         #m1 is assumed to remain constant, no impact velocity
         m1_f = m1_i
@@ -118,9 +154,12 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
                 obs_vals[i] ~ Cauchy(m2_f, obs_errs[i])
             elseif obs_symbol == :Ω
                 #obs_vals[i] ~ VonMises(Ω_f, 1/obs_errs[i]^2)#Normal(Ω_f, obs_errs[i])
+                # AVG: if we are not using VonMises, delete
+                # AVG: why wrapped cauchy instead of cauchy? Shall we warn the user or comment on it?
                 obs_vals[i] ~ WrappedCauchy(Ω_f, obs_errs[i])
             elseif obs_symbol == :ω
                 #obs_vals[i] ~ VonMises(ω_f, 1/obs_errs[i]^2)#Normal(ω_f, obs_errs[i])
+                # AVG: if we are not using VonMises, delete                
                 obs_vals[i] ~ WrappedCauchy(ω_f, obs_errs[i])
             elseif obs_symbol == :ι
                 obs_vals[i] ~ Cauchy(ι_f, obs_errs[i])
@@ -138,13 +177,17 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
     
 end
     
+"""
+kick_model(observations, observed_values, observed_errors) 
+    AVG: to fill later
+"""
 function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_values::Vector{Float64}, observed_errors::Vector{Float64};
-    bhModel = arbitraryEjectaBH,
-    logm1_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), 
-    logm2_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3),
-    logP_i_dist::ContinuousUnivariateDistribution = Uniform(-1,3),
-    vkick_dist::ContinuousUnivariateDistribution = Exponential(1),
-    frac_dist::ContinuousUnivariateDistribution = Uniform(0,1.0))
+    bhModel =   arbitraryEjectaBH,
+                logm1_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), 
+                logm2_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3),
+                logP_i_dist::ContinuousUnivariateDistribution = Uniform(-1,3),
+                vkick_dist::ContinuousUnivariateDistribution = Exponential(1),
+                frac_dist::ContinuousUnivariateDistribution = Uniform(0,1.0))
 
     # provided observed values
     valid_values = [:P, :e, :K1, :K2, :m1, :m2]
@@ -154,6 +197,11 @@ function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_va
         end
     end
 
+    """
+        kick_model(observations, observed_values, observed_errors) 
+        AVG: to fill later
+        AVG: shouldn't this be named "kick_model" circular or so?
+    """
     @model function kick_model(obs::Vector{Symbol}, obs_vals::Vector{Float64}, obs_errs::Vector{Float64})
         # set priors
         #Pre-explosion masses and orbital period
@@ -213,9 +261,14 @@ function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_va
 
 end
 
+"""
+    extract_chain(chain, observations, observed_values, observed_errors, model_type; bhModel)
+    AVG: fill later
+"""
 function extract_chain(chain, observations, observed_values, observed_errors,
         model_type; bhModel = arbitraryEjectaBH)
-    #simple function to change ranges from [-π,π] to [0,2π]
+
+    # simple, single-lined function to change ranges from [-π,π] to [0,2π]
     shift_range = x-> x<0 ? x+2*π : x
 
     res = Dict()
