@@ -3,7 +3,29 @@ using CairoMakie
 
 export create_corner_plot, create_2D_density, create_1D_density
 
-function create_corner_plot(chain_values,names,label_names, fractions, fraction_1D, figure; show_CIs = false, ranges=missing, nbins=100)
+"""
+    create_corner_plot(chain_values, names, label_names, fractions, fraction_1D, figure; 
+    show_CIs=false, ranges=missing, nbins=100)
+
+#TODO Description
+
+# Arguments:
+#TODO
+- chain_values:
+- names:
+- label_names:
+- fractions:
+- fraction_1D:
+- figure:
+- show_CIs=false:
+- ranges=missing:
+- nbins=100:
+
+# Output:
+#TODO
+- 
+"""
+function create_corner_plot(chain_values, names, label_names, fractions, fraction_1D, figure; show_CIs=false, ranges=missing, nbins=100)
     ga = figure[1, 1] = GridLayout()
 
     if ismissing(ranges)
@@ -45,7 +67,27 @@ function create_corner_plot(chain_values,names,label_names, fractions, fraction_
     return figure 
 end
 
-function create_2D_density(values1, ranges1,values2, ranges2, chain_weights,fractions,axis, nbins)
+"""
+    create_2D_density(values1, ranges1, values2, ranges2, chain_weights, fractions, axis, nbins)
+
+#TODO Description
+
+# Arguments:
+#TODO
+- values1:
+- ranges1:
+- values2:
+- ranges2:
+- chain_weights:
+- fractions:
+- axis:
+- nbins:
+
+# Output:
+#TODO
+- 
+"""
+function create_2D_density(values1, ranges1, values2, ranges2, chain_weights, fractions, axis, nbins)
     if !ismissing(ranges1)
         filter = values1 .> ranges1[1] .&& values1 .< ranges1[2] .&&
                     values2 .> ranges2[1] .&& values2 .< ranges2[2]
@@ -63,7 +105,21 @@ function create_2D_density(values1, ranges1,values2, ranges2, chain_weights,frac
     contour!(axis,y,x, h.weights, levels=bounds,color=:black,linewidth=2)
 end  
 
-function get_bounds_for_fractions(h,fractions)
+"""
+    get_bounds_for_fractions(h, fractions)
+
+#TODO Description
+
+# Arguments:
+#TODO
+h:
+fractions:
+
+# Output:
+#TODO
+- 
+"""
+function get_bounds_for_fractions(h, fractions)
     integral = sum(h.weights)
     bounds =zeros(length(fractions))
     for (j,fraction) in enumerate(fractions)
@@ -87,7 +143,25 @@ function get_bounds_for_fractions(h,fractions)
     return bounds
 end
 
-function create_1D_density(values, range, chain_weights,fraction_1D,axis, nbins)
+"""
+    create_1D_density(values, range, chain_weights, fraction_1D, axis, nbins)
+
+#TODO Description
+
+# Arguments:
+#TODO
+- values:
+- range:
+- chain_weights:
+- fraction_1D:
+- axis:
+- nbins:
+
+# Output:
+#TODO
+- 
+"""
+function create_1D_density(values, range, chain_weights, fraction_1D, axis, nbins)
     if !ismissing(range)
         filter = values .> range[1] .&& values .< range[2]
         values = values[filter]
