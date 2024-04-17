@@ -1,6 +1,9 @@
 using Turing
 using Distributions
 
+"""
+RTW TODO: figure out correct way to document structs
+"""
 struct WrappedCauchy{T1<:Real, T2<:Real} <: ContinuousUnivariateDistribution
     μ::T1
     σ::T2
@@ -9,16 +12,18 @@ Distributions.logpdf(d::WrappedCauchy, x::Real) = log(1/(2*π)*(sinh(d.σ)))-log
 Distributions.pdf(d::WrappedCauchy, x::Real) = 1/(2*π)*(sinh(d.σ))/(cosh(d.σ)-cos(x-d.μ))
 
 """
-    createEccentricMCMCModel()
+    createEccentricMCMCModel(observations, observed_values, observed_errors)
 
-Create a Turing model to perform an MCMC sampling of the
-pre-explosion and kick properties of a system
+Create a Turing model to perform an MCMC sampling of the pre-explosion 
+and kick properties of a system, assuming pre-explosion eccentricity.
 
-#Arguments:
-- props: a KickProps variable with necessary prior information
+# Arguments:
+- observations:    the parameters taken from observations [Vector{Symbol}]
+- observed_values: the values of the parameters           [Vector{Float64}] 
+- observed_errors: the errors of the observations         [Vector{Float64}]
 
-#Output:
-- model: A Turing model for sampling
+# Output:
+- kickmodel: A Turing model for sampling
 """
 function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values::Vector{Float64}, observed_errors::Vector{Float64};
     bhModel = arbitraryEjectaBH,
@@ -138,6 +143,21 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
     
 end
     
+"""
+    createSimpleCircularMCMCModel(observations, observed_values, observed_errors)
+
+Description
+Create a Turing model to perform an MCMC sampling of the pre-explosion 
+and kick properties of a system, assuming pre-explosion circularity.
+
+# Arguments:
+- observations:    the parameters taken from observations [Vector{Symbol}]
+- observed_values: the values of the parameters           [Vector{Float64}] 
+- observed_errors: the errors of the observations         [Vector{Float64}]
+
+# Output:
+- kickmodel: A Turing model for sampling
+"""
 function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_values::Vector{Float64}, observed_errors::Vector{Float64};
     bhModel = arbitraryEjectaBH,
     logm1_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), 
@@ -213,6 +233,23 @@ function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_va
 
 end
 
+"""
+    extract_chain(chain, observations, observed_values, observed_errors,
+        model_type; bhModel = arbitraryEjectaBH)
+
+#TODO Description
+
+# Arguments:
+#TODO
+- chain:   
+- observations:   
+- observed_values:   
+- observed_errors:   
+
+# Output:
+#TODO
+- res:
+"""
 function extract_chain(chain, observations, observed_values, observed_errors,
         model_type; bhModel = arbitraryEjectaBH)
     #simple function to change ranges from [-π,π] to [0,2π]
