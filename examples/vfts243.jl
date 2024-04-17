@@ -13,8 +13,7 @@ iterations = 200_000
 @time chain2 = sample(example_model2, NUTS(5_000,0.8), MCMCThreads(), iterations, 8);
 
 ##
-result = SideKicks.extract_chain(chain2, obs2, observed_values2, observed_errors2,
-                                    SideKicks.symbolic_functions_list, :simple)
+result = SideKicks.extract_chain(chain2, obs2, observed_values2, observed_errors2, :simple)
 
 ##
 using CairoMakie

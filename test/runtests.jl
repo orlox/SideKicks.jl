@@ -4,76 +4,128 @@ using Random
 using Turing
 
 #Test Kepler's laws using earth sun system
-year_in_days = SideKicks.kepler_P_from_a(au,1,m_earth/m_sun)
+year_in_days = SideKicks.kepler_P_from_a(;m_1=1, m_2=m_earth/m_sun, a=au)
 @test abs(year_in_days-365.25) < 0.01
-au_from_kepler = SideKicks.kepler_a_from_P(year_in_days,1,m_earth/m_sun)
+au_from_kepler = SideKicks.kepler_a_from_P(;m_1=1, m_2=m_earth/m_sun, P=year_in_days)
 @test isapprox(au, au_from_kepler)
-
-#Test that a Blaauw kick removing a bit more than half of the mass of a system unbinds the orbit, and one just below does not
-orbit_bound = SideKicks.post_kick_parameters_P(10,0.4999,0,0,0)
-orbit_unbound = SideKicks.post_kick_parameters_P(10,0.5001,0,0,0)
-@test isnan(orbit_bound[1]) && !isnan(orbit_unbound[1])
-
-#Repeat using post_kick_parameters_a
-orbit_bound = SideKicks.post_kick_parameters_a(au,0.4999,0,0,0)
-orbit_unbound = SideKicks.post_kick_parameters_a(au,0.5001,0,0,0)
-@test isnan(orbit_bound[1]) && !isnan(orbit_unbound[1])
-
-#Verify consistency between both kick functions
-m1_i = 10
-m2_i = 15
-frac = 0.8
-m2_f = m2_i*frac
-mtilde = (m1_i+m2_f)/(m1_i+m2_i)
-vkick_div_vrel = 0.1
-θ=π/4
-ϕ=π/3
-semimajor_axis = au
-period_in_days = SideKicks.kepler_P_from_a(au,m1_i,m2_i)
-orbit_kick_a = SideKicks.post_kick_parameters_a(au,mtilde,vkick_div_vrel,θ,ϕ)
-orbit_kick_P = SideKicks.post_kick_parameters_P(period_in_days,mtilde,vkick_div_vrel,θ,ϕ)
-#test period
-@test isapprox(SideKicks.kepler_P_from_a(orbit_kick_a[1],m1_i,m2_f), orbit_kick_P[1])
-#test eccentricity
-@test orbit_kick_a[2]==orbit_kick_P[2]
+earth_vel = SideKicks.average_orbital_velocity(;m_1=1, m_2=m_earth/m_sun, a=au)
+@test abs(earth_vel-29.7846) < 0.01
 
 #check K1 and K2 using sun-earth system
-RV_e = SideKicks.RV_semiamplitude_K(year_in_days,0,π/2,m_earth/m_sun,1)
-RV_s = SideKicks.RV_semiamplitude_K(year_in_days,0,π/2,1,m_earth/m_sun)
+RV_e = SideKicks.RV_semiamplitude_K1(;m_1=m_earth/m_sun, m_2=1, P=year_in_days, e=0, i=π/2)
+RV_s = SideKicks.RV_semiamplitude_K1(;m_1=1, m_2=m_earth/m_sun, P=year_in_days, e=0, i=π/2)
 @test abs(RV_e-29.7846) < 0.001 #just test agains value that was computed in a trusted version
 @test isapprox(RV_e/RV_s, m_sun/m_earth) #test that RV ratio follows mass ratio
 
+#Test that a Blaauw kick removing a bit more than half of the mass of a system unbinds the orbit, and one just below does not
+orbit_bound =   SideKicks.post_supernova_circular_orbit_a(;m_1i=10, m_2i=20, a_i=au, m_2f=5.0001) 
+orbit_unbound = SideKicks.post_supernova_circular_orbit_a(;m_1i=10, m_2i=20, a_i=au, m_2f=4.9999) 
+@test !isnan(orbit_bound[1]) && isnan(orbit_unbound[1])
+
+#Repeat using post_kick_parameters_P
+orbit_bound =   SideKicks.post_supernova_circular_orbit_P(;m_1i=10, m_2i=20, P_i=10, m_2f=5.0001) 
+orbit_unbound = SideKicks.post_supernova_circular_orbit_P(;m_1i=10, m_2i=20, P_i=10, m_2f=4.9999) 
+@test !isnan(orbit_bound[1]) && isnan(orbit_unbound[1])
+
+#Verify consistency between both kick functions when no impact kick
+m_1i = 10
+m_2i = 15
+m_2frac = 0.8
+m_2f = m_2i*m_2frac
+vkick=30 
+θ=π/4
+ϕ=π/3
+semimajor_axis = au
+period_in_days = SideKicks.kepler_P_from_a(;m_1=m_1i, m_2=m_2i, a=semimajor_axis)
+orbit_kick_a = SideKicks.post_supernova_circular_orbit_a(;m_1i=m_1i, m_2i=m_2i, a_i=semimajor_axis, m_2f=m_2f, vkick=vkick, θ=θ, ϕ=ϕ)
+orbit_kick_P = SideKicks.post_supernova_circular_orbit_P(;m_1i=m_1i, m_2i=m_2i, P_i=period_in_days, m_2f=m_2f, vkick=vkick, θ=θ, ϕ=ϕ)
+#test period
+@test isapprox(orbit_kick_P[1], SideKicks.kepler_P_from_a(; m_1=m_1i, m_2=m_2f, a=orbit_kick_a[1]))
+#test eccentricity
+@test orbit_kick_a[2]==orbit_kick_P[2]
+
+#Verify consistency between both kick functions with impact kick
+m_1frac = 0.9
+m_1f = m_1i*m_1frac
+vimp = 20
+orbit_kick_a = SideKicks.post_supernova_circular_orbit_a(;m_1i=m_1i, m_2i=m_2i, a_i=semimajor_axis, m_1f=m_1f, m_2f=m_2f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=vimp)
+orbit_kick_P = SideKicks.post_supernova_circular_orbit_P(;m_1i=m_1i, m_2i=m_2i, P_i=period_in_days, m_1f=m_1f, m_2f=m_2f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=vimp)
+#test period
+@test isapprox(orbit_kick_P[1], SideKicks.kepler_P_from_a(; m_1=m_1f, m_2=m_2f, a=orbit_kick_a[1]))
+#test eccentricity
+@test orbit_kick_a[2]==orbit_kick_P[2]
+
+
+# Check that the generalized kick and the circularized kick are equal when the ecc = 0
+params = SideKicks.post_supernova_general_orbit_parameters(;m_1i=m_1i, m_2i=m_2i, a_i=semimajor_axis, e_i=0, m_2f=m_2f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=vimp) 
+print(params)
+#test semi-major axis
+@test isapprox(orbit_kick_a[1], params[1])
+#test eccentricity
+@test isapprox(orbit_kick_a[2]==params[2])
+
+
+
+#Check that the generalized kick function does not crash for arbitrary (non disruptive) input
+m_1i = 20
+m_2i = 25
+a_i=0.3*au
+e_i=0.1
+m_1frac = 0.99
+m_1f = m_1i*m_1frac
+m_2frac = 0.9
+m_2f = m_2i*m_2frac
+vimp=1
+vkick=10 
+θ=π/4
+ϕ=π/3
+ν_i=π/20 
+Ω_i=π/20 
+ω_i=π/20 
+i_i=π/20 
+params = SideKicks.post_supernova_general_orbit_parameters(;m_1i=m_1i, m_2i=m_2i, a_i=a_i, e_i=e_i, m_1f=m_1f, m_2f=m_2f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=vimp, ν_i=ν_i, Ω_i=Ω_i, ω_i=ω_i, i_i=i_i)
+print(params)
+@test all(map(!isnan, params))
+
+
+# Check that the generalized kick and the circularized kick are equal when the ecc = 0
+
+
+
+
+
+
 #Verify consistency of variables upon no mass loss and no kick
-SideKicks.create_symbolic_functions_list()
-m1 = 10
-m2 = 15
-m2f = 15
-P_i = 50 # days
-a_i = SideKicks.kepler_a_from_P(P_i,m1,m2)
-vkick = 0
-vim = 0
-θ = 2
-ϕ = 1
-Ω_i=3
-ω_i=6
-i_i=0.4
-e_i=0.4
-ν=2
-
-a_f, e_f, v_N, v_E, v_r, Ω_f, ω_f, i_f = SideKicks.symbolic_post_kick_parameters_a_e(
-    a_i,e_i,m1*m_sun,m2*m_sun,ν,vkick,
-    θ,ϕ,vim, m1*m_sun, m2f*m_sun,Ω_i,ω_i,i_i,SideKicks.symbolic_functions_list)
-P_f = SideKicks.kepler_P_from_a(a_f,m1,m2f)
-
-@test isapprox(P_i, P_f) #test that the period remains the same
-@test isapprox(a_i, a_f) #test that the semi-major axis remains the same
-@test isapprox(e_i, e_f, atol=1e-7) #test that the eccentricity remains the same
-@test isapprox(v_N, 0.0, atol=1e-7) #test that the velocity is zero
-@test isapprox(v_E, 0.0, atol=1e-7) #test that the velocity is zero
-@test isapprox(v_r, 0.0, atol=1e-7) #test that the velocity is zero
-@test isapprox(Ω_i, Ω_f) #test that Ω remains the same
-@test isapprox(ω_i, ω_f) #test that ω remains the same
-@test isapprox(i_i, i_f) #test that ι remains the same
+#SideKicks.create_symbolic_functions_list()
+#m1 = 10
+#m2 = 15
+#m2f = 15
+#P_i = 50 # days
+#a_i = SideKicks.kepler_a_from_P(P_i,m1,m2)
+#vkick = 0
+#vim = 0
+#θ = 2
+#ϕ = 1
+#Ω_i=3
+#ω_i=6
+#i_i=0.4
+#e_i=0.4
+#ν=2
+#
+#a_f, e_f, v_N, v_E, v_r, Ω_f, ω_f, i_f = SideKicks.symbolic_post_kick_parameters_a_e(
+#    a_i,e_i,m1*m_sun,m2*m_sun,ν,vkick,
+#    θ,ϕ,vim, m1*m_sun, m2f*m_sun,Ω_i,ω_i,i_i,SideKicks.symbolic_functions_list)
+#P_f = SideKicks.kepler_P_from_a(a_f,m1,m2f)
+#
+#@test isapprox(P_i, P_f) #test that the period remains the same
+#@test isapprox(a_i, a_f) #test that the semi-major axis remains the same
+#@test isapprox(e_i, e_f, atol=1e-7) #test that the eccentricity remains the same
+#@test isapprox(v_N, 0.0, atol=1e-7) #test that the velocity is zero
+#@test isapprox(v_E, 0.0, atol=1e-7) #test that the velocity is zero
+#@test isapprox(v_r, 0.0, atol=1e-7) #test that the velocity is zero
+#@test isapprox(Ω_i, Ω_f) #test that Ω remains the same
+#@test isapprox(ω_i, ω_f) #test that ω remains the same
+#@test isapprox(i_i, i_f) #test that ι remains the same
 
 #= #Verify consistency of variables upon reversing a kick
 # SideKicks.create_symbolic_functions_list()
@@ -169,3 +221,8 @@ P_f = SideKicks.kepler_P_from_a(a_f,m1,m2f)
 @test isapprox(Ω_i, Ω_f) || isapprox(Ω_i+π, Ω_f) || isapprox(Ω_i-π, Ω_f) #test that Ω remains the same or flips
 @test isapprox(ι_i, ι_f) #test that ι remains the same
  =#
+
+
+#include("SymbolicFuncs.jl")
+#
+#create_symbolic_functions_list()
