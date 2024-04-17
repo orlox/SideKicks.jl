@@ -1,3 +1,7 @@
+"""
+Test documentation
+"""
+
 function arbitraryEjectaBH(m2_i, frac)
     return m2_i*(1-frac)
 end
