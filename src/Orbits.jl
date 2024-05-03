@@ -113,14 +113,23 @@ function post_supernova_circular_orbit_a(;m_1i, m_2i, a_i, m_1f=-1, m_2f, vkick=
     end
     mtilde = (m_1f+m_2f)/(m_1i+m_2i) 
     v_rel = average_orbital_velocity(;m_1=m_1i, m_2=m_2i, a=a_i)
-    vkick_div_vrel = vkick/v_rel
-    vimp_div_vrel = vimp/v_rel
+    α = vkick/v_rel
+    β = vimp/v_rel
+    #vkick_div_vrel = vkick/v_rel
+    #vimp_div_vrel = vimp/v_rel
     # convert trig functions to vars
     cosθ = cos(θ)
     sinθ = sin(θ)
     cosϕ = cos(ϕ)
     sinϕ = sin(ϕ)
-    ξ = (1 + vkick_div_vrel^2 + vimp_div_vrel^2 + 2*vkick_div_vrel*cosθ - 2*vimp_div_vrel*sinθ*cosϕ)/(mtilde)
+
+    #println("==> ", cosθ, " ", cosϕ)
+    ξ = (1 + α^2 + β^2 + 2*α*cosθ - 2*β*sinθ*cosϕ)/(mtilde)
+    #println(ξ)
+    #ξ = f_ν*g_ν^2*M_i/M_f*(1+α^2+β^2+2*(-h_ν*β*(1+α*cosθ)+α*cosθ-j_ν*β*α*sinθ*cosϕ))
+
+
+
     if (ξ>2)
         return (NaN, NaN)
     end
@@ -130,6 +139,7 @@ function post_supernova_circular_orbit_a(;m_1i, m_2i, a_i, m_1f=-1, m_2f, vkick=
     # Orbital parameters
     a_f = a_i/(2-ξ)
     e_f = sqrt(1 + ξ*(ξ-2)*cosγ^2)
+    #println("af=",a_f)
 
     #Q = (ξ-1) - (vkick_div_vrel*sinθ*cosϕ - vimp_div_vrel)^2/(mtilde) 
     #e_f_old = sqrt(1+(ξ-2)*(Q+1)) # RTW where does this come from?
@@ -285,8 +295,13 @@ using equations from [Marchant, Willcox, Vigna-Gomez] TODO
 - v_e:   post-explosion systemic velocity, toward E [rad]      
 - v_rad: post-explosion radial velocity, toward O   [rad]      
 """
-function post_supernova_general_orbit_parameters(;m_1i, m_2i, a_i, e_i=0, m_1f=-1, m_2f, vkick=0, θ=0, ϕ=0, vimp=0,
-        ν_i=0, Ω_i=0, ω_i=0, i_i=0)
+function post_supernova_general_orbit_parameters(;m_1i, m_2i, a_i, e_i=0, m_1f=-1, m_2f, vkick=0, 
+        θ=0, ϕ=0, vimp=0, ν_i=0, Ω_i=0, ω_i=0, i_i=0)
+    if m_1f == -1
+        m_1f = m_1i
+    end
+    M_i = (m_1i+m_2i)*m_sun  
+    M_f = (m_1f+m_2f)*m_sun 
 
     # convert trig functions to vars
     cosθ = cos(θ)
@@ -303,25 +318,28 @@ function post_supernova_general_orbit_parameters(;m_1i, m_2i, a_i, e_i=0, m_1f=-
     sinΩ_i = sin(Ω_i)
 
     # construct useful intermediary parameters
-    f_ν = (1-e_i^2)/(1+e_i*cosν_i)
-    g_ν = sqrt((1+2*e_i*cosν_i+e_i^2)/(1-e_i^2))
-    M_i = m_1i+m_2i
-    M_f = m_1f+m_2f
-    vrel = g_ν*sqrt(cgrav*M_i/a_i)
+    f_ν = (1 - e_i^2)/(1 + e_i*cosν_i)
+    g_ν = sqrt((1 + 2*e_i*cosν_i + e_i^2)/(1 - e_i^2))
 
-    h_ν = -e_i*sinν_i/sqrt(1+2*e_i*cosν_i+e_i^2)
-    j_ν = (1+e_i*cosν_i)/sqrt(1+2*e_i*cosν_i+e_i^2)
+    v_rel = g_ν*sqrt(cgrav*M_i/a_i)/(km)
 
-    α = vkick/vrel
-    β = vimp/vrel
+    h_ν = -e_i*sinν_i/sqrt(1 + 2*e_i*cosν_i + e_i^2)
+    j_ν = (1 + e_i*cosν_i)/sqrt(1 + 2*e_i*cosν_i + e_i^2)
 
-    ξ = f_ν*g_ν^2*M_i/M_f*(1+α^2+β^2+2*(-h_ν*β*(1+α*cosθ)+α*cosθ-j_ν*β*α*sinθ*cosϕ))
+    α = vkick/v_rel
+    β = vimp/v_rel
+
+    #println("=> ", f_ν, " ", g_ν, " ", h_ν, " ", j_ν, " ")
+    #println("==> ", cosθ, " ", cosϕ)
+    ξ = f_ν*g_ν^2*M_i/M_f* (1 + α^2 + β^2 + 2* (α*cosθ - h_ν*β* (1 + α*cosθ) - j_ν*β*α*sinθ*cosϕ))
+    #println(ξ)
 
     if ξ>2
         return (NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN)
     end
 
     a_f = f_ν*a_i/(2-ξ)
+    #println(a_f)
 
     Lvec_norm = sqrt(α^2*sinθ^2*sinϕ^2+(h_ν*α*sinθ*cosϕ-j_ν*(1+α*cosθ))^2)
     η = f_ν*g_ν^2*M_i/M_f*Lvec_norm^2
@@ -353,7 +371,7 @@ function post_supernova_general_orbit_parameters(;m_1i, m_2i, a_i, e_i=0, m_1f=-
     R_o_z   = cosi_i
 
     # velocity, simply compute from change in momentum
-    v_par = (-(m_2i-m_2f)*m_1i/M_i*vrel +(m_1i-m_1f)*m_2i/M_i*vrel
+    v_par = (-(m_2i-m_2f)*m_1i/M_i*v_rel +(m_1i-m_1f)*m_2i/M_i*v_rel
                     + m_2f*vkick*cosθ + h_ν*m_1f*vimp)/M_f
     v_per = (m_2f*vkick*sinθ*cosϕ+j_ν*m_1f*vimp)/M_f
     v_z = (m_2f*vkick*sinθ*sinϕ)/M_f
@@ -386,14 +404,14 @@ function post_supernova_general_orbit_parameters(;m_1i, m_2i, a_i, e_i=0, m_1f=-
     end
     # compute post-explosion argument of periastron
     if (e_f > 0)
-        periastron_angle = acos(max(-1, min(1, 1/e_f*(a_f/(a*f_ν)*(1-e_f^2)-1))))
+        periastron_angle = acos(max(-1, min(1, 1/e_f*(a_f/(a_i*f_ν)*(1-e_f^2)-1))))
     else
         periastron_angle = 0 # need to check this, though maybe irrelevant as chance of this is null
     end
     # the periastron angle is the same as the true anomaly if the star is moving
     # away from periastron. We need to compute the component of velocity
     # along the line joining both objects (in the COM frame).
-    v1y_cm = vimp + h_ν*(m_2/M*vrel - v_par) - j_ν*v_per
+    v1y_cm = vimp + h_ν*(m_2i/M_i*v_rel - v_par) - j_ν*v_per
     if v1y_cm>0
         periastron_angle = 2π-periastron_angle
     end

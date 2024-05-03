@@ -2,6 +2,7 @@ using LinearAlgebra
 using Symbolics
 using IfElse
 
+module SymbolicFuncs
 
 """
     symbolic_kick_functions_energy_L()
@@ -194,4 +195,6 @@ function symbolic_post_kick_parameters_a_e(a, e, m_1, m_2, ν, vkick, θ, ϕ, v_
     v_r = function_list[14](values2) #v_r_function(values2)
 
     return (a_final, e_final, v_N, v_E, v_r, Ω_final, ω_final, ι_final)
+end
+
 end

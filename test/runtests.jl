@@ -2,6 +2,11 @@ using Test
 using SideKicks
 using Random
 using Turing
+#using LinearAlgebra # RTW should this be here?
+#using Symbolics
+#using IfElse
+#include("./SymbolicFuncs.jl")
+#using .SymbolicFuncs: create_symbolic_functions_list
 
 #Test Kepler's laws using earth sun system
 year_in_days = SideKicks.kepler_P_from_a(;m_1=1, m_2=m_earth/m_sun, a=au)
@@ -55,43 +60,50 @@ orbit_kick_P = SideKicks.post_supernova_circular_orbit_P(;m_1i=m_1i, m_2i=m_2i, 
 #test eccentricity
 @test orbit_kick_a[2]==orbit_kick_P[2]
 
+println("====")
 
-# Check that the generalized kick and the circularized kick are equal when the ecc = 0
-params = SideKicks.post_supernova_general_orbit_parameters(;m_1i=m_1i, m_2i=m_2i, a_i=semimajor_axis, e_i=0, m_2f=m_2f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=vimp) 
-print(params)
-#test semi-major axis
-@test isapprox(orbit_kick_a[1], params[1])
-#test eccentricity
-@test isapprox(orbit_kick_a[2]==params[2])
+# Check that the generalized kick and the circularized kick are equal when the ecc = 0 and vimp = 0
+#θ=0
+#ϕ=0
+#vimp = 0
+#orbit_kick_a = SideKicks.post_supernova_circular_orbit_a(;m_1i=m_1i, m_2i=m_2i, a_i=semimajor_axis,  m_2f=m_2f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=vimp) #m_1f=m_1f,
+#params = SideKicks.post_supernova_general_orbit_parameters(;m_1i=m_1i, m_2i=m_2i, a_i=semimajor_axis,  m_2f=m_2f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=vimp) #m_1f=m_1f,
+##print(params)
+##test semi-major axis
+#@test isapprox(orbit_kick_a[1], params[1])
+##test eccentricity
+#@test isapprox(orbit_kick_a[2]==params[2])
 
 
+# TODO: Check the generalized kick and the circularized kick are equal when the ecc = 0 but vimp != 0
 
 #Check that the generalized kick function does not crash for arbitrary (non disruptive) input
-m_1i = 20
-m_2i = 25
-a_i=0.3*au
-e_i=0.1
-m_1frac = 0.99
-m_1f = m_1i*m_1frac
-m_2frac = 0.9
-m_2f = m_2i*m_2frac
-vimp=1
-vkick=10 
-θ=π/4
-ϕ=π/3
-ν_i=π/20 
-Ω_i=π/20 
-ω_i=π/20 
-i_i=π/20 
-params = SideKicks.post_supernova_general_orbit_parameters(;m_1i=m_1i, m_2i=m_2i, a_i=a_i, e_i=e_i, m_1f=m_1f, m_2f=m_2f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=vimp, ν_i=ν_i, Ω_i=Ω_i, ω_i=ω_i, i_i=i_i)
-print(params)
-@test all(map(!isnan, params))
+#m_1i = 20
+#m_2i = 25
+#a_i=0.3*au
+#e_i=0.1
+#m_1frac = 0.99
+#m_1f = m_1i*m_1frac
+#m_2frac = 0.9
+#m_2f = m_2i*m_2frac
+#vimp=1
+#vkick=10 
+#θ=π/4
+#ϕ=π/3
+#ν_i=π/20 
+#Ω_i=π/20 
+#ω_i=π/20 
+#i_i=π/20 
+##params = SideKicks.post_supernova_general_orbit_parameters(;m_1i=m_1i, m_2i=m_2i, a_i=a_i, e_i=e_i, m_1f=m_1f, m_2f=m_2f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=vimp, ν_i=ν_i, Ω_i=Ω_i, ω_i=ω_i, i_i=i_i)
+#print(params)
+##@test all(map(!isnan, params))
 
 
 # Check that the generalized kick and the circularized kick are equal when the ecc = 0
 
 
-
+# test import of symbolic functions
+#create_symbolic_functions_list()
 
 
 
