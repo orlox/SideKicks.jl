@@ -13,9 +13,9 @@ Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
 [compat]
-StatsBase = "0.34"
+CairoMakie = "0.11, 0.12"
 Distributions = "0.25"
+IfElse = "0.1"
+StatsBase = "0.34"
 Symbolics = "5"
 Turing = "0.30"
-IfElse = "0.1"
-CairoMakie = "0.11"
