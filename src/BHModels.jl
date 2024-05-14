@@ -2,7 +2,6 @@
     arbitraryEjectaBH(m2_i, frac)
 
 #TODO Description
-#RTW do we really need this function? It seems like overkill for such a simple operation
 
 # Arguments:
 #TODO
