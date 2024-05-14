@@ -346,15 +346,15 @@ function post_supernova_general_orbit_parameters(;m_1i, m_2i, a_i, e_i=0, m_1f=-
 
     # Elements of rotation matrix
     # RTW: this coordinate system uses E, N, and O, but the text refers instead to celestial W, not E... need to double check
-    R_e_par = cosi_i*cosΩ_i*cosδ-sinΩ_i*sinδ
-    R_e_per = -(cosi_i*cosΩ_i*sinδ)-sinΩ_i*cosδ
-    R_e_z   = -(sini_i*cosΩ_i)
-    R_n_par = cosΩ_i*sinδ+cosi_i*sinΩ_i*cosδ
-    R_n_per = cosΩ_i*cosδ-cosi_i*sinΩ_i*sinδ
-    R_n_z   = -(sini_i*sinΩ_i)
-    R_o_par = sini_i*cosδ
-    R_o_per = -(sini_i*sinδ)
-    R_o_z   = cosi_i
+    R_w_par =  cosi_i*cosΩ_i*cosδ - sinΩ_i*sinδ
+    R_w_per = -cosi_i*cosΩ_i*sinδ - sinΩ_i*cosδ
+    R_w_z   = -sini_i*cosΩ_i
+    R_n_par =  cosi_i*sinΩ_i*cosδ + cosΩ_i*sinδ 
+    R_n_per = -cosi_i*sinΩ_i*sinδ + cosΩ_i*cosδ 
+    R_n_z   = -sini_i*sinΩ_i
+    R_o_par =  sini_i*cosδ
+    R_o_per = -sini_i*sinδ
+    R_o_z   =  cosi_i
 
     # velocity, simply compute from change in momentum
     v_par = (-(m_2i-m_2f)*m_1i/M_i*v_rel +(m_1i-m_1f)*m_2i/M_i*v_rel
@@ -362,7 +362,7 @@ function post_supernova_general_orbit_parameters(;m_1i, m_2i, a_i, e_i=0, m_1f=-
     v_per = (m_2f*vkick*sinθ*cosϕ+j_ν*m_1f*vimp)/M_f
     v_z = (m_2f*vkick*sinθ*sinϕ)/M_f
 
-    v_e = R_e_par*v_par + R_e_per*v_per + R_e_z*v_z
+    v_w = R_w_par*v_par + R_w_per*v_per + R_w_z*v_z
     v_n = R_n_par*v_par + R_n_per*v_per + R_n_z*v_z
     v_o = R_o_par*v_par + R_o_per*v_per + R_o_z*v_z
     v_rad = -v_o
@@ -372,7 +372,7 @@ function post_supernova_general_orbit_parameters(;m_1i, m_2i, a_i, e_i=0, m_1f=-
     L_per = -h_ν*α*sinθ*sinϕ/Lvec_norm
     L_z = h_ν*α*sinθ*cosϕ-j_ν*(1+α*cosθ)/Lvec_norm
 
-    L_e = R_e_par*L_par + R_e_per*L_per + R_e_z*L_z
+    L_w = R_w_par*L_par + R_w_per*L_per + R_w_z*L_z
     L_n = R_n_par*L_par + R_n_per*L_per + R_n_z*L_z
     L_o = R_o_par*L_par + R_o_per*L_per + R_o_z*L_z
 
@@ -380,12 +380,13 @@ function post_supernova_general_orbit_parameters(;m_1i, m_2i, a_i, e_i=0, m_1f=-
 
     # compute longitude of the ascending node
     # this is obtained by taking the vector n = k x L, where k=(0,0,1) points to the observer
-    # then n = (n_e, n_n, 0) points to the ascending node
-    n_e = -L_n
-    n_n = L_e
-    n_norm = sqrt(n_e^2+n_n^2)
+    # then n = (n_w, n_n, 0) points to the ascending node
+    # RTW: need to check the code below, the subscripts look wrong
+    n_w = -L_n
+    n_n = L_w
+    n_norm = sqrt(n_w^2+n_n^2)
     Ω_f = acos(max(-1, min(1, n_n/n_norm)))
-    if n_e>0
+    if n_w>0
         Ω_f = 2π - Ω_f
     end
     # compute post-explosion argument of periastron
