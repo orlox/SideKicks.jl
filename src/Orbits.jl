@@ -113,7 +113,7 @@ function post_supernova_circular_orbit_a(;m_1i, m_2i, a_i, m_1f=-1, m_2f, vkick=
         m_1f = m_1i
     end
     mtilde = (m_1f+m_2f)/(m_1i+m_2i) 
-    v_rel = average_orbital_velocity(;m_1=m_1i, m_2=m_2i, a=a_i)
+    v_rel = average_orbital_velocity(m_1=m_1i, m_2=m_2i, a=a_i)
     α = vkick/v_rel
     β = vimp/v_rel
     # convert trig functions to vars
