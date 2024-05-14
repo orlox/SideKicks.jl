@@ -42,10 +42,9 @@ end
 
 
 """
-    average_orbital_velocity(;m_1, m_2, a)
+    circular_orbital_velocity(;m_1, m_2, a)
 
-Calculate the average orbital velocity, or equivalently
-the fixed orbital velocity for a circular orbit.
+Calculate the orbital velocity for a circular orbit.
 
 # Arguments:
 - m_1: mass of first companion        [Msun]
@@ -55,7 +54,7 @@ the fixed orbital velocity for a circular orbit.
 # Output:
 - v_orb: the average orbital velocity [km/s]
 """
-function average_orbital_velocity(;m_1, m_2, a)
+function circular_orbital_velocity(;m_1, m_2, a)
     return @. sqrt(cgrav*(m_1+m_2)*m_sun/ a)/(km) 
 end
 
@@ -113,7 +112,7 @@ function post_supernova_circular_orbit_a(;m_1i, m_2i, a_i, m_1f=-1, m_2f, vkick=
         m_1f = m_1i
     end
     mtilde = (m_1f+m_2f)/(m_1i+m_2i) 
-    v_rel = average_orbital_velocity(m_1=m_1i, m_2=m_2i, a=a_i)
+    v_rel = circular_orbital_velocity(m_1=m_1i, m_2=m_2i, a=a_i)
     α = vkick/v_rel
     β = vimp/v_rel
     # convert trig functions to vars
@@ -170,7 +169,7 @@ function post_supernova_circular_orbit_P(;m_1i, m_2i, P_i, m_1f=-1, m_2f, vkick=
     end
     mtilde = (m_1f+m_2f)/(m_1i+m_2i) 
     a_i = kepler_a_from_P(;m_1=m_1i, m_2=m_2i, P=P_i)
-    v_rel = average_orbital_velocity(;m_1=m_1i, m_2=m_2i, a=a_i)
+    v_rel = circular_orbital_velocity(m_1=m_1i, m_2=m_2i, a=a_i)
     α = vkick/v_rel
     β = vimp/v_rel
     # convert trig functions to vars
@@ -221,7 +220,7 @@ function post_supernova_circular_orbit_vsys(;m_1i, m_2i, a_i, m_1f=-1, m_2f, vki
         m_1f = m_1i
     end
     mtilde = (m_1f+m_2f)/(m_1i+m_2i) 
-    v_rel = average_orbital_velocity(;m_1=m_1i, m_2=m_2i, a=a_i)
+    v_rel = circular_orbital_velocity(m_1=m_1i, m_2=m_2i, a=a_i)
     α = vkick/v_rel
     β = vimp/v_rel
     # convert trig functions to vars
