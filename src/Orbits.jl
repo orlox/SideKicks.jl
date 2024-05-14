@@ -20,7 +20,7 @@ Obtain semimajor axis from period using Kepler's third law
 - a: semi-major axis of the orbit [cm]
 """
 function kepler_a_from_P(;m_1, m_2, P)
-    return cbrt((P*day_in_sec)^2*cgrav*(m_1+m_2)*m_sun/(4.0*π^2))
+    return @. cbrt((P*day_in_sec)^2 *(m_1+m_2)*cgrav*m_sun/(4.0*π^2))
 end
 
 """
@@ -37,7 +37,7 @@ Obtain period from semimajor axis using Kepler's third law
 - P: the orbital period            [d]
 """
 function kepler_P_from_a(;m_1, m_2, a)
-    return sqrt(4.0*π^2*a^3/(cgrav*(m_1+m_2)*m_sun))/(day_in_sec)
+    return @. sqrt(4.0*π^2*a^3 /((m_1+m_2)*cgrav*m_sun))/(day_in_sec)
 end
 
 
@@ -56,7 +56,7 @@ the fixed orbital velocity for a circular orbit.
 - v_orb: the average orbital velocity [km/s]
 """
 function average_orbital_velocity(;m_1, m_2, a)
-    return sqrt(cgrav*(m_1+m_2)*m_sun/ a)/(km) 
+    return @. sqrt(cgrav*(m_1+m_2)*m_sun/ a)/(km) 
 end
 
 
@@ -76,7 +76,8 @@ Compute the amplitude of radial velocity variations given orbital parameters and
 - K1: amplitude of radial velocity variation of star 1  [km/s]
 """
 function RV_semiamplitude_K1(;m_1, m_2, P, e, i)
-    return (m_2*sin(i))*cbrt(2*π*cgrav/(P*day_in_sec)*m_sun/(m_2+m_1)^2)/sqrt(1-e^2)/(km) #semi amplitude of RV variation in km/s
+    return @. (m_2*sin(i))*cbrt(2*π*cgrav/(P*day_in_sec)*m_sun/(m_2+m_1)^2)/sqrt(1-e^2)/(km) #semi amplitude of RV variation in km/s
+    
 end
 
 
@@ -115,21 +116,12 @@ function post_supernova_circular_orbit_a(;m_1i, m_2i, a_i, m_1f=-1, m_2f, vkick=
     v_rel = average_orbital_velocity(;m_1=m_1i, m_2=m_2i, a=a_i)
     α = vkick/v_rel
     β = vimp/v_rel
-    #vkick_div_vrel = vkick/v_rel
-    #vimp_div_vrel = vimp/v_rel
     # convert trig functions to vars
     cosθ = cos(θ)
     sinθ = sin(θ)
     cosϕ = cos(ϕ)
     sinϕ = sin(ϕ)
-
-    #println("==> ", cosθ, " ", cosϕ)
-    ξ = (1 + α^2 + β^2 + 2*α*cosθ - 2*β*sinθ*cosϕ)/(mtilde)
-    #println(ξ)
-    #ξ = f_ν*g_ν^2*M_i/M_f*(1+α^2+β^2+2*(-h_ν*β*(1+α*cosθ)+α*cosθ-j_ν*β*α*sinθ*cosϕ))
-
-
-
+    ξ = (1 + α^2 + β^2 + 2*α*cosθ - 2*α*β*sinθ*cosϕ)/(mtilde)
     if (ξ>2)
         return (NaN, NaN)
     end
@@ -139,7 +131,6 @@ function post_supernova_circular_orbit_a(;m_1i, m_2i, a_i, m_1f=-1, m_2f, vkick=
     # Orbital parameters
     a_f = a_i/(2-ξ)
     e_f = sqrt(1 + ξ*(ξ-2)*cosγ^2)
-    #println("af=",a_f)
 
     #Q = (ξ-1) - (vkick_div_vrel*sinθ*cosϕ - vimp_div_vrel)^2/(mtilde) 
     #e_f_old = sqrt(1+(ξ-2)*(Q+1)) # RTW where does this come from?
@@ -180,14 +171,14 @@ function post_supernova_circular_orbit_P(;m_1i, m_2i, P_i, m_1f=-1, m_2f, vkick=
     mtilde = (m_1f+m_2f)/(m_1i+m_2i) 
     a_i = kepler_a_from_P(;m_1=m_1i, m_2=m_2i, P=P_i)
     v_rel = average_orbital_velocity(;m_1=m_1i, m_2=m_2i, a=a_i)
-    vkick_div_vrel = vkick/v_rel
-    vimp_div_vrel = vimp/v_rel
+    α = vkick/v_rel
+    β = vimp/v_rel
     # convert trig functions to vars
     cosθ = cos(θ)
     sinθ = sin(θ)
     cosϕ = cos(ϕ)
     sinϕ = sin(ϕ)
-    ξ = (1 + vkick_div_vrel^2 + vimp_div_vrel^2 + 2*vkick_div_vrel*cosθ - 2*vimp_div_vrel*sinθ*cosϕ)/(mtilde)
+    ξ = (1 + α^2 + β^2 + 2*α*cosθ - 2*α*β*sinθ*cosϕ)/(mtilde)
     if (ξ>2)
         return (NaN, NaN)
     end
@@ -231,14 +222,14 @@ function post_supernova_circular_orbit_vsys(;m_1i, m_2i, a_i, m_1f=-1, m_2f, vki
     end
     mtilde = (m_1f+m_2f)/(m_1i+m_2i) 
     v_rel = average_orbital_velocity(;m_1=m_1i, m_2=m_2i, a=a_i)
-    vkick_div_vrel = vkick/v_rel
-    vimp_div_vrel = vimp/v_rel
+    α = vkick/v_rel
+    β = vimp/v_rel
     # convert trig functions to vars
     cosθ = cos(θ)
     sinθ = sin(θ)
     cosϕ = cos(ϕ)
     sinϕ = sin(ϕ)
-    ξ = (1 + vkick_div_vrel^2 + vimp_div_vrel^2 + 2*vkick_div_vrel*cosθ - 2*vimp_div_vrel*sinθ*cosϕ)/(mtilde)
+    ξ = (1 + α^2 + β^2 + 2*α*cosθ - 2*α*β*sinθ*cosϕ)/(mtilde)
     if (ξ>2)
         return NaN 
     end
@@ -329,17 +320,13 @@ function post_supernova_general_orbit_parameters(;m_1i, m_2i, a_i, e_i=0, m_1f=-
     α = vkick/v_rel
     β = vimp/v_rel
 
-    #println("=> ", f_ν, " ", g_ν, " ", h_ν, " ", j_ν, " ")
-    #println("==> ", cosθ, " ", cosϕ)
     ξ = f_ν*g_ν^2*M_i/M_f* (1 + α^2 + β^2 + 2* (α*cosθ - h_ν*β* (1 + α*cosθ) - j_ν*β*α*sinθ*cosϕ))
-    #println(ξ)
 
     if ξ>2
         return (NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN)
     end
 
     a_f = f_ν*a_i/(2-ξ)
-    #println(a_f)
 
     Lvec_norm = sqrt(α^2*sinθ^2*sinϕ^2+(h_ν*α*sinθ*cosϕ-j_ν*(1+α*cosθ))^2)
     η = f_ν*g_ν^2*M_i/M_f*Lvec_norm^2

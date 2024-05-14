@@ -2,8 +2,6 @@ using LinearAlgebra
 using Symbolics
 using IfElse
 
-module SymbolicFuncs
-
 """
     symbolic_kick_functions_energy_L()
 
@@ -81,7 +79,6 @@ end
 - RTW: TODO!!
 """
 function symbolic_kick_functions_vcm_and_orbital_elements()
-    # RTW what is this?
     @variables a, a_final, e, e_final, ν, L_x, L_y, L_z, v_xcm, v_ycm, v_zcm,  v_1y,  Ω,  ω,  i
 
     f_ν = (1-e^2)/(1+e*cos(ν))
@@ -162,39 +159,37 @@ end
 # Output:
 - RTW: TODO!!
 """
-function symbolic_post_kick_parameters_a_e(a, e, m_1, m_2, ν, vkick, θ, ϕ, v_im, m_1f, m_2f, Ω, ω, i, function_list)
+function symbolic_post_kick_parameters_a_e(; a, e, m_1, m_2, ν, vkick, θ, ϕ, v_im, m_1f, m_2f, Ω, ω, i, function_list)
     v_par = vkick*cos(θ)
     v_per = vkick*sin(θ)*cos(ϕ)
     v_z = vkick*sin(θ)*sin(ϕ)
     values1 = (a, e, ν, m_1, m_1f, m_2, m_2f, v_par, v_per, v_z, v_im)
-    energy = function_list[1](values1) #energy_function(valuesa)
-    L_x = function_list[2](values1) #L_x_function(valuesa)
-    L_y = function_list[3](values1) #L_y_function(valuesa)
-    L_z = function_list[4](values1) #L_z_function(valuesa)
+    energy = function_list[1](values1) 
+    L_x = function_list[2](values1)    
+    L_y = function_list[3](values1)    
+    L_z = function_list[4](values1)    
     
-    v_xcm = function_list[5](values1) #v_xcm_function(valuesa)
-    v_ycm = function_list[6](values1) #v_ycm_function(valuesa)
-    v_zcm = function_list[7](values1) #v_zcm_function(valuesa)
-    v_1y = function_list[8](values1) #v_1y_function(valuesa)
+    v_xcm = function_list[5](values1)  
+    v_ycm = function_list[6](values1)  
+    v_zcm = function_list[7](values1)  
+    v_1y = function_list[8](values1)   
 
     if energy > 0
         return (NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN)
     end
 
-    a_final = -cgrav*m_1f*m_2f/(2*energy)
-    e_final = sqrt(1-(L_x^2+L_y^2+L_z^2)*(m_1f+m_2f)/(cgrav*a_final*m_1f^2*m_2f^2)+1e-15)
+    a_f = -cgrav*m_1f*m_2f/(2*energy)
+    e_f = sqrt(1-(L_x^2+L_y^2+L_z^2)*(m_1f+m_2f)/(cgrav*a_final*m_1f^2*m_2f^2)+1e-15)
 
     values2 = (a, a_final, e, e_final, ν, L_x, L_y, L_z, v_xcm, v_ycm, v_zcm, v_1y, Ω, ω, i)
 
-    Ω_final = function_list[9](values2) #Ω_function(values2)
-    ω_final = function_list[10](values2) #ω_function(values2)
-    ι_final = function_list[11](values2) #ι_function(values2)
+    Ω_f = function_list[9](values2)  
+    ω_f = function_list[10](values2) 
+    ι_f = function_list[11](values2) 
 
-    v_N = function_list[12](values2) #v_N_function(values2)
-    v_E = function_list[13](values2) #v_E_function(values2)
-    v_r = function_list[14](values2) #v_r_function(values2)
+    v_N = function_list[12](values2) 
+    v_E = function_list[13](values2) 
+    v_r = function_list[14](values2) 
 
-    return (a_final, e_final, v_N, v_E, v_r, Ω_final, ω_final, ι_final)
-end
-
+    return (a_f, e_f, v_N, v_E, v_r, Ω_f, ω_f, ι_f)
 end
