@@ -89,8 +89,9 @@ end
 """
     post_supernova_circular_orbit_a(;m1, m2, a, m1_f=-1, m2_f, vkick=0, θ=0, ϕ=0, vimp=0)
 
-Compute post-kick properties for a circular pre-explosion orbit using equations 
-from Tauris & Takens (1999), except that here we have M2 as the exploding star.
+Compute post-kick properties for a circular pre-explosion orbit. Equivalent to
+Tauris et al. (1999): Monthly Notices of the Royal Astronomical Society, Volume 310, Issue 4, pp. 1165-1169.
+
 
 # Arguments:
 - m1:  pre-explosion  mass of non-exploding component   [g]           
@@ -107,8 +108,8 @@ from Tauris & Takens (1999), except that here we have M2 as the exploding star.
 - a_f: post-explosion orbital separation                [cm]
 - e_f: post-explosion excentricity                      [-]
 """
-function post_supernova_circular_orbit_a(;m1, m2, a, m1_f=-1, m2_f, vkick=0, θ=0, ϕ=0, vimp=0)
-    if m1_f == -1
+function post_supernova_circular_orbit_a(;m1, m2, a, m1_f=-1.0, m2_f, vkick=0.0, θ=0.0, ϕ=0.0, vimp=0.0)
+    if m1_f == -1.0
         m1_f = m1
     end
     mtilde = (m1_f + m2_f)/(m1 + m2) 
@@ -124,16 +125,11 @@ function post_supernova_circular_orbit_a(;m1, m2, a, m1_f=-1, m2_f, vkick=0, θ=
     if (ξ>2)
         return (NaN, NaN)
     end
-    tanγ = (vkick*sinθ*cosϕ - vimp)/sqrt((v_rel + vkick*cosθ)^2 + vkick^2*sinθ^2*sinϕ^2)
-    cosγ = 1/sqrt(1+tanγ^2)
+    η = (α^2*sinθ^2*sinϕ^2+(1+α*cosθ)^2)/mtilde
 
     # Orbital parameters
     a_f = a/(2-ξ)
-    e_f = sqrt(1 + ξ*(ξ-2)*cosγ^2)
-
-    #Q = (ξ-1) - (vkick_div_vrel*sinθ*cosϕ - vimp_div_vrel)^2/(mtilde) 
-    #e_f_old = sqrt(1+(ξ-2)*(Q+1)) # RTW where does this come from?
-    # RTW TODO test both values for e_f
+    e_f = sqrt(1 + (ξ-2)*η)
 
     return (a_f, e_f)
 end
@@ -142,11 +138,8 @@ end
 """
     post_supernova_circular_orbit_P(;m1, m2, P, m1_f=-1, m2_f, vkick=0, θ=0, ϕ=0, vimp=0)
 
-Compute post-kick properties for a circular pre-explosion orbit using equations 
-from Tauris & Takens (1999), except that here we have M2 as the exploding star.
-
-Note: This function should be slightly slower than post_supernova_circular_orbit_a, thus
-that one is preferred over this one.
+Same as `post_supernova_circular_orbit_a`, except that it receives the initial orbital period as
+input and returns the final orbital period and eccentricity.
 
 # Arguments:
 - m1:  pre-explosion  mass of non-exploding component   [g]           
@@ -163,39 +156,17 @@ that one is preferred over this one.
 - P_f: post-explosion orbital period                    [d]
 - e_f: post-explosion excentricity                      [-]
 """
-function post_supernova_circular_orbit_P(;m1, m2, P, m1_f=-1, m2_f, vkick=0, θ=0, ϕ=0, vimp=0)
-    if m1_f == -1
+function post_supernova_circular_orbit_P(;m1, m2, P, m1_f=-1.0, m2_f, vkick=0.0, θ=0.0, ϕ=0.0, vimp=0.0)
+    if m1_f == -1.0
         m1_f = m1
     end
-    mtilde = (m1_f + m2_f)/(m1 + m2) 
-    a = kepler_a_from_P(;m1=m1, m2=m2, P=P)
-    v_rel = relative_velocity(m1=m1, m2=m2, a=a)
-    α = vkick/v_rel
-    β = vimp/v_rel
-    # convert trig functions to vars
-    cosθ = cos(θ)
-    sinθ = sin(θ)
-    cosϕ = cos(ϕ)
-    sinϕ = sin(ϕ)
-    ξ = (1 + α^2 + β^2 + 2*α*cosθ - 2*α*β*sinθ*cosϕ)/(mtilde)
+    a = kepler_a_from_P(m1=m1, m2=m2, P=P)
+    (a_f, e_f) = post_supernova_circular_orbit_a(m1=m1, m2=m2, a=a,
+                    m1_f=m1_f, m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=vimp)
+    P_f = kepler_P_from_a(m1=m1_f, m2=m2_f, a=a_f)
 
-    if (ξ>2)
-        return (NaN, NaN)
-    end
-    tanγ = (vkick*sinθ*cosϕ - vimp)/sqrt((v_rel + vkick*cosθ)^2 + vkick^2*sinθ^2*sinϕ^2)
-    cosγ = 1/sqrt(1+tanγ^2)
-
-    # Orbital parameters
-    P_f = P/sqrt(mtilde*(2 - ξ)^3) # RTW check this
-    e_f = sqrt(1 + ξ*(ξ-2)*cosγ^2)
-
-    #Q = (ξ-1) - (vkick_div_vrel*sinθ*cosϕ - vimp_div_vrel)^2/(mtilde) 
-    #e_f_old = sqrt(1+(ξ-2)*(Q+1)) # RTW where does this come from?
-    # RTW TODO test both values for e_f
-
-    return (P_f, e_f)
+    return (P_f,e_f)
 end
-
 
 """
     post_supernova_circular_orbit_vsys(;m1, m2, a, m1_f=-1, m2_f, vkick=0, θ=0, ϕ=0, vimp=0)
@@ -220,19 +191,12 @@ function post_supernova_circular_orbit_vsys(;m1, m2, a, m1_f=-1, m2_f, vkick=0, 
     if m1_f == -1
         m1_f = m1
     end
-    mtilde = (m1_f + m2_f)/(m1 + m2) 
-    v_rel = relative_velocity(m1=m1, m2=m2, a=a)
-    α = vkick/v_rel
-    β = vimp/v_rel
+    vrel = relative_velocity(m1=m1, m2=m2, a=a)
     # convert trig functions to vars
     cosθ = cos(θ)
     sinθ = sin(θ)
     cosϕ = cos(ϕ)
     sinϕ = sin(ϕ)
-    #ξ = (1 + α^2 + β^2 + 2*α*cosθ - 2*α*β*sinθ*cosϕ)/(mtilde)
-    #if (ξ>2)
-    #    return NaN 
-    #end
 
     # Systemic velocity
     Δp_x = (m2_f*m1 - m2*m1_f)/(m2 + m1)*vrel + m2_f*vkick*cosθ
