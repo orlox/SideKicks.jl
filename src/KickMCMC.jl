@@ -12,6 +12,91 @@ Distributions.logpdf(d::WrappedCauchy, x::Real) = log(1/(2*π)*(sinh(d.σ)))-log
 Distributions.pdf(d::WrappedCauchy, x::Real) = 1/(2*π)*(sinh(d.σ))/(cosh(d.σ)-cos(x-d.μ))
 
 """
+    createSimpleCircularMCMCModel(observations, observed_values, observed_errors)
+
+Description
+Create a Turing model to perform an MCMC sampling of the pre-explosion 
+and kick properties of a system, assuming pre-explosion circularity.
+
+# Arguments:
+- observations:    the parameters taken from observations [Vector{Symbol}]
+- observed_values: the values of the parameters           [Vector{Float64}] 
+- observed_errors: the errors of the observations         [Vector{Float64}]
+
+# Output:
+- kickmodel: A Turing model for sampling
+"""
+function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_values::Vector{Float64}, observed_errors::Vector{Float64};
+    bhModel = arbitraryEjectaBH,
+    logm1_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), # in log(Msun)
+    logm2_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), # in log(Msun)
+    logP_dist::ContinuousUnivariateDistribution = Uniform(-1,3),   # in log(days)
+    vkick_dist::ContinuousUnivariateDistribution = Exponential(1), # in 100 km/s
+    frac_dist::ContinuousUnivariateDistribution = Uniform(0,1.0))
+
+    # provided observed values
+    valid_values = [:P, :e, :K1, :K2, :m1, :m2]
+    for obs ∈ observations
+        if obs ∉ valid_values
+            throw(DomainError(obs, "Allowed observations are only [:P, :e, :K1, :K2, :m1, :m2]"))
+        end
+    end
+
+    @model function kick_model(obs::Vector{Symbol}, obs_vals::Vector{Float64}, obs_errs::Vector{Float64})
+        # set priors
+        #Pre-explosion masses and orbital period
+        logm1 ~ logm1_dist
+        m1 = 10^(logm1)*m_sun
+        logm2 ~ logm2_dist
+        m2 = 10^(logm2)*m_sun
+        logP ~ logP_dist
+        P = 10^(logP)*day
+        a = kepler_a_from_P(m1=m1, m2=m2, P=P)
+        cosi ~ Uniform(0,1)
+        i_f = acos(cosi)
+
+        #Post-explosion masses
+        frac ~ frac_dist
+        m2_f = bhModel(m2, frac) # star 2 explodes, star 1 is kept fixed
+
+        #Kick parameters
+        vkick ~ vkick_dist*100*km_per_s
+        cosθ ~ Uniform(-1,1)
+        θ = acos(cosθ)
+        xϕ ~ Normal(0,1)
+        yϕ ~ Normal(0,1)
+        normϕ = 1/sqrt(xϕ^2 + yϕ^2)
+        cosϕ = xϕ*normϕ
+        ϕ = acos(cosϕ)
+
+        #m1 is assumed to remain constant
+        a_f, e_f = post_supernova_circular_orbit_a(m1=m1, m2=m2, a=a, m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ)
+        P_f = kepler_P_from_a(m1=m1, m2=m2, a=a)
+        K1 = RV_semiamplitude_K1(m1=m1, m2=m2_f, P=P_f, e=e_f, i=i_f)
+
+        for i in eachindex(obs)
+            obs_symbol = obs[i]
+            if obs_symbol == :P
+                obs_vals[i] ~ Cauchy(P_f, obs_errs[i])
+            elseif obs_symbol == :e
+                obs_vals[i] ~ Cauchy(e_f, obs_errs[i])
+            elseif obs_symbol == :K1
+                obs_vals[i] ~ Cauchy(K1, obs_errs[i])
+            elseif obs_symbol == :K2
+                obs_vals[i] ~ Cauchy(K2, obs_errs[i])
+            elseif obs_symbol == :m1
+                obs_vals[i] ~ Cauchy(m1, obs_errs[i])
+            elseif obs_symbol == :m2
+                obs_vals[i] ~ Cauchy(m2_f, obs_errs[i])
+            end
+        end
+    end
+
+    return kick_model(observations, observed_values, observed_errors)
+
+end
+
+"""
     createEccentricMCMCModel(observations, observed_values, observed_errors)
 
 Create a Turing model to perform an MCMC sampling of the pre-explosion 
@@ -57,7 +142,7 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
         m2 = 10^(logm2)*m_sun
         logP ~ logP_dist
         P = 10^(logP)*days
-        a = kepler_a_from_P(;m1=m1, m2=m2, P=P)
+        a = kepler_a_from_P(m1=m1, m2=m2, P=P)
         e ~ e_dist
         cosi ~ Uniform(0,1)
         sini = sqrt(1-cosi^2)
@@ -100,11 +185,11 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
 
         #m1 is assumed to remain constant, no impact velocity
         a_f, e_f, Ω_f, ω_f, i_f, v_n, v_e, v_rad = 
-            post_supernova_general_orbit_parameters(;m1=m1, m2=m2, a=a, e=e, m2_f=m2_f, 
+            post_supernova_general_orbit_parameters(m1=m1, m2=m2, a=a, e=e, m2_f=m2_f, 
                 vkick=vkick, θ=θ, ϕ=ϕ, ν=ν, Ω=Ω, ω=ω, i=i)
-        P_f = kepler_P_from_a(;m1=m1, m2=m2_f, a=a_f)
-        K1 = RV_semiamplitude_K1(;m1=m1, m2=m2_f, P=P_f, e=e_f, i=i_f)
-        K2 = RV_semiamplitude_K1(;m1=m2_f, m2=m1, P=P_f, e=e_f, i=i_f)
+        P_f = kepler_P_from_a(m1=m1, m2=m2_f, a=a_f)
+        K1 = RV_semiamplitude_K1(m1=m1, m2=m2_f, P=P_f, e=e_f, i=i_f)
+        K2 = RV_semiamplitude_K1(m1=m2_f, m2=m1, P=P_f, e=e_f, i=i_f)
 
         for i in eachindex(obs)
             obs_symbol = obs[i]
@@ -143,91 +228,6 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
 end
     
 """
-    createSimpleCircularMCMCModel(observations, observed_values, observed_errors)
-
-Description
-Create a Turing model to perform an MCMC sampling of the pre-explosion 
-and kick properties of a system, assuming pre-explosion circularity.
-
-# Arguments:
-- observations:    the parameters taken from observations [Vector{Symbol}]
-- observed_values: the values of the parameters           [Vector{Float64}] 
-- observed_errors: the errors of the observations         [Vector{Float64}]
-
-# Output:
-- kickmodel: A Turing model for sampling
-"""
-function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_values::Vector{Float64}, observed_errors::Vector{Float64};
-    bhModel = arbitraryEjectaBH,
-    logm1_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), # in log(Msun)
-    logm2_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), # in log(Msun)
-    logP_dist::ContinuousUnivariateDistribution = Uniform(-1,3),   # in log(days)
-    vkick_dist::ContinuousUnivariateDistribution = Exponential(1), # in 100 km/s
-    frac_dist::ContinuousUnivariateDistribution = Uniform(0,1.0))
-
-    # provided observed values
-    valid_values = [:P, :e, :K1, :K2, :m1, :m2]
-    for obs ∈ observations
-        if obs ∉ valid_values
-            throw(DomainError(obs, "Allowed observations are only [:P, :e, :K1, :K2, :m1, :m2]"))
-        end
-    end
-
-    @model function kick_model(obs::Vector{Symbol}, obs_vals::Vector{Float64}, obs_errs::Vector{Float64})
-        # set priors
-        #Pre-explosion masses and orbital period
-        logm1 ~ logm1_dist
-        m1 = 10^(logm1)*m_sun
-        logm2 ~ logm2_dist
-        m2 = 10^(logm2)*m_sun
-        logP ~ logP_dist
-        P = 10^(logP)*day
-        a = kepler_a_from_P(;m1=m1, m2=m2, P=P)
-        cosi ~ Uniform(0,1)
-        i_f = acos(cosi)
-
-        #Post-explosion masses
-        frac ~ frac_dist
-        m2_f = bhModel(m2, frac) # star 2 explodes, star 1 is kept fixed
-
-        #Kick parameters
-        vkick ~ vkick_dist*100*km_per_s
-        cosθ ~ Uniform(-1,1)
-        θ = acos(cosθ)
-        xϕ ~ Normal(0,1)
-        yϕ ~ Normal(0,1)
-        normϕ = 1/sqrt(xϕ^2+yϕ^2)
-        cosϕ = xϕ*normϕ
-        ϕ = acos(cosϕ)
-
-        #m1 is assumed to remain constant
-        a_f, e_f = post_supernova_circular_orbit_a(;m1=m1, m2=m2, a=a, m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ)
-        P_f = kepler_P_from_a(;m1=m1, m2=m2, a=a)
-        K1 = RV_semiamplitude_K1(;m1=m1, m2=m2_f, P=P_f, e=e_f, i=i_f)
-
-        for i in eachindex(obs)
-            obs_symbol = obs[i]
-            if obs_symbol == :P
-                obs_vals[i] ~ Cauchy(P_f, obs_errs[i])
-            elseif obs_symbol == :e
-                obs_vals[i] ~ Cauchy(e_f, obs_errs[i])
-            elseif obs_symbol == :K1
-                obs_vals[i] ~ Cauchy(K1, obs_errs[i])
-            elseif obs_symbol == :K2
-                obs_vals[i] ~ Cauchy(K2, obs_errs[i])
-            elseif obs_symbol == :m1
-                obs_vals[i] ~ Cauchy(m1, obs_errs[i])
-            elseif obs_symbol == :m2
-                obs_vals[i] ~ Cauchy(m2_f, obs_errs[i])
-            end
-        end
-    end
-
-    return kick_model(observations, observed_values, observed_errors)
-
-end
-
-"""
     extract_chain(chain, observations, observed_values, observed_errors,
         model_type; bhModel = arbitraryEjectaBH)
 
@@ -248,39 +248,37 @@ function extract_chain(chain, observations, observed_values, observed_errors,
         model_type; bhModel = arbitraryEjectaBH)
     #simple function to change ranges from [-π,π] to [0,2π]
     shift_range = x-> x<0 ? x+2*π : x
-
+    #TODO: RTW this function and the description don't match, check with Pablo
 
     res = Dict()
     res[:logm1] = reduce(vcat,chain[:logm1])
-    res[:m1] = 10 .^ res[:logm1]
+    res[:m1] = 10 .^ res[:logm1] *m_sun
     res[:logm2] = reduce(vcat,chain[:logm2])
-    res[:m2] = 10 .^ res[:logm2]
+    res[:m2] = 10 .^ res[:logm2] *m_sun
     res[:logP] = reduce(vcat,chain[:logP])
-    res[:P] = 10 .^ res[:logP]
-    res[:a] = kepler_a_from_P.(;m1=res[:m1], m2=res[:m2], P=res[:P])
+    res[:P] = 10 .^ res[:logP] *day
+    res[:a] = kepler_a_from_P.(m1=res[:m1], m2=res[:m2], P=res[:P])
     if model_type==:simple
         res[:e] = zeros(length(res[:a]))
     elseif model_type==:general
         res[:e] = reduce(vcat,chain[:e])
-    else
-        throw(ArgumentError("model_type=:$model_type is an invalid option"))
-    end
-    if model_type==:general
         res[:ν] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xν],chain[:yν])]))
         res[:Ω] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xΩ],chain[:yΩ])]))
         res[:ω] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xω],chain[:yω])]))
         res[:i] = reduce(vcat,[acos(x) for x in chain[:cosi]])
+    else
+        throw(ArgumentError("model_type=:$model_type is an invalid option"))
     end
     res[:frac] = reduce(vcat,chain[:frac])
     res[:m2_f] = bhModel.(res[:m2],res[:frac])
     res[:ejecta_mass] = res[:m2] .- res[:m2_f]
-    res[:vkick] = reduce(vcat,chain[:vkick])*100 # MCMC is done in units of 100 km/s, turn into km/s
+    res[:vkick] = reduce(vcat,chain[:vkick])*100*km_per_s # MCMC is done in units of 100 km/s, turn into km/s
     res[:θ] = reduce(vcat,[acos(x) for x in chain[:cosθ]])
     res[:ϕ] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xϕ],chain[:yϕ])]))
     if model_type==:general
-        res[:v_N] = reduce(vcat,chain[:v_N])
-        res[:v_E] = reduce(vcat,chain[:v_E])
-        res[:v_r] = reduce(vcat,chain[:v_r])
+        res[:v_N] = reduce(vcat,chain[:v_N])*100*km_per_s
+        res[:v_E] = reduce(vcat,chain[:v_E])*100*km_per_s
+        res[:v_r] = reduce(vcat,chain[:v_r])*100*km_per_s
     end 
 
     sample_num = length(res[:a])
@@ -295,7 +293,7 @@ function extract_chain(chain, observations, observed_values, observed_errors,
         res[:i_f] = Vector{Float64}(undef, sample_num)
         for i in 1:sample_num
             a_f, e_f, Ω_f, ω_f, i_f, v_n, v_e, v_rad = 
-            post_supernova_general_orbit_parameters(; m1= res[:m1][i], m2= res[:m2][i],
+            post_supernova_general_orbit_parameters(m1=res[:m1][i], m2=res[:m2][i],
                 a= res[:a][i], e= res[:e][i], m2_f= res[:m2_f][i], vkick= res[:vkick][i], 
                 θ= res[:θ][i], ϕ= res[:ϕ][i], ν= res[:ν][i], Ω= res[:Ω][i], ω= res[:ω][i], i= res[:i][i])
 
@@ -312,16 +310,16 @@ function extract_chain(chain, observations, observed_values, observed_errors,
         res[:a_f] = Vector{Float64}(undef, sample_num)
         res[:e_f] = Vector{Float64}(undef, sample_num)
         for i in 1:sample_num
-            a_f, e_f = post_supernova_circular_orbit_a(; m1=res[:m1][i], m2=res[:m2][i], 
+            a_f, e_f = post_supernova_circular_orbit_a(m1=res[:m1][i], m2=res[:m2][i], 
                                                          a=res[:a][i], m2_f=res[:m2_f][i], vkick=res[:vkick][i], θ=res[:θ][i], ϕ=res[:ϕ][i])
             res[:a_f][i] = a_f
             res[:e_f][i] = e_f
         end
         res[:i_f] = reduce(vcat,[acos(x) for x in chain[:cosi]])
     end
-    res[:P_f] = kepler_P_from_a.(; m1=res[:m1], m2=res[:m2_f], a=res[:a_f])
-    res[:K1] = RV_semiamplitude_K1.(;m1=res[:m1], m2=res[:m2_f], P=res[:P_f], e=res[:e_f], i=res[:i_f])
-    res[:K2] = RV_semiamplitude_K1.(;m1=res[:m2_f], m2=res[:m1], P=res[:P_f], e=res[:e_f], i=res[:i_f])
+    res[:P_f] = kepler_P_from_a.(m1=res[:m1], m2=res[:m2_f], a=res[:a_f])
+    res[:K1] = RV_semiamplitude_K1.(m1=res[:m1], m2=res[:m2_f], P=res[:P_f], e=res[:e_f], i=res[:i_f])
+    res[:K2] = RV_semiamplitude_K1.(m1=res[:m2_f], m2=res[:m1], P=res[:P_f], e=res[:e_f], i=res[:i_f])
     #compute weights in log first
     res[:weight] = zeros(Float64,sample_num)
     for j in 1:sample_num
