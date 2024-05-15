@@ -191,14 +191,7 @@ function post_supernova_circular_orbit_vsys(;m1, m2, a, m1_f=-1, m2_f, vkick=0, 
     if m1_f == -1
         m1_f = m1
     end
-<<<<<<< Updated upstream
-    mtilde = (m1_f + m2_f)/(m1 + m2) 
-    v_rel = relative_velocity(m1=m1, m2=m2, a=a)
-    α = vkick/v_rel
-    β = vimp/v_rel
-=======
     vrel = relative_velocity(m1=m1, m2=m2, a=a)
->>>>>>> Stashed changes
     # convert trig functions to vars
     cosθ = cos(θ)
     sinθ = sin(θ)
