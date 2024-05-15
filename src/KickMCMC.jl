@@ -71,7 +71,7 @@ function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_va
 
         #m1 is assumed to remain constant
         a_f, e_f = post_supernova_circular_orbit_a(m1=m1, m2=m2, a=a, m2_f=m2_f, vkick=vkick*100*km_per_s, θ=θ, ϕ=ϕ)
-        P_f = kepler_P_from_a(m1=m1, m2=m2, a=a)
+        P_f = kepler_P_from_a(m1=m1, m2=m2_f, a=a_f)
         K1 = RV_semiamplitude_K1(m1=m1, m2=m2_f, P=P_f, e=e_f, i=i_f)
 
         for i in eachindex(obs)
