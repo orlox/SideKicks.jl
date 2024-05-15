@@ -25,7 +25,7 @@ export create_corner_plot, create_2D_density, create_1D_density
 #TODO
 - 
 """
-function create_corner_plot(chain_values, names, label_names, fractions, fraction_1D, figure; show_CIs=false, ranges=missing, nbins=100, supertitle=nothing)
+function create_corner_plot(chain_values, names, label_names, units, fractions, fraction_1D, figure; show_CIs=false, ranges=missing, nbins=100, supertitle=nothing)
     #f = figure[0:2, 1] = GridLayout()
     f = figure
 
@@ -38,8 +38,8 @@ function create_corner_plot(chain_values, names, label_names, fractions, fractio
         for  j in i+1:num_col+1
             axis = Axis(f[j,i],xtickalign=1,xtickcolor = :white,ytickalign=1,ytickcolor = :white, 
                         xlabel=label_names[i], ylabel=label_names[j])
-            
-            create_2D_density(chain_values[names[i]], ranges[i], chain_values[names[j]], ranges[j], chain_values[:weight],fractions, axis, nbins)
+
+            create_2D_density(chain_values[names[i]]/units[i], ranges[i], chain_values[names[j]]/units[j], ranges[j], chain_values[:weight],fractions, axis, nbins)
             if i>1
                 hideydecorations!(axis, ticks=false, minorticks=false)
             end
@@ -52,7 +52,7 @@ function create_corner_plot(chain_values, names, label_names, fractions, fractio
     for i in 1:num_col+1
         axis = Axis(f[i,i], xgridvisible = false, ygridvisible = false,xtickalign=1,
                     xlabel=label_names[i])
-        (xmin, xmode, xmax) = create_1D_density(chain_values[names[i]], ranges[i], chain_values[:weight],fraction_1D,axis, nbins)
+        (xmin, xmode, xmax) = create_1D_density(chain_values[names[i]]/units[i], ranges[i], chain_values[:weight], fraction_1D,axis, nbins)
         hideydecorations!(axis)
         if i !=num_col+1
             hidexdecorations!(axis,ticks=false, minorticks=false)

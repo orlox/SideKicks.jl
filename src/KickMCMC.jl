@@ -60,8 +60,7 @@ function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_va
         m2_f = bhModel(m2, frac) # star 2 explodes, star 1 is kept fixed
 
         #Kick parameters
-        vkick_100kms ~ vkick_dist  
-        vkick = vkick_100kms *100*km_per_s
+        vkick ~ vkick_dist  
         cosθ ~ Uniform(-1,1)
         θ = acos(cosθ)
         xϕ ~ Normal(0,1)
@@ -71,7 +70,7 @@ function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_va
         ϕ = acos(cosϕ)
 
         #m1 is assumed to remain constant
-        a_f, e_f = post_supernova_circular_orbit_a(m1=m1, m2=m2, a=a, m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ)
+        a_f, e_f = post_supernova_circular_orbit_a(m1=m1, m2=m2, a=a, m2_f=m2_f, vkick=vkick*100*km_per_s, θ=θ, ϕ=ϕ)
         P_f = kepler_P_from_a(m1=m1, m2=m2, a=a)
         K1 = RV_semiamplitude_K1(m1=m1, m2=m2_f, P=P_f, e=e_f, i=i_f)
 
@@ -170,7 +169,7 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
         m2_f = bhModel(m2, frac) # star 2 explodes, star 1 is kept fixed
 
         #Kick parameters
-        vkick ~ vkick_dist*100*km_per_s
+        vkick ~ vkick_dist  
         cosθ ~ Uniform(-1,1)
         θ = arccos(θ)
         xϕ ~ Normal(0,1)
@@ -187,7 +186,7 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
         #m1 is assumed to remain constant, no impact velocity
         a_f, e_f, Ω_f, ω_f, i_f, v_n, v_e, v_rad = 
             post_supernova_general_orbit_parameters(m1=m1, m2=m2, a=a, e=e, m2_f=m2_f, 
-                vkick=vkick, θ=θ, ϕ=ϕ, ν=ν, Ω=Ω, ω=ω, i=i)
+                vkick=vkick*100*km_per_s, θ=θ, ϕ=ϕ, ν=ν, Ω=Ω, ω=ω, i=i)
         P_f = kepler_P_from_a(m1=m1, m2=m2_f, a=a_f)
         K1 = RV_semiamplitude_K1(m1=m1, m2=m2_f, P=P_f, e=e_f, i=i_f)
         K2 = RV_semiamplitude_K1(m1=m2_f, m2=m1, P=P_f, e=e_f, i=i_f)
