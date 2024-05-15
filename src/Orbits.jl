@@ -340,7 +340,6 @@ function post_supernova_general_orbit_parameters(;m1, m2, a, e=0, m1_f=-1, m2_f,
     sinδ = sinν*sinτ*sinω + cosν*cosτ*sinω - cosν*sinτ*cosω + sinν*cosτ*cosω
 
     # Elements of rotation matrix
-    # RTW: this coordinate system uses E, N, and O, but the text refers instead to celestial W, not E... need to double check
     R_w_par =  cosi*cosΩ*cosδ - sinΩ*sinδ
     R_w_per = -cosi*cosΩ*sinδ - sinΩ*cosδ
     R_w_z   = -sini*cosΩ

@@ -60,7 +60,8 @@ function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_va
         m2_f = bhModel(m2, frac) # star 2 explodes, star 1 is kept fixed
 
         #Kick parameters
-        vkick ~ vkick_dist*100*km_per_s
+        vkick_100kms ~ vkick_dist  
+        vkick = vkick_100kms *100*km_per_s
         cosθ ~ Uniform(-1,1)
         θ = acos(cosθ)
         xϕ ~ Normal(0,1)
