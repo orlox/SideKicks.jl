@@ -1,4 +1,4 @@
-export cgrav, m_sun, m_earth, au, r_sun, km, day_in_sec, year_in_sec
+export cgrav, m_sun, m_earth, au, r_sun, km, day, year, km_per_s
 
 const cgrav = 6.67430e-8 # CODATA 2018
 
@@ -6,13 +6,14 @@ const cgrav = 6.67430e-8 # CODATA 2018
 # IAU Resolution B3 (https://arxiv.org/abs/1510.07674)
 const mu_sun = 1.3271244e26
 const mu_earth = 3.986004e20
-const m_sun = mu_sun/cgrav
-const m_earth = mu_earth/cgrav
+const m_sun = mu_sun/cgrav     # in g  
+const m_earth = mu_earth/cgrav # in g 
 
+const au = 1.49597870700e13 # in cm, IAU 2009 system of astronomical constants (Luzum et al. 2011)
 const r_sun = 6.9566e10 # in cm, Schmutz & Kosovichev (2008)
-const au = 1.49597870700e13/r_sun # in Rsun, IAU 2009 system of astronomical constants (Luzum et al. 2011)
-const km = 1e5 # in cm
+const km = 1.0e5 # in cm
 
-const day_in_sec = 24*3600
-const year_in_sec = 365.25*day_in_sec
+const day = 24.0*3600.0  # in s 
+const year = 365.25*day  # in s  
 
+const km_per_s = km # just for convenience

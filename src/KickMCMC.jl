@@ -30,9 +30,9 @@ and kick properties of a system, assuming pre-explosion eccentricity.
 """
 function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values::Vector{Float64}, observed_errors::Vector{Float64};
     bhModel = arbitraryEjectaBH,
-    logm1_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), 
-    logm2_dist::ContinuousUnivariateDistribution = Uniform(0.1,3),
-    logP_dist::ContinuousUnivariateDistribution = Uniform(-1,3),
+    logm1_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), # in log(Msun)
+    logm2_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), # in log(Msun)
+    logP_dist::ContinuousUnivariateDistribution = Uniform(-1,3),   # in log(days)
     e_dist::ContinuousUnivariateDistribution = Uniform(0,0.01),
     vkick_dist::ContinuousUnivariateDistribution = Exponential(1), # in 100 km/s
     vsys_N_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
@@ -52,11 +52,11 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
         # set priors
         #Pre-explosion masses and orbital period
         logm1 ~ logm1_dist
-        m1 = 10^(logm1)
+        m1 = 10^(logm1)*m_sun
         logm2 ~ logm2_dist
-        m2 = 10^(logm2)
+        m2 = 10^(logm2)*m_sun
         logP ~ logP_dist
-        P = 10^(logP)
+        P = 10^(logP)*days
         a = kepler_a_from_P(;m1=m1, m2=m2, P=P)
         e ~ e_dist
         cosi ~ Uniform(0,1)
@@ -84,7 +84,7 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
         m2_f = bhModel(m2, frac) # star 2 explodes, star 1 is kept fixed
 
         #Kick parameters
-        vkick ~ vkick_dist
+        vkick ~ vkick_dist*100*km_per_s
         cosθ ~ Uniform(-1,1)
         θ = arccos(θ)
         xϕ ~ Normal(0,1)
@@ -94,14 +94,14 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
         ϕ = arccos(ϕ)
 
         #Initial systemic velocity parameters
-        v_N ~ vsys_N_dist*1e7         # in cm/s
-        v_E ~ vsys_E_dist*1e7         # in cm/s
-        v_r ~ vsys_r_dist*1e7         # in cm/s
+        v_N ~ vsys_N_dist*100*km_per_s 
+        v_E ~ vsys_E_dist*100*km_per_s 
+        v_r ~ vsys_r_dist*100*km_per_s 
 
         #m1 is assumed to remain constant, no impact velocity
         a_f, e_f, Ω_f, ω_f, i_f, v_n, v_e, v_rad = 
             post_supernova_general_orbit_parameters(;m1=m1, m2=m2, a=a, e=e, m2_f=m2_f, 
-                vkick=vkick*100, θ=θ, ϕ=ϕ, ν=ν, Ω=Ω, ω=ω, i=i)
+                vkick=vkick, θ=θ, ϕ=ϕ, ν=ν, Ω=Ω, ω=ω, i=i)
         P_f = kepler_P_from_a(;m1=m1, m2=m2_f, a=a_f)
         K1 = RV_semiamplitude_K1(;m1=m1, m2=m2_f, P=P_f, e=e_f, i=i_f)
         K2 = RV_semiamplitude_K1(;m1=m2_f, m2=m1, P=P_f, e=e_f, i=i_f)
@@ -159,10 +159,10 @@ and kick properties of a system, assuming pre-explosion circularity.
 """
 function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_values::Vector{Float64}, observed_errors::Vector{Float64};
     bhModel = arbitraryEjectaBH,
-    logm1_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), 
-    logm2_dist::ContinuousUnivariateDistribution = Uniform(0.1,3),
-    logP_dist::ContinuousUnivariateDistribution = Uniform(-1,3),
-    vkick_dist::ContinuousUnivariateDistribution = Exponential(1),
+    logm1_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), # in log(Msun)
+    logm2_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), # in log(Msun)
+    logP_dist::ContinuousUnivariateDistribution = Uniform(-1,3),   # in log(days)
+    vkick_dist::ContinuousUnivariateDistribution = Exponential(1), # in 100 km/s
     frac_dist::ContinuousUnivariateDistribution = Uniform(0,1.0))
 
     # provided observed values
@@ -177,11 +177,11 @@ function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_va
         # set priors
         #Pre-explosion masses and orbital period
         logm1 ~ logm1_dist
-        m1 = 10^(logm1)
+        m1 = 10^(logm1)*m_sun
         logm2 ~ logm2_dist
-        m2 = 10^(logm2)
+        m2 = 10^(logm2)*m_sun
         logP ~ logP_dist
-        P = 10^(logP)
+        P = 10^(logP)*day
         a = kepler_a_from_P(;m1=m1, m2=m2, P=P)
         cosi ~ Uniform(0,1)
         i_f = acos(cosi)
@@ -191,7 +191,7 @@ function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_va
         m2_f = bhModel(m2, frac) # star 2 explodes, star 1 is kept fixed
 
         #Kick parameters
-        vkick ~ vkick_dist
+        vkick ~ vkick_dist*100*km_per_s
         cosθ ~ Uniform(-1,1)
         θ = acos(cosθ)
         xϕ ~ Normal(0,1)
@@ -201,7 +201,7 @@ function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_va
         ϕ = acos(cosϕ)
 
         #m1 is assumed to remain constant
-        a_f, e_f = post_supernova_circular_orbit_a(;m1=m1, m2=m2, a=a, m2_f=m2_f, vkick=100*vkick, θ=θ, ϕ=ϕ)
+        a_f, e_f = post_supernova_circular_orbit_a(;m1=m1, m2=m2, a=a, m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ)
         P_f = kepler_P_from_a(;m1=m1, m2=m2, a=a)
         K1 = RV_semiamplitude_K1(;m1=m1, m2=m2_f, P=P_f, e=e_f, i=i_f)
 

@@ -5,18 +5,18 @@ using Turing
 include("SymbolicFuncs.jl")
 
 #Test Kepler's laws using earth sun system
-year_in_days = SideKicks.kepler_P_from_a(m1=1, m2=m_earth/m_sun, a=au)
-@test abs(year_in_days-365.25) < 0.01
-au_from_kepler = SideKicks.kepler_a_from_P(m1=1, m2=m_earth/m_sun, P=year_in_days)
-@test isapprox(au, au_from_kepler)
-earth_vel = SideKicks.relative_velocity(m1=1, m2=m_earth/m_sun, a=au)
-@test abs(earth_vel-29.7846) < 0.01
+year_kepler = SideKicks.kepler_P_from_a(m1=m_sun, m2=m_earth, a=au)
+@test year_kepler ≈ year rtol=0.01
+au_kepler = SideKicks.kepler_a_from_P(m1=m_sun, m2=m_earth, P=year)
+@test au_kepler ≈ au rtol=0.01
+earth_vel = SideKicks.relative_velocity(m1=m_sun, m2=m_earth, a=au)
+@test earth_vel ≈ 29.7846*km_per_s rtol=0.01
 
 #check K1 and K2 using sun-earth system
-RV_e = SideKicks.RV_semiamplitude_K1(m1=m_earth/m_sun, m2=1, P=year_in_days, e=0, i=π/2)
-RV_s = SideKicks.RV_semiamplitude_K1(m1=1, m2=m_earth/m_sun, P=year_in_days, e=0, i=π/2)
-@test abs(RV_e-29.7846) < 0.001 #just test agains value that was computed in a trusted version
-@test isapprox(RV_e/RV_s, m_sun/m_earth) #test that RV ratio follows mass ratio
+RV_s = SideKicks.RV_semiamplitude_K1(m1=m_sun, m2=m_earth, P=year, e=0, i=π/2)
+RV_e = SideKicks.RV_semiamplitude_K1(m1=m_earth, m2=m_sun, P=year, e=0, i=π/2)
+@test RV_e ≈ 29.7846*km_per_s rtol=0.001 #just test again value that was computed in a trusted version
+@test RV_e/RV_s ≈ m_sun/m_earth rtol=0.01 #test that RV ratio follows mass ratio
 
 ##########################################################
 ### 
@@ -25,22 +25,22 @@ RV_s = SideKicks.RV_semiamplitude_K1(m1=1, m2=m_earth/m_sun, P=year_in_days, e=0
 ##########################################################
 
 #Test that a Blaauw kick removing a bit more than half of the mass of a system unbinds the orbit, and one just below does not
-orbit_bound =   SideKicks.post_supernova_circular_orbit_a(m1=10, m2=20, a=au, m2_f=5.0001) 
-orbit_unbound = SideKicks.post_supernova_circular_orbit_a(m1=10, m2=20, a=au, m2_f=4.9999) 
+orbit_bound =   SideKicks.post_supernova_circular_orbit_a(m1=10*m_sun, m2=20*m_sun, a=au, m2_f=5.0001*m_sun) 
+orbit_unbound = SideKicks.post_supernova_circular_orbit_a(m1=10*m_sun, m2=20*m_sun, a=au, m2_f=4.9999*m_sun) 
 @test !isnan(orbit_bound[1]) && isnan(orbit_unbound[1])
 
 #Repeat using post_kick_parameters_P
-orbit_bound =   SideKicks.post_supernova_circular_orbit_P(m1=10, m2=20, P=10, m2_f=5.0001) 
-orbit_unbound = SideKicks.post_supernova_circular_orbit_P(m1=10, m2=20, P=10, m2_f=4.9999) 
+orbit_bound =   SideKicks.post_supernova_circular_orbit_P(m1=10*m_sun, m2=20*m_sun, P=10*day, m2_f=5.0001*m_sun) 
+orbit_unbound = SideKicks.post_supernova_circular_orbit_P(m1=10*m_sun, m2=20*m_sun, P=10*day, m2_f=4.9999*m_sun) 
 @test !isnan(orbit_bound[1]) && isnan(orbit_unbound[1])
 
 # Generic test values for following kick functions - only use the ones needed
-m1 = 10
-m2 = 15
+m1 = 10*m_sun
+m2 = 15*m_sun
 m1_f = 0.9*m1
 m2_f = 0.8*m2
-vkick=30 
-vimp=20
+vkick=30*km_per_s
+vimp=20*km_per_s
 θ=π/4
 ϕ=π/3
 a=au
@@ -50,7 +50,7 @@ P=SideKicks.kepler_P_from_a(m1=m1, m2=m2, a=a)
 orbit_kick_a = SideKicks.post_supernova_circular_orbit_a(m1=m1, m2=m2, a=a, m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=0)
 orbit_kick_P = SideKicks.post_supernova_circular_orbit_P(m1=m1, m2=m2, P=P, m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=0)
 #test period
-@test isapprox(orbit_kick_P[1], SideKicks.kepler_P_from_a( m1=m1, m2=m2_f, a=orbit_kick_a[1]))
+@test orbit_kick_P[1] ≈ SideKicks.kepler_P_from_a( m1=m1, m2=m2_f, a=orbit_kick_a[1]) rtol=0.01
 #test eccentricity
 @test orbit_kick_a[2]==orbit_kick_P[2]
 
@@ -58,7 +58,7 @@ orbit_kick_P = SideKicks.post_supernova_circular_orbit_P(m1=m1, m2=m2, P=P, m2_f
 orbit_kick_a = SideKicks.post_supernova_circular_orbit_a(m1=m1, m2=m2, a=a, m1_f=m1_f, m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=vimp)
 orbit_kick_P = SideKicks.post_supernova_circular_orbit_P(m1=m1, m2=m2, P=P, m1_f=m1_f, m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=vimp)
 #test period
-@test isapprox(orbit_kick_P[1], SideKicks.kepler_P_from_a( m1=m1_f, m2=m2_f, a=orbit_kick_a[1]))
+@test orbit_kick_P[1] ≈ SideKicks.kepler_P_from_a( m1=m1_f, m2=m2_f, a=orbit_kick_a[1]) rtol=0.01
 #test eccentricity
 @test orbit_kick_a[2]==orbit_kick_P[2]
 
@@ -84,17 +84,17 @@ params = SideKicks.post_supernova_general_orbit_parameters(m1=m1, m2=m2, a=a, e=
 params_cir_orbit = SideKicks.post_supernova_circular_orbit_a(        m1=m1, m2=m2, a=a,  m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=0) 
 params_gen_orbit = SideKicks.post_supernova_general_orbit_parameters(m1=m1, m2=m2, a=a,  m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=0, e=0) 
 #test semi-major axis
-@test isapprox(params_cir_orbit[1], params_gen_orbit[1])
+@test params_cir_orbit[1] ≈ params_gen_orbit[1] rtol=0.01
 #test eccentricity
-@test isapprox(params_cir_orbit[2], params_gen_orbit[2])
+@test params_cir_orbit[2] ≈ params_gen_orbit[2] rtol=0.01
 
 # Check that the generalized kick and the circularized kick are equal when ecc = 0 but vimp != 0
 params_cir_orbit = SideKicks.post_supernova_circular_orbit_a(        m1=m1, m2=m2, a=a,  m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=vimp) 
 params_gen_orbit = SideKicks.post_supernova_general_orbit_parameters(m1=m1, m2=m2, a=a,  m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=vimp, e=0) 
 #test semi-major axis
-@test isapprox(params_cir_orbit[1], params_gen_orbit[1])
+@test params_cir_orbit[1] ≈ params_gen_orbit[1]
 #test eccentricity
-@test isapprox(params_cir_orbit[2], params_gen_orbit[2])
+@test params_cir_orbit[2] ≈ params_gen_orbit[2]
 
 
 ##########################################################
@@ -106,7 +106,7 @@ params_gen_orbit = SideKicks.post_supernova_general_orbit_parameters(m1=m1, m2=m
 #m1 = 10
 #m2 = 15
 #m2_f = 15
-#P = 50 # days
+#P = 50 # day
 #a = SideKicks.kepler_a_from_P( m1=m1, m2=m2, P=P)
 #vkick = 0
 #vim = 0
@@ -141,7 +141,7 @@ params_gen_orbit = SideKicks.post_supernova_general_orbit_parameters(m1=m1, m2=m
 #m1 = 10
 #m2 = 15
 #m2_f = 15
-#P = 50 # days
+#P = 50 # day
 #a = SideKicks.kepler_a_from_P(P,m1,m2)
 #vkick = 0
 #vim = 0
@@ -173,7 +173,7 @@ params_gen_orbit = SideKicks.post_supernova_general_orbit_parameters(m1=m1, m2=m
 #m1 = 10
 #m2 = 15
 #m2_f = m2
-#P = 50 # days
+#P = 50 # day
 #a = SideKicks.kepler_a_from_P(P,m1,m2)
 #vkick = 100e5
 #θ = 2
@@ -207,7 +207,7 @@ params_gen_orbit = SideKicks.post_supernova_general_orbit_parameters(m1=m1, m2=m
 #m1 = 10
 #m2 = 15
 #m2_f = 10
-#P = 50 # days
+#P = 50 # day
 #a = SideKicks.kepler_a_from_P(P,m1,m2)
 #θ = π
 #ϕ = 0
@@ -240,7 +240,7 @@ params_gen_orbit = SideKicks.post_supernova_general_orbit_parameters(m1=m1, m2=m
 #m1 = 10
 #m2 = 15
 #m2_f = 10
-#P = 50 # days
+#P = 50 # day
 #a = SideKicks.kepler_a_from_P(P,m1,m2)
 #θ = π
 #ϕ = 0
