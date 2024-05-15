@@ -17,10 +17,10 @@ Obtain semimajor axis from period using Kepler's third law
 - P:  orbital period          [d]
 
 # Output:
-- a: semi-major axis of the orbit [cm]
+- a: semi-major axis of the orbit [Rsun]
 """
 function kepler_a_from_P(;m1, m2, P)
-    return @. cbrt((P*day_in_sec)^2 *(m1+m2)*cgrav*m_sun/(4.0*π^2))
+    return @. cbrt((P*day_in_sec)^2 *(m1+m2)*cgrav*m_sun/(4.0*π^2))/r_sun
 end
 
 """
@@ -31,13 +31,13 @@ Obtain period from semimajor axis using Kepler's third law
 # Arguments:
 - m1: mass of first companion      [Msun]
 - m2: mass of 2nd companion        [Msun]
-- a:  semi-major axis of the orbit [cm]
+- a:  semi-major axis of the orbit [Rsun]
 
 # Output:
 - P: the orbital period            [d]
 """
 function kepler_P_from_a(;m1, m2, a)
-    return @. sqrt(4.0*π^2*a^3 /((m1+m2)*cgrav*m_sun))/(day_in_sec)
+    return @. sqrt(4.0*π^2*(a*r_sun)^3 /((m1+m2)*cgrav*m_sun))/(day_in_sec)
 end
 
 
@@ -49,13 +49,13 @@ Calculate the relative orbital velocity for a circular orbit.
 # Arguments:
 - m1: mass of first companion        [Msun]
 - m2: mass of 2nd companion          [Msun]
-- a:  semi-major axis of the orbit   [cm]
+- a:  semi-major axis of the orbit   [Rsun]
 
 # Output:
-- v_orb: the relative velocity [km/s]
+- v_rel: the relative velocity [km/s]
 """
 function relative_velocity(;m1, m2, a)
-    return @. sqrt(cgrav*(m1+m2)*m_sun/ a)/(km) 
+    return @. sqrt(cgrav*(m1+m2)*m_sun/ (a*r_sun))/km 
 end
 
 
@@ -75,7 +75,7 @@ Compute the amplitude of radial velocity variations given orbital parameters and
 - K1: amplitude of radial velocity variation of star 1  [km/s]
 """
 function RV_semiamplitude_K1(;m1, m2, P, e, i)
-    return @. (m2*sin(i))*cbrt(2*π*cgrav/(P*day_in_sec)*m_sun/(m2+m1)^2)/sqrt(1-e^2)/(km) #semi amplitude of RV variation in km/s
+    return @. (m2*sin(i))*cbrt(2*π*cgrav/(P*day_in_sec)*m_sun/(m2+m1)^2)/sqrt(1-e^2)/km #semi amplitude of RV variation in km/s
     
 end
 
@@ -95,7 +95,7 @@ from Tauris & Takens (1999), except that here we have M2 as the exploding star.
 # Arguments:
 - m1:  pre-explosion  mass of non-exploding component   [Msun]           
 - m2:  pre-explosion  mass of exploding component       [Msun]       
-- a:   pre-explosion orbital separation                 [cm]
+- a:   pre-explosion orbital separation                 [Rsun]
 - m1_f:  post-explosion mass of non-exploding component [Msun]           
 - m2_f:  post-explosion mass of exploding component     [Msun]   
 - vkick: kick velocity                                  [km/s] 
@@ -104,7 +104,7 @@ from Tauris & Takens (1999), except that here we have M2 as the exploding star.
 - vimp:  imparted kick velocity on companion            [km/s]     
     
 # Output:
-- a_f: post-explosion orbital separation                [cm]
+- a_f: post-explosion orbital separation                [Rsun]
 - e_f: post-explosion excentricity                      [dimensionless]
 """
 function post_supernova_circular_orbit_a(;m1, m2, a, m1_f=-1, m2_f, vkick=0, θ=0, ϕ=0, vimp=0)
@@ -204,7 +204,7 @@ Compute post-kick properties for a circular pre-explosion orbit using equations 
 # Arguments:
 - m1:  pre-explosion  mass of non-exploding component   [Msun]           
 - m2:  pre-explosion  mass of exploding component       [Msun]       
-- a:   pre-explosion orbital separation                 [cm]
+- a:   pre-explosion orbital separation                 [Rsun]
 - m1_f:  post-explosion mass of non-exploding component [Msun]           
 - m2_f:  post-explosion mass of exploding component     [Msun]   
 - vkick: kick velocity                                  [km/s] 
@@ -237,7 +237,7 @@ function post_supernova_circular_orbit_vsys(;m1, m2, a, m1_f=-1, m2_f, vkick=0, 
     Δp_x = (m2_f*m1 - m2*m1_f)/(m2 + m1)*vrel + m2_f*vkick*cosθ
     Δp_y = m1_f*vimp + m2_f*vkick*sinθ*cosϕ
     Δp_z = m2_f*vkick*sinθ*sinϕ
-    vsys_f = sqrt(Δp_x^2 + Δp_y^2 + Δp_z^2)/(m2_f + m1_f)/(km)
+    vsys_f = sqrt(Δp_x^2 + Δp_y^2 + Δp_z^2)/(m2_f + m1_f)/km
 
     return vsys_f
 end
@@ -260,7 +260,7 @@ using equations from [Marchant, Willcox, Vigna-Gomez] TODO
 # Arguments:
 - m1:  pre-explosion  mass of non-exploding component    [Msun]           
 - m2:  pre-explosion  mass of exploding component        [Msun]       
-- a:   pre-explosion orbital separation                  [cm]
+- a:   pre-explosion orbital separation                  [Rsun]
 - e:   pre-explosion orbital eccentricity                [dimensionless]
 - m1_f:  post-explosion mass of non-exploding component  [Msun]           
 - m2_f:  post-explosion mass of exploding component      [Msun]   
@@ -276,7 +276,7 @@ using equations from [Marchant, Willcox, Vigna-Gomez] TODO
     - i: pre-explosion inclination                       [rad]
     
 # Output: RTW: check! 
-- a_f:   post-explosion orbital separation               [cm]
+- a_f:   post-explosion orbital separation               [Rsun]
 - e_f:   post-explosion orbital eccentricity             [dimensionless]
 - Ω_f:   post-explosion longitude of ascending node      [rad]      
 - ω_f:   post-explosion argument of periastron           [rad]    
@@ -311,7 +311,7 @@ function post_supernova_general_orbit_parameters(;m1, m2, a, e=0, m1_f=-1, m2_f,
     f_ν = (1 - e^2)/(1 + e*cosν)
     g_ν = sqrt((1 + 2*e*cosν + e^2)/(1 - e^2))
 
-    v_rel = g_ν*sqrt(cgrav*M/a)/(km)
+    v_rel = g_ν*sqrt(cgrav*M/(a*r_sun))/km
 
     h_ν = -e*sinν/sqrt(1 + 2*e*cosν + e^2)
     j_ν = (1 + e*cosν)/sqrt(1 + 2*e*cosν + e^2)
@@ -325,12 +325,12 @@ function post_supernova_general_orbit_parameters(;m1, m2, a, e=0, m1_f=-1, m2_f,
         return (NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN)
     end
 
-    a_f = f_ν*a/(2-ξ)
+    a_f = f_ν*a/(2 - ξ)
 
-    Lvec_norm = sqrt(α^2*sinθ^2*sinϕ^2+(h_ν*α*sinθ*cosϕ-j_ν*(1+α*cosθ))^2)
+    Lvec_norm = sqrt(α^2*sinθ^2*sinϕ^2 + (h_ν*α*sinθ*cosϕ - j_ν*(1 + α*cosθ))^2)
     η = f_ν*g_ν^2*M/M_f*Lvec_norm^2
 
-    e_f = sqrt(1+(ξ-2)*η)
+    e_f = sqrt(1 + (ξ - 2)*η)
 
     #angle between x and direction of motion
     # perhaps can be skipped to save some time, just get directly cos and sin

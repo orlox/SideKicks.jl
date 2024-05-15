@@ -30,14 +30,14 @@ and kick properties of a system, assuming pre-explosion eccentricity.
 """
 function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values::Vector{Float64}, observed_errors::Vector{Float64};
     bhModel = arbitraryEjectaBH,
-    logm1_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), 
-    logm2_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3),
-    logP_i_dist::ContinuousUnivariateDistribution = Uniform(-1,3),
+    logm1_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), 
+    logm2_dist::ContinuousUnivariateDistribution = Uniform(0.1,3),
+    logP_dist::ContinuousUnivariateDistribution = Uniform(-1,3),
     e_dist::ContinuousUnivariateDistribution = Uniform(0,0.01),
     vkick_dist::ContinuousUnivariateDistribution = Exponential(1), # in 100 km/s
-    vsys_N_i_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
-    vsys_E_i_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
-    vsys_r_i_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
+    vsys_N_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
+    vsys_E_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
+    vsys_r_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
     frac_dist::ContinuousUnivariateDistribution = Uniform(0,1.0))
 
     # provided observed values
@@ -51,14 +51,14 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
     @model function kick_model(obs::Vector{Symbol}, obs_vals::Vector{Float64}, obs_errs::Vector{Float64})
         # set priors
         #Pre-explosion masses and orbital period
-        logm1_i ~ logm1_i_dist
-        m1_i = 10^(logm1_i)
-        logm2_i ~ logm2_i_dist
-        m2_i = 10^(logm2_i)
-        logP_i ~ logP_i_dist
-        P_i = 10^(logP_i)
-        a_i = kepler_a_from_P(;m_1=m1_i, m_2=m2_i, P=P_i)
-        e_i ~ e_dist
+        logm1 ~ logm1_dist
+        m1 = 10^(logm1)
+        logm2 ~ logm2_dist
+        m2 = 10^(logm2)
+        logP ~ logP_dist
+        P = 10^(logP)
+        a = kepler_a_from_P(;m1=m1, m2=m2, P=P)
+        e ~ e_dist
         cosi ~ Uniform(0,1)
         sini = sqrt(1-cosi^2)
         #azimuthal angles are computed by sampling random points with a circularly symmetric distribution
@@ -66,51 +66,45 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
         xν ~ Normal()
         yν ~ Normal()
         normν = 1/sqrt(xν^2+yν^2)
-        cosν_i = xν*normν
-        ν_i = arccos(cosν_i)
-        #sinν = yν*normν
+        cosν = xν*normν
+        ν = arccos(cosν)
         xΩ ~ Normal()
         yΩ ~ Normal()
         normΩ = 1/sqrt(xΩ^2+yΩ^2)
-        cosΩ_i = xΩ*normΩ
-        Ω_i = arccos(cosΩ_i)
-        #sinΩ = yΩ*normΩ
+        cosΩ = xΩ*normΩ
+        Ω = arccos(cosΩ)
         xω ~ Normal()
         yω ~ Normal()
         normω = 1/sqrt(xω^2+yω^2)
-        cosω_i = xω*normω
-        ω_i = arccos(cosω_i)
-        #sinω = yω*normω
+        cosω = xω*normω
+        ω = arccos(cosω)
 
         #Post-explosion masses
         frac ~ frac_dist
-        m2_f = bhModel(m2_i, frac) # star 2 explodes, star 1 is kept fixed
+        m2_f = bhModel(m2, frac) # star 2 explodes, star 1 is kept fixed
 
         #Kick parameters
         vkick ~ vkick_dist
-        # RTW what units is this in?
         cosθ ~ Uniform(-1,1)
         θ = arccos(θ)
-        #sinθ = sqrt(1-cosθ^2)
         xϕ ~ Normal(0,1)
         yϕ ~ Normal(0,1)
         normϕ = 1/sqrt(xϕ^2+yϕ^2)
         cosϕ = xϕ*normϕ
         ϕ = arccos(ϕ)
-        #sinϕ = yϕ*normϕ
 
         #Initial systemic velocity parameters
-        v_N_i ~ vsys_N_i_dist*1e7         # in cm/s
-        v_E_i ~ vsys_E_i_dist*1e7         # in cm/s
-        v_r_i ~ vsys_r_i_dist*1e7         # in cm/s
+        v_N ~ vsys_N_dist*1e7         # in cm/s
+        v_E ~ vsys_E_dist*1e7         # in cm/s
+        v_r ~ vsys_r_dist*1e7         # in cm/s
 
         #m1 is assumed to remain constant, no impact velocity
         a_f, e_f, Ω_f, ω_f, i_f, v_n, v_e, v_rad = 
-            post_supernova_general_orbit_parameters(;m_1i=m1_i, m_2i=m2_i, a_i=a_i, e_i=e_i, m_2f=m2_f, 
-                vkick=vkick*100, θ=θ, ϕ=ϕ, ν_i=ν_i, Ω_i=Ω_i, ω_i=ω_i, i_i=i_i)
-        P_f = kepler_P_from_a(;m_1=m1_i, m_2=m2_f, a=a_f)
-        K1 = RV_semiamplitude_K1(;m_1=m1_i, m_2=m2_f, P=P_f, e=e_f, i=i_f)
-        K2 = RV_semiamplitude_K1(;m_1=m2_f, m_2=m1_i, P=P_f, e=e_f, i=i_f)
+            post_supernova_general_orbit_parameters(;m1=m1, m2=m2, a=a, e=e, m2_f=m2_f, 
+                vkick=vkick*100, θ=θ, ϕ=ϕ, ν=ν, Ω=Ω, ω=ω, i=i)
+        P_f = kepler_P_from_a(;m1=m1, m2=m2_f, a=a_f)
+        K1 = RV_semiamplitude_K1(;m1=m1, m2=m2_f, P=P_f, e=e_f, i=i_f)
+        K2 = RV_semiamplitude_K1(;m1=m2_f, m2=m1, P=P_f, e=e_f, i=i_f)
 
         for i in eachindex(obs)
             obs_symbol = obs[i]
@@ -123,7 +117,7 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
             elseif obs_symbol == :K2
                 obs_vals[i] ~ Cauchy(K2, obs_errs[i])
             elseif obs_symbol == :m1
-                obs_vals[i] ~ Cauchy(m1_i, obs_errs[i])
+                obs_vals[i] ~ Cauchy(m1, obs_errs[i])
             elseif obs_symbol == :m2
                 obs_vals[i] ~ Cauchy(m2_f, obs_errs[i])
             elseif obs_symbol == :Ω
@@ -135,11 +129,11 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
             elseif obs_symbol == :i
                 obs_vals[i] ~ Cauchy(i_f, obs_errs[i])
             elseif obs_symbol == :v_N
-                obs_vals[i] ~ Cauchy(v_N - v_N_i, obs_errs[i])
+                obs_vals[i] ~ Cauchy(v_N - v_N, obs_errs[i])
             elseif obs_symbol == :v_E
-                obs_vals[i] ~ Cauchy(v_E - v_E_i, obs_errs[i])
+                obs_vals[i] ~ Cauchy(v_E - v_E, obs_errs[i])
             elseif obs_symbol == :v_r
-                obs_vals[i] ~ Cauchy(v_r - v_r_i, obs_errs[i])
+                obs_vals[i] ~ Cauchy(v_r - v_r, obs_errs[i])
             end
         end
     end
@@ -165,9 +159,9 @@ and kick properties of a system, assuming pre-explosion circularity.
 """
 function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_values::Vector{Float64}, observed_errors::Vector{Float64};
     bhModel = arbitraryEjectaBH,
-    logm1_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), 
-    logm2_i_dist::ContinuousUnivariateDistribution = Uniform(0.1,3),
-    logP_i_dist::ContinuousUnivariateDistribution = Uniform(-1,3),
+    logm1_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), 
+    logm2_dist::ContinuousUnivariateDistribution = Uniform(0.1,3),
+    logP_dist::ContinuousUnivariateDistribution = Uniform(-1,3),
     vkick_dist::ContinuousUnivariateDistribution = Exponential(1),
     frac_dist::ContinuousUnivariateDistribution = Uniform(0,1.0))
 
@@ -182,19 +176,19 @@ function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_va
     @model function kick_model(obs::Vector{Symbol}, obs_vals::Vector{Float64}, obs_errs::Vector{Float64})
         # set priors
         #Pre-explosion masses and orbital period
-        logm1_i ~ logm1_i_dist
-        m1_i = 10^(logm1_i)
-        logm2_i ~ logm2_i_dist
-        m2_i = 10^(logm2_i)
-        logP_i ~ logP_i_dist
-        P_i = 10^(logP_i)
-        a_i = kepler_a_from_P(;m_1=m1_i, m_2=m2_i, P=P_i)
+        logm1 ~ logm1_dist
+        m1 = 10^(logm1)
+        logm2 ~ logm2_dist
+        m2 = 10^(logm2)
+        logP ~ logP_dist
+        P = 10^(logP)
+        a = kepler_a_from_P(;m1=m1, m2=m2, P=P)
         cosi ~ Uniform(0,1)
         i_f = acos(cosi)
 
         #Post-explosion masses
         frac ~ frac_dist
-        m2_f = bhModel(m2_i, frac) # star 2 explodes, star 1 is kept fixed
+        m2_f = bhModel(m2, frac) # star 2 explodes, star 1 is kept fixed
 
         #Kick parameters
         vkick ~ vkick_dist
@@ -207,9 +201,9 @@ function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_va
         ϕ = acos(cosϕ)
 
         #m1 is assumed to remain constant
-        a_f, e_f = post_supernova_circular_orbit_a(;m_1i=m1_i, m_2i=m2_i, a_i=a_i, m_2f=m2_f, vkick=100*vkick, θ=θ, ϕ=ϕ)
-        P_f = kepler_P_from_a(;m_1=m1_i, m_2=m2_i, a=a_i)
-        K1 = RV_semiamplitude_K1(;m_1=m1_i, m_2=m2_f, P=P_f, e=e_f, i=i_f)
+        a_f, e_f = post_supernova_circular_orbit_a(;m1=m1, m2=m2, a=a, m2_f=m2_f, vkick=100*vkick, θ=θ, ϕ=ϕ)
+        P_f = kepler_P_from_a(;m1=m1, m2=m2, a=a)
+        K1 = RV_semiamplitude_K1(;m1=m1, m2=m2_f, P=P_f, e=e_f, i=i_f)
 
         for i in eachindex(obs)
             obs_symbol = obs[i]
@@ -222,7 +216,7 @@ function createSimpleCircularMCMCModel(observations::Vector{Symbol}, observed_va
             elseif obs_symbol == :K2
                 obs_vals[i] ~ Cauchy(K2, obs_errs[i])
             elseif obs_symbol == :m1
-                obs_vals[i] ~ Cauchy(m1_i, obs_errs[i])
+                obs_vals[i] ~ Cauchy(m1, obs_errs[i])
             elseif obs_symbol == :m2
                 obs_vals[i] ~ Cauchy(m2_f, obs_errs[i])
             end
@@ -257,39 +251,39 @@ function extract_chain(chain, observations, observed_values, observed_errors,
 
 
     res = Dict()
-    res[:logm1_i] = reduce(vcat,chain[:logm1_i])
-    res[:m1_i] = 10 .^ res[:logm1_i]
-    res[:logm2_i] = reduce(vcat,chain[:logm2_i])
-    res[:m2_i] = 10 .^ res[:logm2_i]
-    res[:logP_i] = reduce(vcat,chain[:logP_i])
-    res[:P_i] = 10 .^ res[:logP_i]
-    res[:a_i] = kepler_a_from_P.(;m_1=res[:m1_i], m_2=res[:m2_i], P=res[:P_i])
+    res[:logm1] = reduce(vcat,chain[:logm1])
+    res[:m1] = 10 .^ res[:logm1]
+    res[:logm2] = reduce(vcat,chain[:logm2])
+    res[:m2] = 10 .^ res[:logm2]
+    res[:logP] = reduce(vcat,chain[:logP])
+    res[:P] = 10 .^ res[:logP]
+    res[:a] = kepler_a_from_P.(;m1=res[:m1], m2=res[:m2], P=res[:P])
     if model_type==:simple
-        res[:e_i] = zeros(length(res[:a_i]))
+        res[:e] = zeros(length(res[:a]))
     elseif model_type==:general
-        res[:e_i] = reduce(vcat,chain[:e])
+        res[:e] = reduce(vcat,chain[:e])
     else
         throw(ArgumentError("model_type=:$model_type is an invalid option"))
     end
     if model_type==:general
-        res[:ν_i] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xν],chain[:yν])]))
-        res[:Ω_i] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xΩ],chain[:yΩ])]))
-        res[:ω_i] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xω],chain[:yω])]))
-        res[:i_i] = reduce(vcat,[acos(x) for x in chain[:cosi]])
+        res[:ν] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xν],chain[:yν])]))
+        res[:Ω] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xΩ],chain[:yΩ])]))
+        res[:ω] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xω],chain[:yω])]))
+        res[:i] = reduce(vcat,[acos(x) for x in chain[:cosi]])
     end
     res[:frac] = reduce(vcat,chain[:frac])
-    res[:m2_f] = bhModel.(res[:m2_i],res[:frac])
-    res[:ejecta_mass] = res[:m2_i] .- res[:m2_f]
+    res[:m2_f] = bhModel.(res[:m2],res[:frac])
+    res[:ejecta_mass] = res[:m2] .- res[:m2_f]
     res[:vkick] = reduce(vcat,chain[:vkick])*100 # MCMC is done in units of 100 km/s, turn into km/s
     res[:θ] = reduce(vcat,[acos(x) for x in chain[:cosθ]])
     res[:ϕ] = reduce(vcat,shift_range.([atan(y,x) for (x,y) in zip(chain[:xϕ],chain[:yϕ])]))
     if model_type==:general
-        res[:v_N_i] = reduce(vcat,chain[:v_N_i])
-        res[:v_E_i] = reduce(vcat,chain[:v_E_i])
-        res[:v_r_i] = reduce(vcat,chain[:v_r_i])
+        res[:v_N] = reduce(vcat,chain[:v_N])
+        res[:v_E] = reduce(vcat,chain[:v_E])
+        res[:v_r] = reduce(vcat,chain[:v_r])
     end 
 
-    sample_num = length(res[:a_i])
+    sample_num = length(res[:a])
     if model_type==:general
         res[:a_f] = Vector{Float64}(undef, sample_num)
         res[:e_f] = Vector{Float64}(undef, sample_num)
@@ -301,15 +295,15 @@ function extract_chain(chain, observations, observed_values, observed_errors,
         res[:i_f] = Vector{Float64}(undef, sample_num)
         for i in 1:sample_num
             a_f, e_f, Ω_f, ω_f, i_f, v_n, v_e, v_rad = 
-            post_supernova_general_orbit_parameters(; m_1i= res[:m1_i][i], m_2i= res[:m2_i][i],
-                a_i= res[:a_i][i], e_i= res[:e_i][i], m_2f= res[:m2_f][i], vkick= res[:vkick][i], 
-                θ= res[:θ][i], ϕ= res[:ϕ][i], ν_i= res[:ν_i][i], Ω_i= res[:Ω_i][i], ω_i= res[:ω_i][i], i_i= res[:i_i][i])
+            post_supernova_general_orbit_parameters(; m1= res[:m1][i], m2= res[:m2][i],
+                a= res[:a][i], e= res[:e][i], m2_f= res[:m2_f][i], vkick= res[:vkick][i], 
+                θ= res[:θ][i], ϕ= res[:ϕ][i], ν= res[:ν][i], Ω= res[:Ω][i], ω= res[:ω][i], i= res[:i][i])
 
             res[:a_f][i] = a_f
             res[:e_f][i] = e_f
-            res[:v_N][i] = v_N + res[:v_N_i][i]
-            res[:v_E][i] = v_E + res[:v_E_i][i]
-            res[:v_r][i] = v_r + res[:v_r_i][i]
+            res[:v_N][i] = v_N + res[:v_N][i]
+            res[:v_E][i] = v_E + res[:v_E][i]
+            res[:v_r][i] = v_r + res[:v_r][i]
             res[:Ω_f][i] = Ω_f
             res[:ω_f][i] = ω_f
             res[:i_f][i] = i_f
@@ -318,16 +312,16 @@ function extract_chain(chain, observations, observed_values, observed_errors,
         res[:a_f] = Vector{Float64}(undef, sample_num)
         res[:e_f] = Vector{Float64}(undef, sample_num)
         for i in 1:sample_num
-            a_f, e_f = post_supernova_circular_orbit_a(; m_1i=res[:m1_i][i], m_2i=res[:m2_i][i], 
-                                                         a_i=res[:a_i][i], m_2f=res[:m2_f][i], vkick=res[:vkick][i], θ=res[:θ][i], ϕ=res[:ϕ][i])
+            a_f, e_f = post_supernova_circular_orbit_a(; m1=res[:m1][i], m2=res[:m2][i], 
+                                                         a=res[:a][i], m2_f=res[:m2_f][i], vkick=res[:vkick][i], θ=res[:θ][i], ϕ=res[:ϕ][i])
             res[:a_f][i] = a_f
             res[:e_f][i] = e_f
         end
         res[:i_f] = reduce(vcat,[acos(x) for x in chain[:cosi]])
     end
-    res[:P_f] = kepler_P_from_a.(; m_1=res[:m1_i], m_2=res[:m2_f], a=res[:a_f])
-    res[:K1] = RV_semiamplitude_K1.(;m_1=res[:m1_i], m_2=res[:m2_f], P=res[:P_f], e=res[:e_f], i=res[:i_f])
-    res[:K2] = RV_semiamplitude_K1.(;m_1=res[:m2_f], m_2=res[:m1_i], P=res[:P_f], e=res[:e_f], i=res[:i_f])
+    res[:P_f] = kepler_P_from_a.(; m1=res[:m1], m2=res[:m2_f], a=res[:a_f])
+    res[:K1] = RV_semiamplitude_K1.(;m1=res[:m1], m2=res[:m2_f], P=res[:P_f], e=res[:e_f], i=res[:i_f])
+    res[:K2] = RV_semiamplitude_K1.(;m1=res[:m2_f], m2=res[:m1], P=res[:P_f], e=res[:e_f], i=res[:i_f])
     #compute weights in log first
     res[:weight] = zeros(Float64,sample_num)
     for j in 1:sample_num
@@ -349,8 +343,8 @@ function extract_chain(chain, observations, observed_values, observed_errors,
                 dist2 = Normal(res[:K2][j], observed_errors[i])
                 res[:weight][j] += logpdf(dist2,observed_values[i])-logpdf(dist1,observed_values[i])
             elseif obs_symbol == :m1
-                dist1 = Cauchy(res[:m1_i][j], observed_errors[i])
-                dist2 = Normal(res[:m1_i][j], observed_errors[i])
+                dist1 = Cauchy(res[:m1][j], observed_errors[i])
+                dist2 = Normal(res[:m1][j], observed_errors[i])
                 res[:weight][j] += logpdf(dist2,observed_values[i])-logpdf(dist1,observed_values[i])
             elseif obs_symbol == :m2
                 dist1 = Cauchy(res[:m2_f][j], observed_errors[i])
@@ -404,7 +398,7 @@ function extract_chain(chain, observations, observed_values, observed_errors,
 
     # if we did a general model, we need to weight the true anomaly
     if model_type==:general
-        res[:weight] .= res[:weight].*sqrt.(1 .- res[:e_f].^2).^3 ./ (1 .+ res[:e_f].*cos.(res[:ν_i])).^2
+        res[:weight] .= res[:weight].*sqrt.(1 .- res[:e_f].^2).^3 ./ (1 .+ res[:e_f].*cos.(res[:ν])).^2
     end
 
     return res
