@@ -129,7 +129,7 @@ function post_supernova_circular_orbit_a(;m1, m2, a, m1_f=-1.0, m2_f, vkick=0.0,
 
     # Orbital parameters
     a_f = a/(2-ξ)
-    e_f = sqrt(1 + (ξ-2)*η)
+    e_f = sqrt(1 + (ξ-2)*η + 1e-10) # including safety floor
 
     return (a_f, e_f)
 end
@@ -289,7 +289,7 @@ function post_supernova_general_orbit_parameters(;m1, m2, a, e=0, m1_f=-1, m2_f,
     a_f = f_ν*a/(2 - ξ)
     Lvec_norm = sqrt(α^2*sinθ^2*sinϕ^2 + (h_ν*α*sinθ*cosϕ - j_ν*(1 + α*cosθ))^2)
     η = f_ν*g_ν^2*M/M_f*Lvec_norm^2
-    e_f = sqrt(1 + (ξ - 2)*η)
+    e_f = sqrt(1 + (ξ-2)*η + 1e-10) # including safety floor
 
     #angle between x and direction of motion
     # perhaps can be skipped to save some time, just get directly cos and sin
