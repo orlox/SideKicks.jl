@@ -1,3 +1,7 @@
+"""
+Main module for `SideKicks.jl` -- a analysis package for performing parameter inference on compact object stellar binaries.
+
+"""
 module SideKicks
 
 include("Constants.jl")

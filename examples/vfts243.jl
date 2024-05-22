@@ -5,11 +5,11 @@ using BenchmarkTools
 
 observed_values2 = [10.4031, 0.017, 25.0, 81.4]
 observed_errors2 = [0.01, 0.012, 2.3, 1.3]
-obs2 = [:P,:e,:m1, :K1]
+obs2 = [:P, :e, :m1, :K1]
 
 ##
 example_model2 = SideKicks.createSimpleCircularMCMCModel(obs2, observed_values2, observed_errors2);
-iterations = 200_000
+iterations = 2_000
 @time chain2 = sample(example_model2, NUTS(5_000,0.8), MCMCThreads(), iterations, 8);
 
 ##
