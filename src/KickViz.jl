@@ -25,21 +25,43 @@ export create_corner_plot, create_2D_density, create_1D_density
 #TODO
 - 
 """
-function create_corner_plot(chain_values, names, label_names, units, fractions, fraction_1D, figure; show_CIs=false, ranges=missing, nbins=100, supertitle=nothing)
-    #f = figure[0:2, 1] = GridLayout()
-    f = figure
 
-    if ismissing(ranges)
-        ranges = [missing for i in 1:length(names)]
+function create_corner_plot(results, plotting_props; 
+        fig=Figure(), supertitle=missing,
+        fractions=[0.68,0.95,0.997], fraction_1D=0.68, 
+        show_CIs=false, nbins=100)
+
+    props = plotting_props.props
+    units = plotting_props.units
+    label_names=plotting_props.names_latex
+    ranges = plotting_props.ranges
+
+    # Checks on the input
+    
+    #Confirm requested props exist
+    available_props = keys(results)
+    for prop ∈ props
+        if prop ∉ available_props
+            throw(DomainError(prop, "Allowed props are only "*[String(aprop) for aprop in available_props] ))
+        end
     end
-   
-    num_col = length(names)-1
+
+    #Add ranges if none supplied
+    num_props = length(props)
+    if ismissing(ranges)
+        ranges = Vector{Any}(undef, num_props) 
+        for i in 1:num_props
+            values = vec(results[props[i]])/units[i]
+            ranges[i] = [minimum(values), maximum(values)]
+        end
+    end
+
+    # Create 2D density plots
+    num_col = num_props-1
     for i in 1:num_col
         for  j in i+1:num_col+1
-            axis = Axis(f[j,i],xtickalign=1,xtickcolor = :white,ytickalign=1,ytickcolor = :white, 
-                        xlabel=label_names[i], ylabel=label_names[j])
-
-            create_2D_density(chain_values[names[i]]/units[i], ranges[i], chain_values[names[j]]/units[j], ranges[j], chain_values[:weight],fractions, axis, nbins)
+            axis = Axis(fig[j,i], xtickalign=1, xtickcolor = :white, ytickalign=1, ytickcolor = :white, xlabel=label_names[i], ylabel=label_names[j])
+            create_2D_density(vec(results[props[i]])/units[i], ranges[i], vec(results[props[j]])/units[j], ranges[j], vec(results[:weights]), fractions, axis, nbins)
             if i>1
                 hideydecorations!(axis, ticks=false, minorticks=false)
             end
@@ -47,12 +69,11 @@ function create_corner_plot(chain_values, names, label_names, units, fractions, 
                 hidexdecorations!(axis,ticks=false, minorticks=false)
             end         
         end  
-   
     end 
+    # Create 1D PDFs along the diagonal
     for i in 1:num_col+1
-        axis = Axis(f[i,i], xgridvisible = false, ygridvisible = false,xtickalign=1,
-                    xlabel=label_names[i])
-        (xmin, xmode, xmax) = create_1D_density(chain_values[names[i]]/units[i], ranges[i], chain_values[:weight], fraction_1D,axis, nbins)
+        axis = Axis(fig[i,i], xgridvisible = false, ygridvisible = false, xtickalign=1, xlabel=label_names[i])
+        (xmin, xmode, xmax) = create_1D_density(vec(results[props[i]])/units[i], ranges[i], vec(results[:weights]), fraction_1D,axis, nbins)
         hideydecorations!(axis)
         if i !=num_col+1
             hidexdecorations!(axis,ticks=false, minorticks=false)
@@ -62,14 +83,14 @@ function create_corner_plot(chain_values, names, label_names, units, fractions, 
         end
         print(label_names[i]*"="*"$(xmode)^$(xmax-xmode)_$(xmode-xmin)\n")
     end     
-    rowgap!(f.layout,10)
-    colgap!(f.layout,10)
+    rowgap!(fig.layout, 10)
+    colgap!(fig.layout, 10)
 
     if !ismissing(supertitle)
-        Label(f[0,:], text=supertitle, fontsize=30)
+        Label(fig[0,:], text=supertitle, fontsize=30)
     end
 
-    return f
+    return fig
 end
 
 """
@@ -83,7 +104,7 @@ end
 - ranges1:
 - values2:
 - ranges2:
-- chain_weights:
+- weights:
 - fractions:
 - axis:
 - nbins:
@@ -93,21 +114,20 @@ end
 - 
 """
 function create_2D_density(values1, ranges1, values2, ranges2, chain_weights, fractions, axis, nbins)
-    if !ismissing(ranges1)
-        filter = values1 .> ranges1[1] .&& values1 .< ranges1[2] .&&
-                    values2 .> ranges2[1] .&& values2 .< ranges2[2]
-        values1 = values1[filter]
-        values2 = values2[filter]
-        chain_weights = chain_weights[filter]
-    end
 
-    h = fit(Histogram,(values1,values2),weights(chain_weights),nbins=nbins)
-    x= (h.edges[2][2:end].+h.edges[2][1:end-1])./2
-    y =(h.edges[1][2:end].+h.edges[1][1:end-1])./2
-    heatmap!(axis,y,x, h.weights)
-    bounds = get_bounds_for_fractions(h,fractions)
+    filter = values1 .> ranges1[1] .&& values1 .< ranges1[2] .&&
+                values2 .> ranges2[1] .&& values2 .< ranges2[2]
+    values1 = values1[filter]
+    values2 = values2[filter]
+    chain_weights = weights(chain_weights[filter]) # weights is a StatsBase function
+
+    h = fit(Histogram, (values1, values2), chain_weights, nbins=nbins)
+    x = (h.edges[2][2:end] .+ h.edges[2][1:end-1])./2
+    y = (h.edges[1][2:end] .+ h.edges[1][1:end-1])./2
+    heatmap!(axis, y, x, h.weights)
+    bounds = get_bounds_for_fractions(h, fractions)
    
-    contour!(axis,y,x, h.weights, levels=bounds,color=:black,linewidth=2)
+    contour!(axis, y, x, h.weights, levels=bounds, color=:black, linewidth=2)
 end  
 
 """
@@ -167,15 +187,14 @@ end
 - 
 """
 function create_1D_density(values, range, chain_weights, fraction_1D, axis, nbins)
-    if !ismissing(range)
-        filter = values .> range[1] .&& values .< range[2]
-        values = values[filter]
-        chain_weights = chain_weights[filter]
-    end
 
-    h = fit(Histogram,(values),weights(chain_weights),nbins=nbins)
-    x =(h.edges[1][2:end].+h.edges[1][1:end-1])./2
-    bound = get_bounds_for_fractions(h,[fraction_1D])[1]
+    filter = values .> range[1] .&& values .< range[2]
+    values = values[filter]
+    chain_weights = weights(chain_weights[filter]) # weights is a StatsBase function
+
+    h = fit(Histogram, values, chain_weights, nbins=nbins)
+    x =(h.edges[1][2:end] .+ h.edges[1][1:end-1])./2
+    bound = get_bounds_for_fractions(h, [fraction_1D])[1]
 
     xmin = minimum(x[h.weights .>= bound])
     xmode = x[argmax(h.weights)]
@@ -183,10 +202,10 @@ function create_1D_density(values, range, chain_weights, fraction_1D, axis, nbin
 
     filter = x .>= xmin .&& x.<= xmax
 
-    band!(axis, x[filter], zeros(length(x[filter])), h.weights[filter], color=(:gray,0.4))
-    scatter!(axis,[xmin,xmax],[0,0])
-    lines!(axis,x, h.weights)
-    xlims!(axis,minimum(x),maximum(x)) 
+    band!(axis, x[filter], zeros(length(x[filter])), h.weights[filter], color=(:gray, 0.4))
+    scatter!(axis, [xmin,xmax], [0,0])
+    lines!(axis, x, h.weights)
+    xlims!(axis, minimum(x), maximum(x)) 
 
     return (xmin, xmode, xmax)
    

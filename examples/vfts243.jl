@@ -16,8 +16,8 @@ println(obs.props)
 ##
 
 #Logging.disable_logging(Logging.Info)
-
-@benchmark mcmcStruct = SideKicks.RunKickMCMC(
+#@benchmark 
+mcmcStruct = SideKicks.RunKickMCMC(
         pre_supernova_orbit = :circular,
         observations = obs,
         nuts_warmup_count = 200,
@@ -26,6 +26,7 @@ println(obs.props)
         nchains = 8)
 
 ##
+
 
 # test
 results = mcmcStruct.results
@@ -40,7 +41,7 @@ println(results[:m2_f][1:10])
 using CairoMakie
 plotting_props = SideKicks.PlottingProps(
     props  = [:m1,   :m2_f, :P_f, :e_f],
-    units = [m_sun, m_sun, day, 1, ],
+    units = [m_sun, m_sun, day, 1 ],
     ranges = [[0, 25], [0, .0005], [0, 1], [0, 1]], 
     names_latex = ["m1",   "m2_f", "P_f", "e_f" ]
 )
