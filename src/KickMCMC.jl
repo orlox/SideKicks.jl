@@ -406,6 +406,12 @@ function RunKickMCMC(; pre_supernova_orbit, observations::Observations, nuts_war
     # RTW check that max weights is 1
     results[:weights] = exp.(logweights) # RTW something broke here
     #results[:weights] = ones(size(logweights)) 
+
+    #RTW this was from the previous iteration, is this still relevant?
+    # if we did a general model, we need to weight the true anomaly
+    #if model_type==:general
+    #    res[:weight] .= res[:weight].*sqrt.(1 .- res[:e_f].^2).^3 ./ (1 .+ res[:e_f].*cos.(res[:ν])).^2
+    #end
    
     return KickMCMCResults(
         mcmc_model = mcmc_cauchy, 
