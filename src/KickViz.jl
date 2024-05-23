@@ -73,7 +73,7 @@ function create_corner_plot(results, plotting_props;
     # Create 1D PDFs along the diagonal
     for i in 1:num_col+1
         axis = Axis(fig[i,i], xgridvisible = false, ygridvisible = false, xtickalign=1, xlabel=label_names[i])
-        (xmin, xmode, xmax) = create_1D_density(vec(results[props[i]])/units[i], ranges[i], vec(results[:weights]), fraction_1D,axis, nbins)
+        (xmin, xmode, xmax) = create_1D_density(results[props[i]]/units[i], ranges[i], results[:weights], fraction_1D,axis, nbins)
         hideydecorations!(axis)
         if i !=num_col+1
             hidexdecorations!(axis,ticks=false, minorticks=false)
@@ -81,7 +81,7 @@ function create_corner_plot(results, plotting_props;
         if show_CIs
             axis.title = "$(xmode)^$(xmax-xmode)_$(xmode-xmin)"
         end
-        print(label_names[i]*"="*"$(xmode)^$(xmax-xmode)_$(xmode-xmin)\n")
+        println(label_names[i]*"="*"$(xmode)^$(xmax-xmode)_$(xmode-xmin)")
     end     
     rowgap!(fig.layout, 10)
     colgap!(fig.layout, 10)
@@ -186,26 +186,33 @@ end
 #TODO
 - 
 """
-function create_1D_density(values, range, chain_weights, fraction_1D, axis, nbins)
+function create_1D_density(values_matrix, range, chain_weights_matrix, fraction_1D, axis, nbins)
 
-    filter = values .> range[1] .&& values .< range[2]
-    values = values[filter]
-    chain_weights = weights(chain_weights[filter]) # weights is a StatsBase function
+    xmin, xmode, xmax = 0, 0, 0
+    # Iterate over the different chains
+    for i in 1:size(values_matrix)[1] # nchains
+        values = values_matrix[i,:]
+        chain_weights = chain_weights_matrix[i,:]
 
-    h = fit(Histogram, values, chain_weights, nbins=nbins)
-    x =(h.edges[1][2:end] .+ h.edges[1][1:end-1])./2
-    bound = get_bounds_for_fractions(h, [fraction_1D])[1]
+        filter = values .> range[1] .&& values .< range[2]
+        values = values[filter]
+        chain_weights = weights(chain_weights[filter]) # weights is a StatsBase function
 
-    xmin = minimum(x[h.weights .>= bound])
-    xmode = x[argmax(h.weights)]
-    xmax = maximum(x[h.weights .>= bound])
+        h = fit(Histogram, values, chain_weights, nbins=nbins)
+        x =(h.edges[1][2:end] .+ h.edges[1][1:end-1])./2
+        bound = get_bounds_for_fractions(h, [fraction_1D])[1]
 
-    filter = x .>= xmin .&& x.<= xmax
+        xmin = minimum(x[h.weights .>= bound])
+        xmode = x[argmax(h.weights)]
+        xmax = maximum(x[h.weights .>= bound])
 
-    band!(axis, x[filter], zeros(length(x[filter])), h.weights[filter], color=(:gray, 0.4))
-    scatter!(axis, [xmin,xmax], [0,0])
-    lines!(axis, x, h.weights)
-    xlims!(axis, minimum(x), maximum(x)) 
+        filter = x .>= xmin .&& x.<= xmax
+
+        #band!(axis, x[filter], zeros(length(x[filter])), h.weights[filter], color=(:gray, 0.4))
+        #scatter!(axis, [xmin,xmax], [0,0])
+        lines!(axis, x, h.weights)
+        xlims!(axis, minimum(x), maximum(x)) 
+    end
 
     return (xmin, xmode, xmax)
    
