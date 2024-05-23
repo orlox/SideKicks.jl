@@ -22,8 +22,6 @@ Distributions.pdf(d::WrappedCauchy, x::Real) = 1/(2*π)*(sinh(d.σ))/(cosh(d.σ)
     vals::Vector{Float64}
     errs::Vector{Float64}
     units::Vector{Float64}
-    #names_latex::Vector{String} # do we ever plot obs?
-    #units_latex::Vector{String} # do we ever plot obs?
 end
 
 @kwdef mutable struct Priors
@@ -34,21 +32,12 @@ end
     frac_dist::ContinuousUnivariateDistribution 
 end
 
-
-#@kwdef mutable struct McmcModelStruct
-#    mcmc_model #::Vector{Float64} # check this
-#    props::Vector{Symbol}
-#    likelihood::Symbol
-#end
-
 @kwdef mutable struct KickMCMCResults
     # TODO RTW: do I need types for everything? what do I use if non-trivial?
     mcmc_model # RTW todo
     observations::Observations
     results::Dict{Symbol, Matrix{Float64}}
     chains # RTW todo
-    #loglikelihoods_cauchy 
-    #loglikelihoods_normal 
     nuts_warmup_count::Int
     nuts_acceptance_rate::Float64
     nsamples::Int
@@ -87,6 +76,7 @@ function createPriors(;
         frac_dist  = frac_dist   
     )
 end
+
 """
     createSimpleCircularMCMCModel(observations, observed_values, observed_errors)
 
@@ -104,21 +94,16 @@ and kick properties of a system, assuming pre-explosion circularity.
 """
 function createCircularMCMCModel(;
     observations::Observations,
+    priors::Priors,
     likelihood = :Cauchy,
     bhModel = arbitraryEjectaBH
     )
 
-    #logm1_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), # in log(Msun)
-    #logm2_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), # in log(Msun)
-    #logP_dist::ContinuousUnivariateDistribution = Uniform(-1,3),   # in log(days)
-    #vkick_dist::ContinuousUnivariateDistribution = Exponential(1), # in 100 km/s
-    #frac_dist::ContinuousUnivariateDistribution = Uniform(0,1.0)
-    # RTW put this as a default arg somewhere... later
-    logm1_dist = Uniform(0.1,3) # in log(Msun)
-    logm2_dist = Uniform(0.1,3) # in log(Msun)
-    logP_dist  = Uniform(-1,3)   # in log(days)
-    vkick_dist = Exponential(1) # in 100 km/s
-    frac_dist  = Uniform(0,1.0)
+    logm1_dist = priors.logm1_dist 
+    logm2_dist = priors.logm2_dist 
+    logP_dist  = priors.logP_dist  
+    vkick_dist = priors.vkick_dist 
+    frac_dist  = priors.frac_dist  
 
     # provided observed values
     valid_values = [:P, :e, :K1, :K2, :m1, :m2]
@@ -131,7 +116,7 @@ function createCircularMCMCModel(;
         throw(DomainError(likelihood, "likelihood must be either :Cauchy or :Normal"))
     end
 
-    @model function create_MCMC_model(observations::Observations)
+    @model function create_MCMC_model(obs_vals, obs_errs) 
 
         # set priors
         #Pre-explosion masses and orbital period
@@ -182,14 +167,16 @@ function createCircularMCMCModel(;
                 param = m2_f
             end
             likelihood == :Cauchy ?
-              observations.vals[i] ~ Cauchy(param, observations.errs[i]) :
-              observations.vals[i] ~ Normal(param, observations.errs[i]) 
+              obs_vals[i] ~ Cauchy(param, obs_errs[i]) :
+              obs_vals[i] ~ Normal(param, obs_errs[i]) 
         end
-
-        return   (m1,    m2,    P,   a,     i_f, vkick, m2_f,  a_f,   P_f,  e_f,  K1,       K2)
+        return     (m1,    m2,    P,   a,     i_f, vkick, m2_f,  a_f,   P_f,  e_f,  K1,       K2, frac)
     end
-    props =     [:m1,   :m2,   :P,  :a,    :i_f, :vkick, :m2_f, :a_f,  :P_f, :e_f, :K1,      :K2]
-    return [create_MCMC_model(observations), props]
+    return_props = [:m1,   :m2,   :P,  :a,    :i_f, :vkick, :m2_f, :a_f,  :P_f, :e_f, :K1,      :K2, :frac]
+
+    obs_vals_cgs = observations.vals .* observations.units
+    obs_errs_cgs = observations.errs .* observations.units
+    return [create_MCMC_model(obs_vals_cgs, obs_errs_cgs), return_props]
 end
 
 
@@ -210,28 +197,44 @@ and kick properties of a system, assuming pre-explosion eccentricity.
 # Output:
 - kickmodel: A Turing model for sampling
 """
-function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values::Vector{Float64}, observed_errors::Vector{Float64};
-    bhModel = arbitraryEjectaBH,
-    logm1_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), # in log(Msun)
-    logm2_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), # in log(Msun)
-    logP_dist::ContinuousUnivariateDistribution = Uniform(-1,3),   # in log(days)
-    e_dist::ContinuousUnivariateDistribution = Uniform(0,0.01),
-    vkick_dist::ContinuousUnivariateDistribution = Exponential(1), # in 100 km/s
-    vsys_N_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
-    vsys_E_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
-    vsys_r_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
-    frac_dist::ContinuousUnivariateDistribution = Uniform(0,1.0),
-    likelihood = :Cauchy)
+function createEccentricMCMCModel(;
+    observations::Observations,
+    priors::Priors,
+    likelihood = :Cauchy,
+    bhModel = arbitraryEjectaBH)
+    
+    #logm1_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), # in log(Msun)
+    #logm2_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), # in log(Msun)
+    #logP_dist::ContinuousUnivariateDistribution = Uniform(-1,3),   # in log(days)
+    #e_dist::ContinuousUnivariateDistribution = Uniform(0,0.01),
+    #vkick_dist::ContinuousUnivariateDistribution = Exponential(1), # in 100 km/s
+    #vsys_N_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
+    #vsys_E_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
+    #vsys_r_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
+    #frac_dist::ContinuousUnivariateDistribution = Uniform(0,1.0),
+    
+    logm1_dist = Uniform(0.1,3) # in log(Msun)
+    logm2_dist = Uniform(0.1,3) # in log(Msun)
+    logP_dist = Uniform(-1,3)   # in log(days)
+    e_dist = Uniform(0,0.01)
+    vkick_dist = Exponential(1) # in 100 km/s
+    vsys_N_dist = Normal(0,0.1) # in 100 km/s
+    vsys_E_dist = Normal(0,0.1) # in 100 km/s
+    vsys_r_dist = Normal(0,0.1) # in 100 km/s
+    frac_dist = Uniform(0,1.0)
 
     # provided observed values
     valid_values = [:P, :e, :K1, :K2, :m1, :m2, :Ω, :ω, :i, :v_N, :v_E, :v_r]
-    for obs ∈ observations
+    for obs ∈ observations.props
         if obs ∉ valid_values
             throw(DomainError(obs, "Allowed observations are only [:P, :e, :K1, :K2, :m1, :m2, :Ω, :ω, :i, :v_N, :v_E, :v_r]"))
         end
     end
+    if !(likelihood == :Cauchy || likelihood == :Normal)
+        throw(DomainError(likelihood, "likelihood must be either :Cauchy or :Normal"))
+    end
 
-    @model function kick_model(obs::Vector{Symbol}, obs_vals::Vector{Float64}, obs_errs::Vector{Float64})
+    @model function create_MCMC_model(obs_vals, obs_errs) 
         # set priors
         #Pre-explosion masses and orbital period
         logm1 ~ logm1_dist
@@ -281,16 +284,13 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
         end
 
         #Initial systemic velocity parameters
-        v_N_100kms ~ vsys_N_dist*100*km_per_s 
-        v_E_100kms ~ vsys_E_dist*100*km_per_s 
-        v_r_100kms ~ vsys_r_dist*100*km_per_s 
+        v_N_100kms ~ vsys_N_dist
+        v_E_100kms ~ vsys_E_dist
+        v_r_100kms ~ vsys_r_dist
         v_N = v_N_100kms*100*km_per_s
         v_E = v_E_100kms*100*km_per_s
         v_r = v_r_100kms*100*km_per_s
 
-        cosθ ~ Uniform(-1,1)
-        cosθ ~ Uniform(-1,1)
-        cosθ ~ Uniform(-1,1)
         #m1 is assumed to remain constant, no impact velocity
         a_f, e_f, Ω_f, ω_f, i_f, v_N, v_E, v_r = 
             post_supernova_general_orbit_parameters(m1=m1, m2=m2, a=a, e=e, m2_f=m2_f, 
@@ -299,20 +299,22 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
         K1 = RV_semiamplitude_K1(m1=m1, m2=m2_f, P=P_f, e=e_f, i=i_f)
         K2 = RV_semiamplitude_K1(m1=m2_f, m2=m1, P=P_f, e=e_f, i=i_f)
 
-        for i in eachindex(obs)
-            obs_symbol = obs[i]
+        for i in eachindex(observations.props)
+            obs_symbol = observations.props[i]
             if obs_symbol == :P
-                obs_vals[i] ~ likelihood_dist(P_f, obs_errs[i])
+                param = P_f
             elseif obs_symbol == :e
-                obs_vals[i] ~ likelihood_dist(e_f, obs_errs[i])
+                param = e_f
             elseif obs_symbol == :K1
-                obs_vals[i] ~ likelihood_dist(K1, obs_errs[i])
+                param = K1
             elseif obs_symbol == :K2
-                obs_vals[i] ~ likelihood_dist(K2, obs_errs[i])
+                param = K2
             elseif obs_symbol == :m1
-                obs_vals[i] ~ likelihood_dist(m1, obs_errs[i])
+                param = m1
             elseif obs_symbol == :m2
-                obs_vals[i] ~ likelihood_dist(m2_f, obs_errs[i])
+                param = m2_f
+
+                # RTW TODO: fix these dists
             elseif obs_symbol == :Ω
                 #obs_vals[i] ~ VonMises(Ω_f, 1/obs_errs[i]^2)#Normal(Ω_f, obs_errs[i])
                 obs_vals[i] ~ angular_likelihood_dist(Ω_f, obs_errs[i])
@@ -321,36 +323,40 @@ function createEccentricMCMCModel(observations::Vector{Symbol}, observed_values:
                 obs_vals[i] ~ angular_likelihood_dist(ω_f, obs_errs[i])
             elseif obs_symbol == :i
                 obs_vals[i] ~ likelihood_dist(i_f, obs_errs[i])
-            # RTW: what is going on with these, v_N - v_N?
+                # RTW: what is going on with these, v_N - v_N?
             elseif obs_symbol == :v_N
-                obs_vals[i] ~ likelihood_dist(v_N - v_N, obs_errs[i])
+                param = v_N - v_N
             elseif obs_symbol == :v_E
-                obs_vals[i] ~ likelihood_dist(v_E - v_E, obs_errs[i])
+                param = v_E - v_E
             elseif obs_symbol == :v_r
-                obs_vals[i] ~ likelihood_dist(v_r - v_r, obs_errs[i])
+                param = v_r - v_r
             end
+            likelihood == :Cauchy ?
+              obs_vals[i] ~ Cauchy(param, obs_errs[i]) :
+              obs_vals[i] ~ Normal(param, obs_errs[i]) 
         end
+        return     (m1,    m2,    P,   a,     i_f, vkick, m2_f,  a_f,   P_f,  e_f,  K1,       K2, frac)
     end
-    
-    # RTW : fix this later
-    return kick_model(observations, observed_values, observed_errors)
+    # RTW : fix the props later
+    return_props = [:m1,   :m2,   :P,  :a,    :i_f, :vkick, :m2_f, :a_f,  :P_f, :e_f, :K1,      :K2, :frac]
+
+    obs_vals_cgs = observations.vals .* observations.units
+    obs_errs_cgs = observations.errs .* observations.units
+    return [create_MCMC_model(obs_vals_cgs, obs_errs_cgs), return_props]
     
 end
-    
 
 
-function RunKickMCMC(; pre_supernova_orbit, observations::Observations, nuts_warmup_count,
-            		nuts_acceptance_rate, nsamples, nchains)
+function RunKickMCMC(; pre_supernova_orbit, observations::Observations, priors::Priors,
+        nuts_warmup_count, nuts_acceptance_rate, nsamples, nchains)
 
+    println("huh?")
     if (pre_supernova_orbit==:circular)
-        mcmc_cauchy, props_cauchy = SideKicks.createCircularMCMCModel( observations=observations, likelihood=:Cauchy)
-        mcmc_normal, props_normal = SideKicks.createCircularMCMCModel( observations=observations, likelihood=:Normal)
-    # RTW : fix this later
+        mcmc_cauchy, props_cauchy = SideKicks.createCircularMCMCModel( observations=observations, priors=priors, likelihood=:Cauchy)
+        mcmc_normal, props_normal = SideKicks.createCircularMCMCModel( observations=observations, priors=priors, likelihood=:Normal)
     elseif (pre_supernova_orbit==:eccentric)
-        (model_cauchy, output_names) = SideKicks.createEccentricMCMCModel(
-            observed_properties, observed_values, observed_errors, likelihood=:Cauchy)
-        (model_normal, output_names) = SideKicks.createEccentricMCMCModel(
-            observed_properties, observed_values, observed_errors, likelihood=:Normal)
+        mcmc_cauchy, props_cauchy = SideKicks.createEccentricMCMCModel( observations=observations, priors=priors, likelihood=:Cauchy)
+        mcmc_normal, props_normal = SideKicks.createEccentricMCMCModel( observations=observations, priors=priors, likelihood=:Normal)
     else
         throw(ArgumentError("pre_supernova_orbit=:$pre_supernova_orbit is an invalid option. Can be either :circular or :eccentric"))
     end
@@ -366,19 +372,8 @@ function RunKickMCMC(; pre_supernova_orbit, observations::Observations, nuts_war
     loglikelihoods_cauchy = pointwise_loglikelihoods(mcmc_cauchy, chains)
     loglikelihoods_normal = pointwise_loglikelihoods(mcmc_normal, chains)
 
-    output_values = generated_quantities(mcmc_cauchy, chains)
     # Obtain the generated values from the chains
-    
-    
-    # From names(chains):
-    #thingy = [:logm1, :logm2, :logP, :cosi, :frac, :vkick_100kms, :cosθ, :xϕ, :yϕ, :lp, :n_steps, :is_accept, :acceptance_rate, :log_density, :hamiltonian_energy, :hamiltonian_energy_error, :max_hamiltonian_energy_error, :tree_depth, :numerical_error, :step_size, :nom_step_size]
-    ##[:m1, :m2, :P, :a, :i_f, :vkick, :m2_f, :a_f, :P_f, :e_f, :K1, :K2]
-    #println(props_cauchy)
-    
-    
-    #chains_params = Turing.MCMCChains.get_sections(chains, props_cauchy)
-    #chains_params = Turing.MCMCChains.get_sections(chains, thingy) # props_cauchy)
-    #output_values = generated_quantities(mcmc_cauchy, chains_params)
+    output_values = generated_quantities(mcmc_cauchy, chains)
     
     # Combine into a dictionary of matrices, where the keys are props and the matrices are (chains x samples)
     results = Dict() 
@@ -402,10 +397,15 @@ function RunKickMCMC(; pre_supernova_orbit, observations::Observations, nuts_war
             end
         end
     end
-    logweights = logweights .- maximum(logweights)
-    # RTW check that max weights is 1
-    results[:weights] = exp.(logweights) # RTW something broke here
-    #results[:weights] = ones(size(logweights)) 
+    logweights = logweights .- maximum(logweights) # set max weights = 1
+    # RTW something broke here
+    weights = exp.(logweights)
+    if (all(isfinite(weights)))
+        results[:weights] = weights 
+    else
+        println("Weights are off!!")
+        results[:weights] = ones(size(weights)) 
+    end
 
     #RTW this was from the previous iteration, is this still relevant?
     # if we did a general model, we need to weight the true anomaly
