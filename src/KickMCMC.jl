@@ -8,7 +8,10 @@ using Distributions
 ########################
 
 """
-RTW TODO: figure out correct way to document structs
+    struct WrappedCauchy{T1<:Real, T2<:Real} <: ContinuousUnivariateDistribution
+
+The WrappedCauchy distribution captures the Cauchy distribution defined on the unit 
+circle from 0 to 2π, with the endpoints wrapped back to each other.
 """
 struct WrappedCauchy{T1<:Real, T2<:Real} <: ContinuousUnivariateDistribution
     μ::T1
@@ -17,6 +20,11 @@ end
 Distributions.logpdf(d::WrappedCauchy, x::Real) = log(1/(2*π)*(sinh(d.σ)))-log(cosh(d.σ)-cos(x-d.μ))
 Distributions.pdf(d::WrappedCauchy, x::Real) = 1/(2*π)*(sinh(d.σ))/(cosh(d.σ)-cos(x-d.μ))
 
+"""
+    mutable struct Observations
+
+Observations contains the symbols, values, errors, and units of each observed parameter.
+"""
 @kwdef mutable struct Observations
     props::Vector{Symbol}
     vals::Vector{Float64}
@@ -24,6 +32,11 @@ Distributions.pdf(d::WrappedCauchy, x::Real) = 1/(2*π)*(sinh(d.σ))/(cosh(d.σ)
     units::Vector{Float64}
 end
 
+"""
+    mutable struct Priors
+
+Priors contains the prior distribution of each of the desired parameters
+"""
 @kwdef mutable struct Priors
     logm1_dist::ContinuousUnivariateDistribution
     logm2_dist::ContinuousUnivariateDistribution
@@ -32,6 +45,12 @@ end
     frac_dist::ContinuousUnivariateDistribution 
 end
 
+"""
+    mutable struct KickMCMCResults
+
+KickMCMCResults contains the MCMC model and Observations structs, the Results dict,
+the chains that resulted from the MCMC, and the parameters that went into the sampler.
+"""
 @kwdef mutable struct KickMCMCResults
     # TODO RTW: do I need types for everything? what do I use if non-trivial?
     mcmc_model # RTW todo
@@ -41,13 +60,6 @@ end
     nuts_warmup_count::Int
     nuts_acceptance_rate::Float64
     nsamples::Int
-end
-
-@kwdef mutable struct PlottingProps
-    props::Vector{Symbol}
-    units::Vector{Float64}
-    ranges # RTW TODO
-    names_latex::Vector{String} # RTW rename this to label_names
 end
 
 
@@ -62,6 +74,15 @@ end
 
 # RTW TODO
 
+function createObservations(obs_matrix::Vector{Vector{Any}})
+    obs_matrix = stack(obs_matrix) # make into actual matrix
+    return Observations(
+        props = obs_matrix[1,:],
+        vals  = obs_matrix[2,:],
+        errs  = obs_matrix[3,:],
+        units = obs_matrix[4,:])
+end
+
 function createPriors(;
     logm1_dist = Uniform(0.1,3), # in log(Msun)
     logm2_dist = Uniform(0.1,3), # in log(Msun)
@@ -73,8 +94,7 @@ function createPriors(;
         logm2_dist = logm2_dist,  
         logP_dist  = logP_dist ,  
         vkick_dist = vkick_dist,  
-        frac_dist  = frac_dist   
-    )
+        frac_dist  = frac_dist )
 end
 
 """
@@ -350,7 +370,6 @@ end
 function RunKickMCMC(; pre_supernova_orbit, observations::Observations, priors::Priors,
         nuts_warmup_count, nuts_acceptance_rate, nsamples, nchains)
 
-    println("huh?")
     if (pre_supernova_orbit==:circular)
         mcmc_cauchy, props_cauchy = SideKicks.createCircularMCMCModel( observations=observations, priors=priors, likelihood=:Cauchy)
         mcmc_normal, props_normal = SideKicks.createCircularMCMCModel( observations=observations, priors=priors, likelihood=:Normal)

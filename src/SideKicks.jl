@@ -8,6 +8,6 @@ include("Constants.jl")
 include("Orbits.jl")
 include("BHFallback.jl")
 include("KickMCMC.jl")
-include("KickViz.jl")
+include("CornerPlots.jl")
 
 end # module
