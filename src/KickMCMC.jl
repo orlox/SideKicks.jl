@@ -36,6 +36,8 @@ end
     mutable struct Priors
 
 Priors contains the prior distribution of each of the desired parameters
+
+RTW: check that N and E are identical to RA and Dec...
 """
 @kwdef mutable struct Priors
     logm1_dist::ContinuousUnivariateDistribution
@@ -43,6 +45,14 @@ Priors contains the prior distribution of each of the desired parameters
     logP_dist::ContinuousUnivariateDistribution 
     vkick_dist::ContinuousUnivariateDistribution
     frac_dist::ContinuousUnivariateDistribution 
+    e_dist::ContinuousUnivariateDistribution       
+    rv_src_dist::ContinuousUnivariateDistribution 
+    rv_env_dist::ContinuousUnivariateDistribution 
+    pmra_src_dist::ContinuousUnivariateDistribution  
+    pmdec_src_dist::ContinuousUnivariateDistribution 
+    pmra_env_dist::ContinuousUnivariateDistribution  
+    pmdec_env_dist::ContinuousUnivariateDistribution 
+    distance_dist::ContinuousUnivariateDistribution 
 end
 
 """
@@ -72,8 +82,6 @@ end
 ### 
 ########################
 
-# RTW TODO
-
 function createObservations(obs_matrix::Vector{Vector{Any}})
     obs_matrix = stack(obs_matrix) # make into actual matrix
     return Observations(
@@ -89,12 +97,30 @@ function createPriors(;
     logP_dist  = Uniform(-1,3),   # in log(days)
     vkick_dist = Exponential(1), # in 100 km/s
     frac_dist  = Uniform(0,1.0))
+    # For ecc systems - ignored for circular case
+    e_dist = Uniform(0,0.01)
+    # RTW: fix these priors, they are too narrow for what we know about these quantities...
+    rv_src_dist    = Normal(0,0.1) # in 100 km/s
+    rv_env_dist    = Normal(0,0.1) # in 100 km/s
+    pmra_src_dist  = Normal(0,0.1) # in mas/yr 
+    pmdec_src_dist = Normal(0,0.1) # in mas/yr 
+    pmra_env_dist  = Normal(0,0.1) # in mas/yr 
+    pmdec_env_dist = Normal(0,0.1) # in mas/yr 
+    distance_dist  = Normal(0,0.1) # in kpc
     return Priors(
         logm1_dist = logm1_dist,  
         logm2_dist = logm2_dist,  
         logP_dist  = logP_dist ,  
         vkick_dist = vkick_dist,  
-        frac_dist  = frac_dist )
+        frac_dist  = frac_dist,
+        e_dist = e_dist,
+        rv_src_dist    = rv_src_dist,
+        rv_env_dist    = rv_env_dist,
+        pmra_src_dist  = pmra_src_dist,
+        pmdec_src_dist = pmdec_src_dist,
+        pmra_env_dist  = pmra_env_dist,
+        pmdec_env_dist = pmdec_env_dist,
+        distance_dist  = distance_dist)
 end
 
 """
@@ -103,6 +129,9 @@ end
 Description
 Create a Turing model to perform an MCMC sampling of the pre-explosion 
 and kick properties of a system, assuming pre-explosion circularity.
+
+RTW this is more simplistic than just using a circular model, it's also
+assuming you know the eccentricity and don't care about radial velocity etc.
 
 # Arguments:
 - observations:    the parameters taken from observations [Vector{Symbol}]
@@ -119,24 +148,32 @@ function createCircularMCMCModel(;
     bhModel = arbitraryEjectaBH
     )
 
-    logm1_dist = priors.logm1_dist 
-    logm2_dist = priors.logm2_dist 
-    logP_dist  = priors.logP_dist  
-    vkick_dist = priors.vkick_dist 
-    frac_dist  = priors.frac_dist  
+    logm1_dist = priors.logm1_dist
+    logm2_dist = priors.logm2_dist
+    logP_dist = priors.logP_dist
+    vkick_dist = priors.vkick_dist
+    frac_dist = priors.frac_dist
+    #rv_src_dist = priors.rv_src_dist
+    #rv_env_dist = priors.rv_env_dist
+    #pmra_src_dist = priors.pmra_src_dist
+    #pmdec_src_dist = priors.pmdec_src_dist
+    #pmra_env_dist = priors.pmra_env_dist
+    #pmdec_env_dist = priors.pmdec_env_dist
+    #distance_dist = priors.distance_dist
 
-    # provided observed values
-    valid_values = [:P, :e, :K1, :K2, :m1, :m2]
-    for obs ∈ observations.props
-        if obs ∉ valid_values
-            throw(DomainError(obs, "Allowed observations are only [:P, :e, :K1, :K2, :m1, :m2]"))
-        end
-    end
+    # RTW: why do we need this?
+    ## provided observed values
+    #valid_values = [:P, :e, :K1, :K2, :m1, :m2]
+    #for obs ∈ observations.props
+    #    if obs ∉ valid_values
+    #        throw(DomainError(obs, "Allowed observations are only [:P, :e, :K1, :K2, :m1, :m2]"))
+    #    end
+    #end
     if !(likelihood == :Cauchy || likelihood == :Normal)
         throw(DomainError(likelihood, "likelihood must be either :Cauchy or :Normal"))
     end
 
-    @model function create_MCMC_model(obs_vals, obs_errs) 
+    @model function create_MCMC_model(obs_props, obs_vals, obs_errs) 
 
         # set priors
         #Pre-explosion masses and orbital period
@@ -171,8 +208,12 @@ function createCircularMCMCModel(;
         K1 = RV_semiamplitude_K1(m1=m1, m2=m2_f, P=P_f, e=e_f, i=i_f)
         K2 = RV_semiamplitude_K1(m1=m2_f, m2=m1, P=P_f, e=e_f, i=i_f)
 
-        for i in eachindex(observations.props)
-            obs_symbol = observations.props[i]
+        likelihood == :Cauchy ?
+            likelihood_dist = Cauchy :
+            likelihood_dist = Normal
+
+        for i in eachindex(obs_props)
+            obs_symbol = obs_props[i]
             if obs_symbol == :P
                 param = P_f
             elseif obs_symbol == :e
@@ -185,14 +226,22 @@ function createCircularMCMCModel(;
                 param = m1
             elseif obs_symbol == :m2
                 param = m2_f
+            else
+                continue
             end
-            likelihood == :Cauchy ?
-              obs_vals[i] ~ Cauchy(param, obs_errs[i]) :
-              obs_vals[i] ~ Normal(param, obs_errs[i]) 
+
+            obs_vals[i] ~ likelihood_dist(param, obs_errs[i])
+            #likelihood == :Cauchy ?
+            #  obs_vals[i] ~ Cauchy(param, obs_errs[i]) :
+            #  obs_vals[i] ~ Normal(param, obs_errs[i]) 
         end
-        return     (m1,    m2,    P,   a,     i_f, vkick, m2_f,  a_f,   P_f,  e_f,  K1,       K2, frac)
+
+
+        # other params
+        dm2 = m2 - m2_f
+        return     (m1,    m2,    P,   a,     i_f, vkick, m2_f,  a_f,   P_f,  e_f,  K1,       K2, frac, dm2)
     end
-    return_props = [:m1,   :m2,   :P,  :a,    :i_f, :vkick, :m2_f, :a_f,  :P_f, :e_f, :K1,      :K2, :frac]
+    return_props = [:m1,   :m2,   :P,  :a,    :i_f, :vkick, :m2_f, :a_f,  :P_f, :e_f, :K1,      :K2, :frac, :dm2]
 
     obs_vals_cgs = observations.vals .* observations.units
     obs_errs_cgs = observations.errs .* observations.units
@@ -223,38 +272,29 @@ function createEccentricMCMCModel(;
     likelihood = :Cauchy,
     bhModel = arbitraryEjectaBH)
     
-    #logm1_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), # in log(Msun)
-    #logm2_dist::ContinuousUnivariateDistribution = Uniform(0.1,3), # in log(Msun)
-    #logP_dist::ContinuousUnivariateDistribution = Uniform(-1,3),   # in log(days)
-    #e_dist::ContinuousUnivariateDistribution = Uniform(0,0.01),
-    #vkick_dist::ContinuousUnivariateDistribution = Exponential(1), # in 100 km/s
-    #vsys_N_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
-    #vsys_E_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
-    #vsys_r_dist::ContinuousUnivariateDistribution = Normal(0,0.1), # in 100 km/s
-    #frac_dist::ContinuousUnivariateDistribution = Uniform(0,1.0),
-    
-    logm1_dist = Uniform(0.1,3) # in log(Msun)
-    logm2_dist = Uniform(0.1,3) # in log(Msun)
-    logP_dist = Uniform(-1,3)   # in log(days)
-    e_dist = Uniform(0,0.01)
-    vkick_dist = Exponential(1) # in 100 km/s
-    vsys_N_dist = Normal(0,0.1) # in 100 km/s
-    vsys_E_dist = Normal(0,0.1) # in 100 km/s
-    vsys_r_dist = Normal(0,0.1) # in 100 km/s
-    frac_dist = Uniform(0,1.0)
+    logm1_dist = priors.logm1_dist
+    logm2_dist = priors.logm2_dist
+    logP_dist = priors.logP_dist
+    e_dist = priors.e_dist
+    vkick_dist = priors.vkick_dist
+    vsys_N_dist = priors.vsys_N_dist
+    vsys_E_dist = priors.vsys_E_dist
+    vsys_r_dist = priors.vsys_r_dist
+    frac_dist = priors.frac_dist
 
     # provided observed values
-    valid_values = [:P, :e, :K1, :K2, :m1, :m2, :Ω, :ω, :i, :v_N, :v_E, :v_r]
-    for obs ∈ observations.props
-        if obs ∉ valid_values
-            throw(DomainError(obs, "Allowed observations are only [:P, :e, :K1, :K2, :m1, :m2, :Ω, :ω, :i, :v_N, :v_E, :v_r]"))
-        end
-    end
+    # RTW: why do we need this?
+    #valid_values = [:P, :e, :K1, :K2, :m1, :m2, :Ω, :ω, :i, :v_N, :v_E, :v_r]
+    #for obs ∈ observations.props
+    #    if obs ∉ valid_values
+    #        throw(DomainError(obs, "Allowed observations are only [:P, :e, :K1, :K2, :m1, :m2, :Ω, :ω, :i, :v_N, :v_E, :v_r]"))
+    #    end
+    #end
     if !(likelihood == :Cauchy || likelihood == :Normal)
         throw(DomainError(likelihood, "likelihood must be either :Cauchy or :Normal"))
     end
 
-    @model function create_MCMC_model(obs_vals, obs_errs) 
+    @model function create_MCMC_model(obs_props, obs_vals, obs_errs) 
         # set priors
         #Pre-explosion masses and orbital period
         logm1 ~ logm1_dist
@@ -319,8 +359,13 @@ function createEccentricMCMCModel(;
         K1 = RV_semiamplitude_K1(m1=m1, m2=m2_f, P=P_f, e=e_f, i=i_f)
         K2 = RV_semiamplitude_K1(m1=m2_f, m2=m1, P=P_f, e=e_f, i=i_f)
 
-        for i in eachindex(observations.props)
-            obs_symbol = observations.props[i]
+        likelihood == :Cauchy ?
+            likelihood_dist = Cauchy :
+            likelihood_dist = Normal
+
+        # RTW TODO: when to use VonMises vs WrappedCauchy?
+        for i in eachindex(obs_props)
+            obs_symbol = obs_props[i]
             if obs_symbol == :P
                 param = P_f
             elseif obs_symbol == :e
@@ -333,35 +378,53 @@ function createEccentricMCMCModel(;
                 param = m1
             elseif obs_symbol == :m2
                 param = m2_f
-
-                # RTW TODO: fix these dists
+            elseif obs_symbol == :i
+                param = i_f
             elseif obs_symbol == :Ω
                 #obs_vals[i] ~ VonMises(Ω_f, 1/obs_errs[i]^2)#Normal(Ω_f, obs_errs[i])
-                obs_vals[i] ~ angular_likelihood_dist(Ω_f, obs_errs[i])
+                #obs_vals[i] ~ angular_likelihood_dist(Ω_f, obs_errs[i])
+                param = Ω_f
+                likelihood_dist = angular_likelihood_dist
             elseif obs_symbol == :ω
                 #obs_vals[i] ~ VonMises(ω_f, 1/obs_errs[i]^2)#Normal(ω_f, obs_errs[i])
-                obs_vals[i] ~ angular_likelihood_dist(ω_f, obs_errs[i])
-            elseif obs_symbol == :i
-                obs_vals[i] ~ likelihood_dist(i_f, obs_errs[i])
+                #obs_vals[i] ~ angular_likelihood_dist(ω_f, obs_errs[i])
+                param = ω_f
+                likelihood_dist = angular_likelihood_dist
+                #likelihood_dist = angular_likelihood_dist
                 # RTW: what is going on with these, v_N - v_N?
-            elseif obs_symbol == :v_N
-                param = v_N - v_N
-            elseif obs_symbol == :v_E
-                param = v_E - v_E
-            elseif obs_symbol == :v_r
-                param = v_r - v_r
+            else
+                continue
             end
-            likelihood == :Cauchy ?
-              obs_vals[i] ~ Cauchy(param, obs_errs[i]) :
-              obs_vals[i] ~ Normal(param, obs_errs[i]) 
+
+            obs_vals[i] ~ likelihood_dist(param, obs_errs[i])
+            #likelihood == :Cauchy ?
+            #  obs_vals[i] ~ Cauchy(param, obs_errs[i]) :
+            #  obs_vals[i] ~ Normal(param, obs_errs[i]) 
         end
+
+
+        #for 
+
+            #elseif obs_symbol == :v_N
+            #    param = v_N - v_N
+            #elseif obs_symbol == :v_E
+            #    param = v_E - v_E
+            #elseif obs_symbol == :v_r
+            #    param = v_r - v_r
+
+
         return     (m1,    m2,    P,   a,     i_f, vkick, m2_f,  a_f,   P_f,  e_f,  K1,       K2, frac)
     end
     # RTW : fix the props later
     return_props = [:m1,   :m2,   :P,  :a,    :i_f, :vkick, :m2_f, :a_f,  :P_f, :e_f, :K1,      :K2, :frac]
 
+    # Need to combine some of the observations to compare against the predicted output
     obs_vals_cgs = observations.vals .* observations.units
     obs_errs_cgs = observations.errs .* observations.units
+
+
+
+
     return [create_MCMC_model(obs_vals_cgs, obs_errs_cgs), return_props]
     
 end

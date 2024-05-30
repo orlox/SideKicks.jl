@@ -124,8 +124,6 @@ function create_corner_plot(results, plotting_props;
         Label(fig[0,:], text=supertitle, fontsize=supertitlefontsize)
     end
 
-    resize!(fig.scene, (1000, 1000))
-
     return fig
 end
 
