@@ -66,16 +66,19 @@ function create_corner_plot(results, plotting_props;
     available_props = keys(results)
     for prop ∈ props
         if prop ∉ available_props
-            throw(DomainError(prop, "Allowed props are only "*[String(aprop) for aprop in available_props] ))
+            throw(DomainError(prop, "Allowed props are only "*join([String(aprop) for aprop in available_props], ", ")))
         end
     end
 
     # Add ranges if none supplied
     num_props = length(props)
     for i in 1:num_props
-        if ismissing(ranges[i])
-            values = vec(results[props[i]])/units[i]
-            ranges[i] = [minimum(values), maximum(values)]
+        values = vec(results[props[i]])/units[i]
+        minval = minimum(values)
+        maxval = maximum(values)
+        if ismissing(ranges[i]) || minval > ranges[i][2] || maxval < ranges[i][1]
+            ranges[i] = [minval, maxval]
+            print("Range set for ", props[i], ": ", ranges[i])
         end
     end
 
@@ -149,12 +152,24 @@ end
 """
 function create_2D_density(axis, values1, ranges1, values2, ranges2, chain_weights, fractions, nbins)
 
-    filter = values1 .> ranges1[1] .&& values1 .< ranges1[2] .&&
-                values2 .> ranges2[1] .&& values2 .< ranges2[2]
+    filter1 = values1 .> ranges1[1] .&& values1 .< ranges1[2] 
+    filter2 = values2 .> ranges2[1] .&& values2 .< ranges2[2]
+    # RTW: make this check more robust
+    if sum(filter1) == 0
+        println("problem with 1")
+        println(ranges1, " ", minimum(values1), " ", maximum(values1))
+        return
+    end
+    if sum(filter2) == 0
+        println("problem with 2")
+        println(ranges2, " ", minimum(values2), " ", maximum(values2))
+        return
+    end
+    filter = filter1 .&& filter2
     values1 = values1[filter]
     values2 = values2[filter]
     chain_weights = weights(chain_weights[filter]) # weights is a StatsBase function
-
+    
     h = fit(Histogram, (values1, values2), chain_weights, nbins=nbins)
     x = (h.edges[2][2:end] .+ h.edges[2][1:end-1])./2
     y = (h.edges[1][2:end] .+ h.edges[1][1:end-1])./2
