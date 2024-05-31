@@ -173,6 +173,7 @@ function createCircularMCMCModel(;
 
         for i in eachindex(observations.props)
             obs_symbol = observations.props[i]
+            #obs_val = obs_vals[i]
             if obs_symbol == :P
                 param = P_f
             elseif obs_symbol == :e
@@ -187,8 +188,8 @@ function createCircularMCMCModel(;
                 param = m2_f
             end
             likelihood == :Cauchy ?
-              obs_vals[i] ~ Cauchy(param, obs_errs[i]) :
-              obs_vals[i] ~ Normal(param, obs_errs[i]) 
+                obs_vals[i] ~ Cauchy(param, obs_errs[i]) :
+                obs_vals[i] ~ Normal(param, obs_errs[i]) 
         end
         return     (m1,    m2,    P,   a,     i_f, vkick, m2_f,  a_f,   P_f,  e_f,  K1,       K2, frac)
     end

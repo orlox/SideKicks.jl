@@ -26,7 +26,7 @@ mcmcStruct = SideKicks.RunKickMCMC(
         priors = priors,
         nuts_warmup_count = 200,
         nuts_acceptance_rate = 0.8,
-        nsamples = 200,
+        nsamples = 2000,
         nchains = 8)
 
 ##
@@ -36,7 +36,7 @@ results = mcmcStruct.results
 plotting_props_obs_check = SideKicks.createPlottingProps([
     [:m1,    m_sun,    [15,40],        L"M_1\;[M_{\odot}]"],
     [:m2_f,  m_sun,    [6,14],         L"M_{2f}\;[M_{\odot}]"],
-    [:P_f,   day,      [10.3,10.5],  L"P_f\;[\mathrm{days}]"],
+    [:P_f,   day,      [10.3,10.5],    L"P_f\;[\mathrm{days}]"],
     [:e_f,   1,        [0,0.1],        L"e_f"],
     [:K1,    km_per_s, missing,        L"K_1  \;[\mathrm{km s}^{-1}]"],
 ])
@@ -47,7 +47,7 @@ f = create_corner_plot(results, plotting_props_obs_check,
     show_CIs=true)
 save("vfts243_obs_check.png", f)
 
-
+##
 
 plotting_props = SideKicks.createPlottingProps([
     #[:m1,    m_sun,    [15,40],        L"M_1\;[M_{\odot}]"],
