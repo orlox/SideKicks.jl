@@ -10,7 +10,7 @@ using Distributions
 """
     struct WrappedCauchy{T1<:Real, T2<:Real} <: ContinuousUnivariateDistribution
 
-The WrappedCauchy distribution captures the Cauchy distribution defined on the unit 
+The WrappedCauchy distribution resembles the Cauchy distribution defined on the unit 
 circle from 0 to 2π, with the endpoints wrapped back to each other.
 """
 struct WrappedCauchy{T1<:Real, T2<:Real} <: ContinuousUnivariateDistribution
@@ -46,13 +46,11 @@ RTW: check that N and E are identical to RA and Dec...
     vkick_dist::ContinuousUnivariateDistribution
     frac_dist::ContinuousUnivariateDistribution 
     e_dist::ContinuousUnivariateDistribution       
-    rv_src_dist::ContinuousUnivariateDistribution 
     rv_env_dist::ContinuousUnivariateDistribution 
-    pmra_src_dist::ContinuousUnivariateDistribution  
-    pmdec_src_dist::ContinuousUnivariateDistribution 
     pmra_env_dist::ContinuousUnivariateDistribution  
     pmdec_env_dist::ContinuousUnivariateDistribution 
-    distance_dist::ContinuousUnivariateDistribution 
+    parallax_dist::ContinuousUnivariateDistribution 
+    # RTW make this parallax
 end
 
 """
@@ -100,13 +98,10 @@ function createPriors(;
     # For ecc systems - ignored for circular case
     e_dist = Uniform(0,0.01)
     # RTW: fix these priors, they are too narrow for what we know about these quantities...
-    rv_src_dist    = Normal(0,0.1) # in 100 km/s
-    rv_env_dist    = Normal(0,0.1) # in 100 km/s
-    pmra_src_dist  = Normal(0,0.1) # in mas/yr 
-    pmdec_src_dist = Normal(0,0.1) # in mas/yr 
-    pmra_env_dist  = Normal(0,0.1) # in mas/yr 
-    pmdec_env_dist = Normal(0,0.1) # in mas/yr 
-    distance_dist  = Normal(0,0.1) # in kpc
+    rv_env_dist    = Normal(0,10) # in 100 km/s
+    pmra_env_dist  = Normal(0,10) # in mas/yr 
+    pmdec_env_dist = Normal(0,10) # in mas/yr 
+    parallax_dist  = Normal(0.01,0.005) # in 1/kpc
     return Priors(
         logm1_dist = logm1_dist,  
         logm2_dist = logm2_dist,  
@@ -114,13 +109,10 @@ function createPriors(;
         vkick_dist = vkick_dist,  
         frac_dist  = frac_dist,
         e_dist = e_dist,
-        rv_src_dist    = rv_src_dist,
         rv_env_dist    = rv_env_dist,
-        pmra_src_dist  = pmra_src_dist,
-        pmdec_src_dist = pmdec_src_dist,
         pmra_env_dist  = pmra_env_dist,
         pmdec_env_dist = pmdec_env_dist,
-        distance_dist  = distance_dist)
+        parallax_dist  = parallax_dist)
 end
 
 """
@@ -153,13 +145,10 @@ function createCircularMCMCModel(;
     logP_dist = priors.logP_dist
     vkick_dist = priors.vkick_dist
     frac_dist = priors.frac_dist
-    #rv_src_dist = priors.rv_src_dist
-    #rv_env_dist = priors.rv_env_dist
-    #pmra_src_dist = priors.pmra_src_dist
-    #pmdec_src_dist = priors.pmdec_src_dist
-    #pmra_env_dist = priors.pmra_env_dist
-    #pmdec_env_dist = priors.pmdec_env_dist
-    #distance_dist = priors.distance_dist
+    rv_env_dist = priors.rv_env_dist
+    pmra_env_dist = priors.pmra_env_dist
+    pmdec_env_dist = priors.pmdec_env_dist
+    parallax_dist = priors.parallax_dist
 
     # RTW: why do we need this?
     ## provided observed values
@@ -173,7 +162,7 @@ function createCircularMCMCModel(;
         throw(DomainError(likelihood, "likelihood must be either :Cauchy or :Normal"))
     end
 
-    @model function create_MCMC_model(obs_props, obs_vals, obs_errs) 
+    @model function create_MCMC_model(obs_vals, obs_errs) 
 
         # set priors
         #Pre-explosion masses and orbital period
@@ -211,9 +200,10 @@ function createCircularMCMCModel(;
         likelihood == :Cauchy ?
             likelihood_dist = Cauchy :
             likelihood_dist = Normal
+        obs_err = obs_errs[i]
 
-        for i in eachindex(obs_props)
-            obs_symbol = obs_props[i]
+        for i in eachindex(observations.props)
+            obs_symbol = observations.props[i]
             if obs_symbol == :P
                 param = P_f
             elseif obs_symbol == :e
@@ -230,12 +220,8 @@ function createCircularMCMCModel(;
                 continue
             end
 
-            obs_vals[i] ~ likelihood_dist(param, obs_errs[i])
-            #likelihood == :Cauchy ?
-            #  obs_vals[i] ~ Cauchy(param, obs_errs[i]) :
-            #  obs_vals[i] ~ Normal(param, obs_errs[i]) 
+            obs_vals[i] ~ likelihood_dist(param, obs_err) # Needs to have this [i] in the obs_vals, no idea why...
         end
-
 
         # other params
         dm2 = m2 - m2_f
@@ -277,10 +263,11 @@ function createEccentricMCMCModel(;
     logP_dist = priors.logP_dist
     e_dist = priors.e_dist
     vkick_dist = priors.vkick_dist
-    vsys_N_dist = priors.vsys_N_dist
-    vsys_E_dist = priors.vsys_E_dist
-    vsys_r_dist = priors.vsys_r_dist
     frac_dist = priors.frac_dist
+    rv_env_dist = priors.rv_env_dist
+    pmra_env_dist = priors.pmra_env_dist
+    pmdec_env_dist = priors.pmdec_env_dist
+    parallax_dist = priors.parallax_dist
 
     # provided observed values
     # RTW: why do we need this?
@@ -325,6 +312,13 @@ function createEccentricMCMCModel(;
         cosω = xω*normω
         ω = arccos(cosω)
 
+        #rv_env_dist = 
+        #pmra_env_dist =
+        #pmdec_env_dist 
+        #parallax_dist =
+        # TODO: how to specify either pm/parallax or v_Sys priors?
+
+
         #Post-explosion masses
         frac ~ frac_dist
         m2_f = bhModel(m2, frac) # star 2 explodes, star 1 is kept fixed
@@ -362,6 +356,7 @@ function createEccentricMCMCModel(;
         likelihood == :Cauchy ?
             likelihood_dist = Cauchy :
             likelihood_dist = Normal
+        obs_err = obs_errs[i]
 
         # RTW TODO: when to use VonMises vs WrappedCauchy?
         for i in eachindex(obs_props)
@@ -381,37 +376,34 @@ function createEccentricMCMCModel(;
             elseif obs_symbol == :i
                 param = i_f
             elseif obs_symbol == :Ω
-                #obs_vals[i] ~ VonMises(Ω_f, 1/obs_errs[i]^2)#Normal(Ω_f, obs_errs[i])
-                #obs_vals[i] ~ angular_likelihood_dist(Ω_f, obs_errs[i])
                 param = Ω_f
-                likelihood_dist = angular_likelihood_dist
+                if likelihood == :Cauchy 
+                    likelihood_dist = WrappedCauchy
+                else
+                    likelihood_dist = VonMises
+                    obs_err = 1/obs_errs[i]^2
+                end
             elseif obs_symbol == :ω
-                #obs_vals[i] ~ VonMises(ω_f, 1/obs_errs[i]^2)#Normal(ω_f, obs_errs[i])
-                #obs_vals[i] ~ angular_likelihood_dist(ω_f, obs_errs[i])
                 param = ω_f
-                likelihood_dist = angular_likelihood_dist
-                #likelihood_dist = angular_likelihood_dist
-                # RTW: what is going on with these, v_N - v_N?
-            else
-                continue
-            end
-
-            obs_vals[i] ~ likelihood_dist(param, obs_errs[i])
-            #likelihood == :Cauchy ?
-            #  obs_vals[i] ~ Cauchy(param, obs_errs[i]) :
-            #  obs_vals[i] ~ Normal(param, obs_errs[i]) 
-        end
-
-
-        #for 
-
+                if likelihood == :Cauchy 
+                    likelihood_dist = WrappedCauchy
+                else
+                    likelihood_dist = VonMises
+                    obs_err = 1/obs_errs[i]^2
+                end
+            # RTW: what is going on with these, v_N - v_N?
             #elseif obs_symbol == :v_N
             #    param = v_N - v_N
             #elseif obs_symbol == :v_E
             #    param = v_E - v_E
             #elseif obs_symbol == :v_r
             #    param = v_r - v_r
+            else
+                continue
+            end
 
+            obs_vals[i] ~ likelihood_dist(param, obs_err)
+        end
 
         return     (m1,    m2,    P,   a,     i_f, vkick, m2_f,  a_f,   P_f,  e_f,  K1,       K2, frac)
     end
@@ -487,6 +479,7 @@ function RunKickMCMC(; pre_supernova_orbit, observations::Observations, priors::
     else
         println("Weights are off!!")
         results[:weights] = ones(size(weights)) 
+        # TODO: throw an exception here
     end
 
     #RTW this was from the previous iteration, is this still relevant?

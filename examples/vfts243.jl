@@ -16,6 +16,10 @@ priors = SideKicks.createPriors(
     logP_dist  = Uniform(-1,3),   # in log(days)
     vkick_dist = Exponential(1), # in 100 km/s
     frac_dist  = Uniform(0,1.0)
+    rv_env_dist    = Normal(0,10) # in 100 km/s
+    #pmra_env_dist  = Normal(0,10) # in mas/yr 
+    #pmdec_env_dist = Normal(0,10) # in mas/yr 
+    #parallax_dist  = Normal(0.01,0.005) # in 1/kpc
 )
 
 ##
@@ -26,7 +30,7 @@ mcmcStruct = SideKicks.RunKickMCMC(
         priors = priors,
         nuts_warmup_count = 200,
         nuts_acceptance_rate = 0.8,
-        nsamples = 2000,
+        nsamples = 200,
         nchains = 8)
 
 ##
