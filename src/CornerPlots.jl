@@ -54,7 +54,7 @@ function create_corner_plot(results, plotting_props;
         fig=Figure(), supertitle=missing,
         fractions=[0.68,0.95,0.997], fraction_1D=0.68, 
         show_CIs=false, nbins=100,
-        rowcolgap=15, xticklabelrotation=20,
+        rowcolgap=10, xticklabelrotation=20,
         labelfontsize=16, tickfontsize=4, supertitlefontsize=30)
 
     props = plotting_props.props
@@ -72,54 +72,79 @@ function create_corner_plot(results, plotting_props;
 
     # Add ranges if none supplied
     num_props = length(props)
-    for i in 1:num_props
-        values = vec(results[props[i]])/units[i]
+    for ii in 1:num_props
+        values = vec(results[props[ii]])/units[ii]
         minval = minimum(values)
         maxval = maximum(values)
-        if ismissing(ranges[i]) || minval > ranges[i][2] || maxval < ranges[i][1]
-            ranges[i] = [minval, maxval]
-            print("Range set for ", props[i], ": ", ranges[i])
+        if ismissing(ranges[ii]) || minval > ranges[ii][2] || maxval < ranges[ii][1]
+            ranges[ii] = [minval, maxval]
+            println("Range set for ", props[ii], ": ", ranges[ii])
         end
     end
 
     # Create 2D density plots
     num_col = num_props
-    for i in 1:num_col-1
-        for  j in i+1:num_col
-            axis = Axis(fig[j,i], xtickalign=1, xtickcolor = :white, ytickalign=1, ytickcolor = :white, 
-                        xlabel=names[i], ylabel=names[j], 
+    for ii in 1:num_col-1
+        for  jj in ii+1:num_col
+            axis = Axis(fig[jj+1,ii], xtickalign=1, xtickcolor = :white, ytickalign=1, ytickcolor = :white, 
+                        aspect=1,
+                        xlabel=names[ii], ylabel=names[jj], 
                         xlabelsize=labelfontsize, ylabelsize=labelfontsize,
                         xticklabelrotation=xticklabelrotation,
                         xticklabelsize=tickfontsize, yticklabelsize=tickfontsize)
-            create_2D_density(axis, vec(results[props[i]])/units[i], ranges[i], vec(results[props[j]])/units[j], ranges[j], vec(results[:weights]), fractions, nbins)
-            if i>1
+            create_2D_density(axis, vec(results[props[ii]])/units[ii], ranges[ii], vec(results[props[jj]])/units[jj], ranges[jj], vec(results[:weights]), fractions, nbins)
+            if ii>1
                 hideydecorations!(axis, ticks=false, minorticks=false)
             end
-            if j!=num_col
+            if jj!=num_col
                 hidexdecorations!(axis,ticks=false, minorticks=false)
             end         
         end  
     end 
     # Create 1D PDFs along the diagonal
-    for i in 1:num_col
-        axis = Axis(fig[i,i], xgridvisible = false, ygridvisible = false, xtickalign=1, xlabel=names[i],
+    latex_bounds_array = Array{AbstractString}(undef, num_col)
+    for ii in 1:num_col
+        axis = Axis(fig[ii+1,ii], xgridvisible = false, ygridvisible = false, xtickalign=1, xlabel=names[ii],
+                    aspect=1,
                         xlabelsize=labelfontsize, ylabelsize=labelfontsize,
                         xticklabelrotation=xticklabelrotation,
                         xticklabelsize=tickfontsize, yticklabelsize=tickfontsize)
-        (xmin, xmode, xmax) = create_compound_1D_densities(axis, results[props[i]]/units[i], ranges[i], results[:weights], fraction_1D, nbins)
+        (xmin, xmode, xmax) = create_compound_1D_densities(axis, results[props[ii]]/units[ii], ranges[ii], results[:weights], fraction_1D, nbins)
         hideydecorations!(axis)
-        if i !=num_col
+        if ii !=num_col
             hidexdecorations!(axis,ticks=false, minorticks=false)
         end
         str_xmode = round(xmode, sigdigits=3)
         str_upp = round(xmax-xmode, sigdigits=3)
         str_low = round(xmode-xmin, sigdigits=3)
         latex_bounds = L"%$(str_xmode)^{+%$(str_upp)}_{-%$(str_low)}"
+        latex_bounds_array[ii] = latex_bounds
+
+        println(names[ii]*"="*latex_bounds)
         if show_CIs
-            axis.title = latex_bounds
+            # RTW: streamline this
+            if ii == 1
+                Label(fig[ii,ii], latex_bounds, 
+                      valign=:bottom, fontsize=20,
+                      tellwidth=false)
+
+                axis = Axis(fig[ii,ii], aspect=3,
+                            xgridvisible = false, ygridvisible = false)
+                hidedecorations!(axis)
+                hidespines!(axis)
+            else
+                Label(fig[ii,ii], latex_bounds, 
+                      valign=:bottom, fontsize=20,
+                      tellwidth=false, tellheight=false)
+                axis = Axis(fig[ii,ii], aspect=1,
+                            xgridvisible = false, ygridvisible = false)
+                hidedecorations!(axis)
+                hidespines!(axis)
+            end
         end
-        println(names[i]*"="*latex_bounds)
     end     
+
+    # Readjust rows and columns
     rowgap!(fig.layout, rowcolgap)
     colgap!(fig.layout, rowcolgap)
 
@@ -127,6 +152,8 @@ function create_corner_plot(results, plotting_props;
         Label(fig[0,:], text=supertitle, fontsize=supertitlefontsize)
     end
 
+    resolution=600 .*(1,1)
+    resize!(fig.scene, resolution)
     return fig
 end
 
@@ -173,10 +200,8 @@ function create_2D_density(axis, values1, ranges1, values2, ranges2, chain_weigh
     h = fit(Histogram, (values1, values2), chain_weights, nbins=nbins)
     x = (h.edges[2][2:end] .+ h.edges[2][1:end-1])./2
     y = (h.edges[1][2:end] .+ h.edges[1][1:end-1])./2
-    heatmap!(axis, y, x, h.weights)
+    heatmap!(axis, y, x, h.weights, colormap=:dense)
     bounds = get_bounds_for_fractions(h, fractions)
-   
-    contour!(axis, y, x, h.weights, levels=bounds, color=:black, linewidth=2)
 end  
 
 """
@@ -196,11 +221,11 @@ fractions:
 function get_bounds_for_fractions(h, fractions)
     integral = sum(h.weights)
     bounds =zeros(length(fractions))
-    for (j,fraction) in enumerate(fractions)
+    for (jj,fraction) in enumerate(fractions)
         minbound = 0
         maxbound = maximum(h.weights)
         newbound = 0
-        for i in 1:15
+        for ii in 1:15
             newbound = 0.5*(minbound+maxbound)
             integral2 = sum(h.weights[h.weights.>newbound])
             newfraction = integral2/integral
@@ -211,7 +236,7 @@ function get_bounds_for_fractions(h, fractions)
             end
 
         end
-        bounds[j] = newbound
+        bounds[jj] = newbound
         
     end 
     return bounds
@@ -268,9 +293,9 @@ end
 function create_compound_1D_densities(axis, values_matrix, range, chain_weights_matrix, fraction_1D, nbins)
 
     # Iterate over the different chains
-    for i in 1:size(values_matrix)[1] # nchains
-        values = values_matrix[i,:]
-        chain_weights = chain_weights_matrix[i,:]
+    for ii in 1:size(values_matrix)[1] # nchains
+        values = values_matrix[ii,:]
+        chain_weights = chain_weights_matrix[ii,:]
         create_1D_density(axis, values, range, chain_weights, fraction_1D, nbins, color=(:gray, 0.4), linewidth=1)
     end
 
