@@ -17,10 +17,6 @@ obs = SideKicks.createObservations([
     [:venv_r,  271.6,   12.2,    km_per_s],
 ]) 
 
-# venv is a prior! Not an observation...
-# vsys is an observation
-# Should the venv be an observation as well?
-
 priors = SideKicks.Priors(
     logm1_dist = Uniform(0.1,3), # in log(Msun)
     logm2_dist = Uniform(0.1,3), # in log(Msun)
@@ -28,23 +24,14 @@ priors = SideKicks.Priors(
     vkick_dist = Exponential(1), # in 100 km/s
     frac_dist  = Uniform(0,1.0),
     e_dist = Uniform(0,0.01),
-    # scrappy values roughly taken from Tomer
-    #venv_N_dist = Normal(0,0.1), # in 100 km/s
-    #venv_E_dist = Normal(0.2,0.1), # in 100 km/s
-    #venv_r_dist = Normal(0.2,0.1), # in 100 km/s
-
-    #rv_env_dist    = Normal(0,10) # in 100 km/s
-    #pmra_env_dist  = Normal(0,10) # in mas/yr 
-    #pmdec_env_dist = Normal(0,10) # in mas/yr 
-    #parallax_dist  = Normal(0.01,0.005) # in 1/kpc
 )
 
 
 ##
 
 mcmcStruct = SideKicks.RunKickMCMC(
-        pre_supernova_orbit = :circular,
-        #pre_supernova_orbit = :eccentric,
+        #pre_supernova_orbit = :circular,
+        pre_supernova_orbit = :eccentric,
         observations = obs,
         priors = priors,
         nuts_warmup_count = 200,
@@ -89,9 +76,11 @@ plotting_props = SideKicks.createPlottingProps([
     #[:m2_f,   m_sun,    [6,14],         L"M_{2f}\;[M_{\odot}]"],
     #[:P_f,    day,      [10.37,10.43],  L"P_f\;[\mathrm{days}]"],
     #[:e_f,    1,        [0,0.1],        L"e_f"],
-    [:m2,     m_sun,    [0,20],         L"M_2  \;[M_{\odot}]"],
+    #[:m2,     m_sun,    missing,         L"M_2  \;[M_{\odot}]"],
+    [:m2,     m_sun,    [0,25],         L"M_2  \;[M_{\odot}]"],
     [:dm2,    m_sun,    [0, 4],        L"ΔM_2  \;[M_{\odot}]"],
-    [:P,      day,      [9,11],        L"P  \;[\mathrm{days}]"],
+    #[:dm2,    m_sun,    missing,        L"ΔM_2  \;[M_{\odot}]"],
+    [:P,      day,      [8,12],        L"P  \;[\mathrm{days}]"],
     #[:a,      r_sun,    missing,        L"a  \;[R_{odot}]"],
     #[:i_f,    pi,       missing,        L"i_f  \;[π rad]"],
     [:vkick, km_per_s,  [0,50],         L"v_{kick}  \;[\mathrm{km s}^{-1}]"],
@@ -114,9 +103,37 @@ f
 
 ##
 
-@kwdef struct mystruct6
-    a::Union{ContinuousUnivariateDistribution,Missing} = missing
-end
-##
+# Eccentric plotting
 
-mystruct6()
+plotting_props = SideKicks.createPlottingProps([
+    #[:m1,     m_sun,    [15,40],        L"M_1\;[M_{\odot}]"],
+    #[:m2_f,   m_sun,    [6,14],         L"M_{2f}\;[M_{\odot}]"],
+    #[:P_f,    day,      [10.37,10.43],  L"P_f\;[\mathrm{days}]"],
+    #[:e_f,    1,        [0,0.1],        L"e_f"],
+    #[:m2,     m_sun,    missing,         L"M_2  \;[M_{\odot}]"],
+    [:m2,     m_sun,    [0,25],         L"M_2  \;[M_{\odot}]"],
+    [:dm2,    m_sun,    [0, 4],        L"ΔM_2  \;[M_{\odot}]"],
+    #[:dm2,    m_sun,    missing,        L"ΔM_2  \;[M_{\odot}]"],
+    [:P,      day,      [8,12],        L"P  \;[\mathrm{days}]"],
+    #[:a,      r_sun,    missing,        L"a  \;[R_{odot}]"],
+    #[:i_f,    pi,       missing,        L"i_f  \;[π rad]"],
+    [:vkick, km_per_s,  [0,50],         L"v_{kick}  \;[\mathrm{km s}^{-1}]"],
+    #[:a_f,   r_sun,     missing,        L"a_f  \;[R_{odot}]"],
+    #[:K1,    km_per_s,  missing,        L"K_1  \;[\mathrm{km s}^{-1}]"],
+    #[:K2,    km_per_s,  missing,        L"K_2  \;[\mathrm{km s}^{-1}]"],
+    #[:frac,  1,         missing,        L"f_{fb}"],
+    [:vsys,  km_per_s, [0,50],        L"v_{\mathrm{sys}} \;[\mathrm{km s}^{-1}]"], 
+    [:vnet_N,  km_per_s, [0,50],        L"v_{\mathrm{net,N}} \;[\mathrm{km s}^{-1}]"], 
+    [:vnet_E,  km_per_s, [0,50],        L"v_{\mathrm{net,E}} \;[\mathrm{km s}^{-1}]"], 
+    [:vnet_r,  km_per_s, [0,50],        L"v_{\mathrm{net,r}} \;[\mathrm{km s}^{-1}]"], 
+])
+
+f = create_corner_plot(results, plotting_props,
+    tickfontsize=10 ,
+    xticklabelrotation=pi/4, 
+    show_CIs=true,
+    supertitle="Derived quantities"
+    )
+save("vfts243_ecc.png", f)
+
+f   

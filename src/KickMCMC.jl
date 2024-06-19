@@ -7,6 +7,8 @@ using Distributions
 ### 
 ########################
 
+# RTW TODO: Add in functionality for vsys/venv or pmra/pmdec/parallax
+
 """
     struct WrappedCauchy{T1<:Real, T2<:Real} <: ContinuousUnivariateDistribution
 
@@ -110,42 +112,8 @@ function addObservation(obs::Observations, new_obs::Vector{Any})
         units = units)
 end
 
-#function createPriors(;
-#    logm1_dist = Uniform(0.1,3), # in log(Msun)
-#    logm2_dist = Uniform(0.1,3), # in log(Msun)
-#    logP_dist  = Uniform(-1,3),   # in log(days)
-#    vkick_dist = Exponential(1), # in 100 km/s
-#    frac_dist  = Uniform(0,1.0),
-#    # For ecc systems - ignored for circular case
-#    e_dist = Uniform(0,0.01),
-#    vsys_N_dist = Normal(0,0.1), # in 100 km/s
-#    vsys_E_dist = Normal(0,0.1), # in 100 km/s
-#    vsys_r_dist = Normal(0,0.1), # in 100 km/s
-#    # RTW: fix these priors, they are too narrow for what we know about these quantities...
-#    #rv_env_dist    = Normal(0,10) # in 100 km/s
-#    #pmra_env_dist  = Normal(0,10) # in mas/yr 
-#    #pmdec_env_dist = Normal(0,10) # in mas/yr 
-#    #parallax_dist  = Normal(0.01,0.005) # in 1/kpc
-#    )
-#    return Priors(
-#        logm1_dist = logm1_dist,  
-#        logm2_dist = logm2_dist,  
-#        logP_dist  = logP_dist ,  
-#        vkick_dist = vkick_dist,  
-#        frac_dist  = frac_dist,
-#        e_dist = e_dist,
-#        vsys_N_dist = vsys_N_dist,
-#        vsys_E_dist = vsys_E_dist,
-#        vsys_r_dist = vsys_r_dist,
-#        #rv_env_dist    = rv_env_dist,
-#        #pmra_env_dist  = pmra_env_dist,
-#        #pmdec_env_dist = pmdec_env_dist,
-#        #parallax_dist  = parallax_dist,
-#       )
-#end
 
-
-# RTW: improve this, they should only be setting one at a time
+# RTW TODO: improve and implement this, they should only be setting one at a time
 function SetDefaultPrior(;
     logm1_dist = nothing,
     logm2_dist = nothing,
@@ -205,6 +173,7 @@ function SetDefaultPrior(;
 end
 
 
+
 """
     createSimpleCircularMCMCModel(observations, observed_values, observed_errors)
 
@@ -232,14 +201,6 @@ function createCircularMCMCModel(;
 
     # Verify priors are set correctly
     # Need m1, m2, vkick, and frac
-    # Then either <vsys_N, vsys_E, vsys_r>
-    # or <rv_env_dist, pmra_env_dist, pmdec_env_dist, parallax_dist >
-    # RTW TODO: add this in later
-    # RTW TODO: how to do velocity for circular systems? For the obs_vals[ii] likelihood,
-    # we need to supply this initially, so maybe we need to just calculate this ahead of time
-    # and supply a total velocity distribution as the observation? Seems sketchy, but I don't
-    # know how to combine the obs_vals[ii] for the 3 coordinates within this function...
-    # Also, I don't think the circular function in Orbits.jl can output directional information...
 
     logm1_dist = priors.logm1_dist
     logm2_dist = priors.logm2_dist
@@ -247,9 +208,6 @@ function createCircularMCMCModel(;
     vkick_dist = priors.vkick_dist
     frac_dist = priors.frac_dist
 
-    #venv_N_dist = priors.venv_N_dist
-    #venv_E_dist = priors.venv_E_dist
-    #venv_r_dist = priors.venv_r_dist
 
     # Define a new observation object for the net velocity
     obs = deepcopy(observations)
@@ -269,7 +227,7 @@ function createCircularMCMCModel(;
             if !all( [:venv_N, :venv_E, :venv_r] .∈ (obs.props,))
                 println("Raise error, either set all venv or none")
             # RTW make this error proper
-            # If venv not supplied, treat them all as 0
+            # If venv not supplied, treat them all as 0 - handled below
             end
         end    
 
@@ -291,11 +249,8 @@ function createCircularMCMCModel(;
                          vsysenv_errs[3]^2 + vsysenv_errs[4]^2 +
                          vsysenv_errs[5]^2 + vsysenv_errs[6]^2 )
         obs = addObservation(obs, [:vnet, vnet_val, vnet_err, km_per_s])
-        println("vnet_val = ", vnet_val)
-        println("vnet_err = ", vnet_err)
     end
 
-    println(obs)
     # Add back in later
     #rv_env_dist = priors.rv_env_dist
     #pmra_env_dist = priors.pmra_env_dist
@@ -343,24 +298,6 @@ function createCircularMCMCModel(;
         cosϕ = xϕ*normϕ
         ϕ = acos(cosϕ)
 
-        # delete later
-        #Initial systemic velocity parameters
-        #if use_vsys
-        #    #vsys_N_100kms ~ vsys_N_dist
-        #    #vsys_E_100kms ~ vsys_E_dist
-        #    #vsys_r_100kms ~ vsys_r_dist
-        #    #vsys_N = vsys_N_100kms*100*km_per_s
-        #    #vsys_E = vsys_E_100kms*100*km_per_s
-        #    #vsys_r = vsys_r_100kms*100*km_per_s
-        #    venv_N_100kms ~ venv_N_dist
-        #    venv_E_100kms ~ venv_E_dist
-        #    venv_r_100kms ~ venv_r_dist
-        #    venv_N = venv_N_100kms*100*km_per_s 
-        #    venv_E = venv_E_100kms*100*km_per_s 
-        #    venv_r = venv_r_100kms*100*km_per_s 
-        #    venv = sqrt(venv_N*venv_N + venv_E*venv_E + venv_r*venv_r)
-        #end
-
         #m1 is assumed to remain constant
         a_f, e_f = post_supernova_circular_orbit_a(m1=m1, m2=m2, a=a, m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ)
         P_f = kepler_P_from_a(m1=m1, m2=m2_f, a=a_f)
@@ -390,12 +327,6 @@ function createCircularMCMCModel(;
                 param = m2_f
             elseif obs_symbol == :vnet
                 param = vsys
-            #elseif obs_symbol == :vsys_N
-            #    param = v_N - venv_N
-            #elseif obs_symbol == :vsys_E
-            #    param = v_E - venv_E
-            #elseif obs_symbol == :vsys_r
-            #    param = v_r - venv_r
             else
                 continue
             end
@@ -445,22 +376,52 @@ function createEccentricMCMCModel(;
     vkick_dist = priors.vkick_dist
     frac_dist = priors.frac_dist
 
-    venv_N_dist = priors.venv_N_dist
-    venv_E_dist = priors.venv_E_dist
-    venv_r_dist = priors.venv_r_dist
-
+    obs = deepcopy(observations)
     use_vsys = false
     # if any of the vsys objects are in the observations, check that
     # they all are, then make sure that the venv priors are used
-    if any( [:vsys_N, :vsys_E, :vsys_r] .∈ (observations.props,))
-        if !all( [:vsys_N, :vsys_E, :vsys_r] .∈ (observations.props,))
+    if any( [:vsys_N, :vsys_E, :vsys_r] .∈ (obs.props,))
+        if !all( [:vsys_N, :vsys_E, :vsys_r] .∈ (obs.props,))
             println("Raise error, either set all venv or none")
         else
             use_vsys = true
         end
     end
+    if use_vsys
+        if any( [:venv_N, :venv_E, :venv_r] .∈ (obs.props,))
+            if !all( [:venv_N, :venv_E, :venv_r] .∈ (obs.props,))
+                println("Raise error, either set all venv or none")
+            # RTW make this error proper
+            # If venv not supplied, treat them all as 0 - handled below
+            end
+        end    
+        
+        # need to extract all the key values
+        vsysenv_vals = zeros(6, 1)
+        vsysenv_errs = zeros(6, 1)
+        props = [ :vsys_N, :vsys_E, :vsys_r, :venv_N, :venv_E, :venv_r]
+        for ii in eachindex(props)
+            if props[ii] ∈ obs.props
+                idx = findall(x->x==props[ii], obs.props)[1]
+                vsysenv_vals[ii] = obs.vals[idx]
+                vsysenv_errs[ii] = obs.errs[idx]
+            end
+        end
 
-    # Add back in later
+        vnet_val_N = abs(vsysenv_vals[1] - vsysenv_vals[4])
+        vnet_val_E = abs(vsysenv_vals[2] - vsysenv_vals[5])
+        vnet_val_r = abs(vsysenv_vals[3] - vsysenv_vals[6])
+        vnet_err_N = sqrt(vsysenv_errs[1]^2 + vsysenv_errs[4]^2)
+        vnet_err_E = sqrt(vsysenv_errs[2]^2 + vsysenv_errs[5]^2)
+        vnet_err_r = sqrt(vsysenv_errs[3]^2 + vsysenv_errs[6]^2)
+        #println("vnet_N: ",vnet_val_N, " ", vnet_err_N) #  2.0 16.97056274847714
+        #println("vnet_E: ",vnet_val_E, " ", vnet_err_E) #  12.0 14.422205101855956
+        #println("vnet_r: ",vnet_val_r, " ", vnet_err_r) #  11.400000000000034 12.233151678941939
+        obs = addObservation(obs, [:vnet_N, vnet_val_N, vnet_err_N, km_per_s])
+        obs = addObservation(obs, [:vnet_E, vnet_val_E, vnet_err_E, km_per_s])
+        obs = addObservation(obs, [:vnet_r, vnet_val_r, vnet_err_r, km_per_s])
+    end
+
     #rv_env_dist = priors.rv_env_dist
     #pmra_env_dist = priors.pmra_env_dist
     #pmdec_env_dist = priors.pmdec_env_dist
@@ -475,9 +436,9 @@ function createEccentricMCMCModel(;
     # provided observed values
     # RTW: why do we need this?
     #valid_values = [:P, :e, :K1, :K2, :m1, :m2, :Ω, :ω, :i, :v_N, :v_E, :v_r]
-    #for obs ∈ observations.props
+    #for obs ∈ obs.props
     #    if obs ∉ valid_values
-    #        throw(DomainError(obs, "Allowed observations are only [:P, :e, :K1, :K2, :m1, :m2, :Ω, :ω, :i, :v_N, :v_E, :v_r]"))
+    #        throw(DomainError(obs, "Allowed obs are only [:P, :e, :K1, :K2, :m1, :m2, :Ω, :ω, :i, :v_N, :v_E, :v_r]"))
     #    end
     #end
     if !(likelihood == :Cauchy || likelihood == :Normal)
@@ -496,7 +457,6 @@ function createEccentricMCMCModel(;
         a = kepler_a_from_P(m1=m1, m2=m2, P=P)
         e ~ e_dist
         cosi ~ Uniform(0,1)
-        #sini = sqrt(1-cosi^2)
         i = acos(cosi)
         #azimuthal angles are computed by sampling random points with a circularly symmetric distribution
         #we take all true anomalies to be equally likely. This is corrected by weighting later
@@ -516,13 +476,6 @@ function createEccentricMCMCModel(;
         cosω = xω*normω
         ω = acos(cosω)
 
-        #rv_env_dist = 
-        #pmra_env_dist =
-        #pmdec_env_dist 
-        #parallax_dist =
-        # TODO: how to specify either pm/parallax or v_Sys priors?
-
-
         #Post-explosion masses
         frac ~ frac_dist
         m2_f = bhModel(m2, frac) # star 2 explodes, star 1 is kept fixed
@@ -541,21 +494,21 @@ function createEccentricMCMCModel(;
             ϕ = 2π - ϕ
         end
 
-        #Initial systemic velocity parameters
-        if use_vsys
-            #vsys_N_100kms ~ vsys_N_dist
-            #vsys_E_100kms ~ vsys_E_dist
-            #vsys_r_100kms ~ vsys_r_dist
-            #vsys_N = vsys_N_100kms*100*km_per_s
-            #vsys_E = vsys_E_100kms*100*km_per_s
-            #vsys_r = vsys_r_100kms*100*km_per_s
-            venv_N_100kms ~ venv_N_dist
-            venv_E_100kms ~ venv_E_dist
-            venv_r_100kms ~ venv_r_dist
-            venv_N = venv_N_100kms*100*km_per_s 
-            venv_E = venv_E_100kms*100*km_per_s 
-            venv_r = venv_r_100kms*100*km_per_s 
-        end
+        ##Initial systemic velocity parameters
+        #if use_vsys
+        #    #vsys_N_100kms ~ vsys_N_dist
+        #    #vsys_E_100kms ~ vsys_E_dist
+        #    #vsys_r_100kms ~ vsys_r_dist
+        #    #vsys_N = vsys_N_100kms*100*km_per_s
+        #    #vsys_E = vsys_E_100kms*100*km_per_s
+        #    #vsys_r = vsys_r_100kms*100*km_per_s
+        #    venv_N_100kms ~ venv_N_dist
+        #    venv_E_100kms ~ venv_E_dist
+        #    venv_r_100kms ~ venv_r_dist
+        #    venv_N = venv_N_100kms*100*km_per_s 
+        #    venv_E = venv_E_100kms*100*km_per_s 
+        #    venv_r = venv_r_100kms*100*km_per_s 
+        #end
 
         #m1 is assumed to remain constant, no impact velocity
         a_f, e_f, Ω_f, ω_f, i_f, v_N, v_E, v_r = 
@@ -564,16 +517,15 @@ function createEccentricMCMCModel(;
         P_f = kepler_P_from_a(m1=m1, m2=m2_f, a=a_f)
         K1 = RV_semiamplitude_K1(m1=m1, m2=m2_f, P=P_f, e=e_f, i=i_f)
         K2 = RV_semiamplitude_K1(m1=m2_f, m2=m1, P=P_f, e=e_f, i=i_f)
+        vsys = sqrt( v_N^2 + v_E^2 + v_r^2)
 
         likelihood == :Cauchy ?
             likelihood_dist = Cauchy :
             likelihood_dist = Normal
+        useVonMises = false
 
-        # TODO: how to deal with obs error?
-
-        for ii in eachindex(observations.props)
-            obs_symbol = observations.props[ii]
-            obs_err = obs_errs[ii]
+        for ii in eachindex(obs.props)
+            obs_symbol = obs.props[ii]
             if obs_symbol == :P
                 param = P_f
             elseif obs_symbol == :e
@@ -594,7 +546,7 @@ function createEccentricMCMCModel(;
                     likelihood_dist = WrappedCauchy
                 else
                     likelihood_dist = VonMises
-                    obs_err = 1/obs_errs[ii]^2
+                    useVonMises = true
                 end
             elseif obs_symbol == :ω
                 param = ω_f
@@ -602,32 +554,36 @@ function createEccentricMCMCModel(;
                     likelihood_dist = WrappedCauchy
                 else
                     likelihood_dist = VonMises
-                    obs_err = 1/obs_errs[ii]^2
+                    useVonMises = true
                 end
-            # RTW: what is going on with these, v_N - v_N?
-            elseif obs_symbol == :vsys_N
-                param = v_N - venv_N
-            elseif obs_symbol == :vsys_E
-                param = v_E - venv_E
-            elseif obs_symbol == :vsys_r
-                param = v_r - venv_r
+            elseif obs_symbol == :vnet_N
+                param = v_N
+            elseif obs_symbol == :vnet_E
+                param = v_E
+            elseif obs_symbol == :vnet_r
+                param = v_r
             else
                 continue
             end
 
-            obs_vals[ii] ~ likelihood_dist(param, obs_err)
+            # vonMises has weird errors, need to handle here
+            if !useVonMises
+                obs_vals[ii] ~ likelihood_dist(param, obs_errs[ii])
+            else
+                obs_vals[ii] ~ likelihood_dist(param, 1/obs_errs[ii]^2)
+            end
         end
 
         # other params
         dm2 = m2 - m2_f
-        return     (m1,    m2,    P,   a,     i_f, vkick, m2_f,  a_f,   P_f,  e_f,  K1,       K2, frac, dm2)
+        return     ( m1,  m2,  P,  e,  a,  i_f,  vkick,  m2_f,  a_f,  P_f,  e_f,  K1,  K2,  frac,  dm2,  v_N,  v_E,  v_r,  vsys)
     end
     # RTW : fix the props later
-    return_props = [:m1,   :m2,   :P,  :a,    :i_f, :vkick, :m2_f, :a_f,  :P_f, :e_f, :K1,      :K2, :frac, :dm2]
+    return_props = [:m1, :m2, :P, :e, :a, :i_f, :vkick, :m2_f, :a_f, :P_f, :e_f, :K1, :K2, :frac, :dm2, :v_N, :v_E, :v_r, :vsys]
 
     # Need to combine some of the observations to compare against the predicted output
-    obs_vals_cgs = observations.vals .* observations.units
-    obs_errs_cgs = observations.errs .* observations.units
+    obs_vals_cgs = obs.vals .* obs.units
+    obs_errs_cgs = obs.errs .* obs.units
 
     return [create_MCMC_model(obs_vals_cgs, obs_errs_cgs), return_props]
     
