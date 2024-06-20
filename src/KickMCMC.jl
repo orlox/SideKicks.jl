@@ -245,9 +245,13 @@ function createCircularMCMCModel(;
         vnet_val = sqrt((vsysenv_vals[1]-vsysenv_vals[4])^2 +
                         (vsysenv_vals[2]-vsysenv_vals[5])^2 +
                         (vsysenv_vals[3]-vsysenv_vals[6])^2 )
-        vnet_err = sqrt( vsysenv_errs[1]^2 + vsysenv_errs[2]^2 + 
-                         vsysenv_errs[3]^2 + vsysenv_errs[4]^2 +
-                         vsysenv_errs[5]^2 + vsysenv_errs[6]^2 )
+        vnet_err = (1/vnet_val) * sqrt( 
+                (vsysenv_errs[1]^2 + vsysenv_errs[4]^2)
+                    *(vsysenv_vals[1]-vsysenv_vals[4]) +
+                (vsysenv_errs[2]^2 + vsysenv_errs[5]^2)
+                    *(vsysenv_vals[2]-vsysenv_vals[5]) +
+                (vsysenv_errs[3]^2 + vsysenv_errs[6]^2)
+                    *(vsysenv_vals[3]-vsysenv_vals[6]))
         obs = addObservation(obs, [:vnet, vnet_val, vnet_err, km_per_s])
     end
 
@@ -408,9 +412,9 @@ function createEccentricMCMCModel(;
             end
         end
 
-        vnet_val_N = abs(vsysenv_vals[1] - vsysenv_vals[4])
-        vnet_val_E = abs(vsysenv_vals[2] - vsysenv_vals[5])
-        vnet_val_r = abs(vsysenv_vals[3] - vsysenv_vals[6])
+        vnet_val_N = vsysenv_vals[1] - vsysenv_vals[4]
+        vnet_val_E = vsysenv_vals[2] - vsysenv_vals[5]
+        vnet_val_r = vsysenv_vals[3] - vsysenv_vals[6]
         vnet_err_N = sqrt(vsysenv_errs[1]^2 + vsysenv_errs[4]^2)
         vnet_err_E = sqrt(vsysenv_errs[2]^2 + vsysenv_errs[5]^2)
         vnet_err_r = sqrt(vsysenv_errs[3]^2 + vsysenv_errs[6]^2)
