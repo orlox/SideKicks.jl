@@ -1,5 +1,6 @@
 using Turing
 using Distributions
+using Logging
 
 ########################
 ### 
@@ -418,11 +419,17 @@ function createEccentricMCMCModel(;
         normΩ = 1/sqrt(xΩ^2+yΩ^2)
         cosΩ = xΩ*normΩ
         Ω = acos(cosΩ)
+        if yΩ < 0
+            Ω = 2π - Ω
+        end
         xω ~ Normal()
         yω ~ Normal()
         normω = 1/sqrt(xω^2+yω^2)
         cosω = xω*normω
         ω = acos(cosω)
+        if yω < 0
+            ω = 2π - ω
+        end
 
         #Post-explosion masses
         frac ~ frac_dist
@@ -558,9 +565,14 @@ function RunKickMCMC(; pre_supernova_orbit, observations::Observations, priors::
                     nsamples,
                     nchains);
 
-    # Compute weights to get sampling from a normal distribution
-    loglikelihoods_cauchy = pointwise_loglikelihoods(mcmc_cauchy, chains)
-    loglikelihoods_normal = pointwise_loglikelihoods(mcmc_normal, chains)
+    # pointwise_loglikelihood can give a lot of spurious warnings. We suppress them
+    # by doing this part with a specific logger.
+    (loglikelihoods_cauchy, loglikelihoods_normal) = with_logger(ConsoleLogger(Error)) do
+        # Compute weights to get sampling from a normal distribution
+        loglikelihoods_cauchy = pointwise_loglikelihoods(mcmc_cauchy, chains)
+        loglikelihoods_normal = pointwise_loglikelihoods(mcmc_normal, chains)
+        return (loglikelihoods_cauchy, loglikelihoods_cauchy)
+    end
 
     # Obtain the generated values from the chains
     output_values = generated_quantities(mcmc_cauchy, chains)
@@ -583,7 +595,7 @@ function RunKickMCMC(; pre_supernova_orbit, observations::Observations, priors::
         for i_sample in 1:nsamples
             for dict_key in keys(loglikelihoods_cauchy)
                 logweights[i_chain, i_sample] = loglikelihoods_normal[dict_key][i_sample, i_chain]
-                                               -loglikelihoods_cauchy[dict_key][i_sample, i_chain]
+                                            -loglikelihoods_cauchy[dict_key][i_sample, i_chain]
             end
         end
     end
@@ -594,7 +606,6 @@ function RunKickMCMC(; pre_supernova_orbit, observations::Observations, priors::
         results[:weights] = weights 
     else
         throw(ErrorException("Failed to reweight samples"))
-        results[:weights] = ones(size(weights)) 
     end
 
     #RTW this was from the previous iteration, is this still relevant?
@@ -602,7 +613,7 @@ function RunKickMCMC(; pre_supernova_orbit, observations::Observations, priors::
     #if model_type==:general
     #    res[:weight] .= res[:weight].*sqrt.(1 .- res[:e_f].^2).^3 ./ (1 .+ res[:e_f].*cos.(res[:ν])).^2
     #end
-   
+    
     return KickMCMCResults(
         mcmc_model = mcmc_cauchy, 
         observations = observations,

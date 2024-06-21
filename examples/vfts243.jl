@@ -30,7 +30,6 @@ priors = SideKicks.Priors(
 mcmc_cauchy, props_cauchy = SideKicks.createEccentricMCMCModel( observations=obs, priors=priors, likelihood=:Cauchy)
 
 ##
-
 mcmcStruct = SideKicks.RunKickMCMC(
         #pre_supernova_orbit = :circular,
         pre_supernova_orbit = :eccentric,
@@ -42,8 +41,8 @@ mcmcStruct = SideKicks.RunKickMCMC(
         nchains = 8)
 
 ##
-
 results = mcmcStruct.results
+
 ##
 
 plotting_props_obs_check = SideKicks.createPlottingProps([
@@ -100,6 +99,7 @@ f = create_corner_plot(results, plotting_props,
 save("vfts243.png", f)
 
 f
+##
 
 # Extra Eccentric plotting
 
