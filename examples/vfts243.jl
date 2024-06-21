@@ -8,13 +8,9 @@ obs = SideKicks.createObservations([
     [:e,   0.017,    0.012,  1],
     [:m1,  25.0,     2.3,    m_sun],
     [:K1,  81.4,     1.3,    km_per_s],
-    # dec is toward N right?
-    [:vsys_N,  143,     12,    km_per_s],
-    [:vsys_E,  408,     8,     km_per_s],
-    [:vsys_r,  260.2,   0.9,    km_per_s],
-    [:venv_N,  145,     12,    km_per_s],
-    [:venv_E,  396,     12,    km_per_s],
-    [:venv_r,  271.6,   12.2,    km_per_s],
+    [:v_N,  143,     12,    km_per_s],
+    [:v_E,  408,     8,     km_per_s],
+    [:v_r,  260.2,   0.9,    km_per_s]
 ]) 
 
 priors = SideKicks.Priors(
@@ -24,6 +20,24 @@ priors = SideKicks.Priors(
     vkick_dist = Exponential(1), # in 100 km/s
     frac_dist  = Uniform(0,1.0),
     e_dist = Uniform(0,0.01),
+    v_N_100kms_dist = Normal(145/100, 12/100),
+    v_E_100kms_dist = Normal(396/100, 12/100),
+    v_r_100kms_dist = Normal(271.6/100, 12.2/100)
+)
+
+##
+mcmc_cauchy, props_cauchy = SideKicks.createEccentricMCMCModel( observations=obs, priors=priors, likelihood=:Cauchy)
+
+##
+using Turing
+using Random
+@code_warntype mcmc_cauchy.f(
+    mcmc_cauchy,
+    Turing.VarInfo(mcmc_cauchy),
+    Turing.SamplingContext(
+        Random.GLOBAL_RNG, Turing.SampleFromPrior(), Turing.DefaultContext(),
+    ),
+    mcmc_cauchy.args...,
 )
 
 
@@ -45,24 +59,20 @@ results = mcmcStruct.results
 
 plotting_props_obs_check = SideKicks.createPlottingProps([
     [:m1,    m_sun,    [15,40],        L"M_1\;[M_{\odot}]"],
-    [:m2_f,  m_sun,    [6,14],         L"M_{2f}\;[M_{\odot}]"],
     [:P_f,   day,      [10.3,10.5],    L"P_f\;[\mathrm{days}]"],
     [:e_f,   1,        [0,0.1],        L"e_f"],
-    [:K1,    km_per_s, [80,85],        L"K_1  \;[\mathrm{km s}^{-1}]"],
+    [:K1,    km_per_s, [77,85],        L"K_1  \;[\mathrm{km s}^{-1}]"],
+    [:vf_N,    km_per_s, [130,170],        L"v_N  \;[\mathrm{km s}^{-1}]"],
+    [:vf_E,    km_per_s, [380,430],        L"v_E  \;[\mathrm{km s}^{-1}]"],
+    [:vf_r,    km_per_s, [257,263],        L"v_r  \;[\mathrm{km s}^{-1}]"],
 ])
-#plotting_props_obs_check = SideKicks.createPlottingProps([
-#    [:m1,    m_sun,    [0,40],    L"M_1\;[M_{\odot}]"],
-#    [:m2_f,  m_sun,    [0,15],    L"M_{2f}\;[M_{\odot}]"],
-#    [:P_f,   day,      [0,10.5],    L"P_f\;[\mathrm{days}]"],
-#    [:e_f,   1,        [0,1],    L"e_f"],
-#    [:K1,    km_per_s, [0, 100],    L"K_1  \;[\mathrm{km s}^{-1}]"],
-#])
 
 f = create_corner_plot(results, plotting_props_obs_check,
     tickfontsize=10 ,
     xticklabelrotation=pi/4, 
     show_CIs=true,
     rowcolgap=8,
+    fraction_1D = 0.9,
     supertitle="Check known quantities"
     )
 save("vfts243_obs_check.png", f)
@@ -99,7 +109,7 @@ f = create_corner_plot(results, plotting_props,
     )
 save("vfts243.png", f)
 
-f   
+f
 
 ##
 

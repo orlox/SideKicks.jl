@@ -86,7 +86,7 @@ function create_corner_plot(results, plotting_props;
     num_col = num_props
     for ii in 1:num_col-1
         for  jj in ii+1:num_col
-            axis = Axis(fig[jj+1,ii], xtickalign=1, xtickcolor = :white, ytickalign=1, ytickcolor = :white, 
+            axis = Axis(fig[jj+1,ii], xtickalign=1, ytickalign=1, 
                         aspect=1,
                         xlabel=names[ii], ylabel=names[jj], 
                         xlabelsize=labelfontsize, ylabelsize=labelfontsize,
