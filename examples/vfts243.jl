@@ -10,7 +10,8 @@ obs = SideKicks.createObservations([
     [:K1,  81.4,     1.3,    km_per_s],
     [:v_N,  143,     12,    km_per_s],
     [:v_E,  408,     8,     km_per_s],
-    [:v_r,  260.2,   0.9,    km_per_s]
+    [:v_r,  260.2,   0.9,    km_per_s],
+    [:ω,  66,   53,    degree]
 ]) 
 
 priors = SideKicks.Priors(
@@ -29,19 +30,6 @@ priors = SideKicks.Priors(
 mcmc_cauchy, props_cauchy = SideKicks.createEccentricMCMCModel( observations=obs, priors=priors, likelihood=:Cauchy)
 
 ##
-using Turing
-using Random
-@code_warntype mcmc_cauchy.f(
-    mcmc_cauchy,
-    Turing.VarInfo(mcmc_cauchy),
-    Turing.SamplingContext(
-        Random.GLOBAL_RNG, Turing.SampleFromPrior(), Turing.DefaultContext(),
-    ),
-    mcmc_cauchy.args...,
-)
-
-
-##
 
 mcmcStruct = SideKicks.RunKickMCMC(
         #pre_supernova_orbit = :circular,
@@ -56,6 +44,7 @@ mcmcStruct = SideKicks.RunKickMCMC(
 ##
 
 results = mcmcStruct.results
+##
 
 plotting_props_obs_check = SideKicks.createPlottingProps([
     [:m1,    m_sun,    [15,40],        L"M_1\;[M_{\odot}]"],
@@ -65,6 +54,7 @@ plotting_props_obs_check = SideKicks.createPlottingProps([
     [:vf_N,    km_per_s, [130,170],        L"v_N  \;[\mathrm{km s}^{-1}]"],
     [:vf_E,    km_per_s, [380,430],        L"v_E  \;[\mathrm{km s}^{-1}]"],
     [:vf_r,    km_per_s, [257,263],        L"v_r  \;[\mathrm{km s}^{-1}]"],
+    [:omega_f,   degree, [0,360],        L"\omega_f  \;[\mathrm{rad}]"],
 ])
 
 f = create_corner_plot(results, plotting_props_obs_check,
@@ -72,7 +62,6 @@ f = create_corner_plot(results, plotting_props_obs_check,
     xticklabelrotation=pi/4, 
     show_CIs=true,
     rowcolgap=8,
-    fraction_1D = 0.9,
     supertitle="Check known quantities"
     )
 save("vfts243_obs_check.png", f)
@@ -98,20 +87,19 @@ plotting_props = SideKicks.createPlottingProps([
     #[:K1,    km_per_s,  missing,        L"K_1  \;[\mathrm{km s}^{-1}]"],
     #[:K2,    km_per_s,  missing,        L"K_2  \;[\mathrm{km s}^{-1}]"],
     #[:frac,  1,         missing,        L"f_{fb}"],
-    [:vsys,  km_per_s, [0,50],        L"v_{\mathrm{sys}} \;[\mathrm{km s}^{-1}]"], 
+    [:vsys,  km_per_s, [0,50],        L"v_{\mathrm{sys}} \;[\mathrm{km s}^{-1}]"],
 ])
 
 f = create_corner_plot(results, plotting_props,
     tickfontsize=10 ,
     xticklabelrotation=pi/4, 
     show_CIs=true,
+    fraction_1D = 0.9,
     supertitle="Derived quantities"
     )
 save("vfts243.png", f)
 
 f
-
-##
 
 # Extra Eccentric plotting
 
@@ -133,9 +121,9 @@ plotting_props = SideKicks.createPlottingProps([
     #[:K2,    km_per_s,  missing,        L"K_2  \;[\mathrm{km s}^{-1}]"],
     #[:frac,  1,         missing,        L"f_{fb}"],
     [:vsys,  km_per_s, [0,50],        L"v_{\mathrm{sys}} \;[\mathrm{km s}^{-1}]"], 
-    [:v_N,  km_per_s, [0,50],        L"v_{\mathrm{N}} \;[\mathrm{km s}^{-1}]"], 
-    [:v_E,  km_per_s, [0,50],        L"v_{\mathrm{E}} \;[\mathrm{km s}^{-1}]"], 
-    [:v_r,  km_per_s, [0,50],        L"v_{\mathrm{r}} \;[\mathrm{km s}^{-1}]"], 
+    [:vf_N,  km_per_s, [0,50],        L"v_{\mathrm{N}} \;[\mathrm{km s}^{-1}]"], 
+    [:vf_E,  km_per_s, [0,50],        L"v_{\mathrm{E}} \;[\mathrm{km s}^{-1}]"], 
+    [:vf_r,  km_per_s, [0,50],        L"v_{\mathrm{r}} \;[\mathrm{km s}^{-1}]"], 
 ])
 
 f = create_corner_plot(results, plotting_props,

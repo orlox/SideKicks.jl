@@ -524,10 +524,10 @@ function createEccentricMCMCModel(;
 
         # other params
         dm2 = m2 - m2_f
-        return     ( m1,  m2,  P,  e,  a,  i_f,  vkick,  m2_f,  a_f,  P_f,  e_f,  K1,  K2,  frac,  dm2,  vf_N,  vf_E,  vf_r,  vsys)
+        return     ( m1,  m2,  P,  e,  a,  i_f, ω_f, Ω_f,  vkick,  m2_f,  a_f,  P_f,  e_f,  K1,  K2,  frac,  dm2,  vf_N,  vf_E,  vf_r,  vsys)
     end
     # RTW : fix the props later
-    return_props = [:m1, :m2, :P, :e, :a, :i_f, :vkick, :m2_f, :a_f, :P_f, :e_f, :K1, :K2, :frac, :dm2, :vf_N, :vf_E, :vf_r, :vsys]
+    return_props = [:m1, :m2, :P, :e, :a, :i_f, :omega_f, :Omega_f, :vkick, :m2_f, :a_f, :P_f, :e_f, :K1, :K2, :frac, :dm2, :vf_N, :vf_E, :vf_r, :vsys]
 
     # Need to combine some of the observations to compare against the predicted output
     obs_vals_cgs = observations.vals .* observations.units
@@ -593,9 +593,8 @@ function RunKickMCMC(; pre_supernova_orbit, observations::Observations, priors::
     if (all(isfinite(weights)))
         results[:weights] = weights 
     else
-        println("Weights are off!!")
+        throw(ErrorException("Failed to reweight samples"))
         results[:weights] = ones(size(weights)) 
-        # TODO: throw an exception here
     end
 
     #RTW this was from the previous iteration, is this still relevant?

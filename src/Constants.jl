@@ -1,4 +1,4 @@
-export cgrav, m_sun, m_earth, au, r_sun, km, day, year, km_per_s
+export cgrav, m_sun, m_earth, au, r_sun, km, day, year, km_per_s, degree
 
 const cgrav = 6.67430e-8 # CODATA 2018
 
@@ -17,3 +17,5 @@ const day = 24.0*3600.0  # in s
 const year = 365.25*day  # in s  
 
 const km_per_s = km # just for convenience
+
+const degree = pi/180 #internally we use radians
