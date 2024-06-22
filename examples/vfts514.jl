@@ -3,17 +3,17 @@ using BenchmarkTools
 using CairoMakie
 using Distributions
 
-vfts_id = "243"
+vfts_id = "514"
 
 # Velocity components ignored for :simplified model
 obs = SideKicks.createObservations([
-    [:P,   10.4031,  0.01,   day],
-    [:e,   0.017,    0.012,  1],
-    [:m1,  25.0,     2.3,    m_sun],
-    [:K1,  81.4,     1.3,    km_per_s],
-    [:v_N,  143,     12,    km_per_s],
-    [:v_E,  408,     8,     km_per_s],
-    [:v_r,  260.2,   0.9,    km_per_s]
+    [:P,   184.92,  0.11,   day],
+    [:e,   0.411,    0.019,  1],
+    [:m1,  19.0,     3,    m_sun],
+    [:K1,  22.9,     0.4,    km_per_s],
+    #[:v_N,  143,     12,    km_per_s],
+    #[:v_E,  408,     8,     km_per_s],
+    #[:v_r,  260.2,   0.9,    km_per_s]
 ]) 
 
 priors = SideKicks.Priors(
@@ -67,15 +67,12 @@ mcmcStruct = SideKicks.RunKickMCMC(
 results = mcmcStruct.results
 
 plotting_props_obs_check = SideKicks.createPlottingProps([
-    [:m1,    m_sun,    [15,40],        L"M_1\;[M_{\odot}]"],
-    [:P_f,   day,      [10.3,10.5],    L"P_f\;[\mathrm{days}]"],
-    [:e_f,   1,        [0,0.1],        L"e_f"],
-    [:K1,    km_per_s, [77,85],        L"K_1  \;[\mathrm{km s}^{-1}]"],
+    [:m1,    m_sun,    [10,25],     L"M_1\;[M_{\odot}]"],
+    [:m2_f,  m_sun,    [1,7],      L"M_{2f}\;[M_{\odot}]"],
+    [:P_f,   day,      [184,186],  L"P_f\;[\mathrm{days}]"],
+    [:e_f,   1,        [.25,.55],  L"e_f"],
+    [:K1,    km_per_s, [22,24],     L"K_1  \;[\mathrm{km s}^{-1}]"],
 ])
-
-    #[:vf_N,    km_per_s, [130,170],        L"v_N  \;[\mathrm{km s}^{-1}]"],
-    #[:vf_E,    km_per_s, [380,430],        L"v_E  \;[\mathrm{km s}^{-1}]"],
-    #[:vf_r,    km_per_s, [257,263],        L"v_r  \;[\mathrm{km s}^{-1}]"],
 
 f = create_corner_plot(results, plotting_props_obs_check,
     tickfontsize=10 ,
@@ -98,17 +95,17 @@ plotting_props = SideKicks.createPlottingProps([
     #[:e_f,    1,        [0,0.1],        L"e_f"],
     #[:m2,     m_sun,    missing,         L"M_2  \;[M_{\odot}]"],
     [:m2,     m_sun,    [0,25],         L"M_2  \;[M_{\odot}]"],
-    [:dm2,    m_sun,    [0, 4],        L"ΔM_2  \;[M_{\odot}]"],
+    [:dm2,    m_sun,    [0,3],        L"ΔM_2  \;[M_{\odot}]"],
     #[:dm2,    m_sun,    missing,        L"ΔM_2  \;[M_{\odot}]"],
-    [:P,      day,      [8,12],        L"P  \;[\mathrm{days}]"],
+    [:P,      day,      [50,100],        L"P  \;[\mathrm{days}]"],
     #[:a,      r_sun,    missing,        L"a  \;[R_{odot}]"],
     #[:i_f,    pi,       missing,        L"i_f  \;[π rad]"],
-    [:vkick, km_per_s,  [0,50],         L"v_{kick}  \;[\mathrm{km s}^{-1}]"],
+    [:vkick, km_per_s,   missing,         L"v_{kick}  \;[\mathrm{km s}^{-1}]"],
     #[:a_f,   r_sun,     missing,        L"a_f  \;[R_{odot}]"],
     #[:K1,    km_per_s,  missing,        L"K_1  \;[\mathrm{km s}^{-1}]"],
     #[:K2,    km_per_s,  missing,        L"K_2  \;[\mathrm{km s}^{-1}]"],
     #[:frac,  1,         missing,        L"f_{fb}"],
-    [:vsys,  km_per_s, [0,50],        L"v_{\mathrm{sys}} \;[\mathrm{km s}^{-1}]"], 
+    [:vsys,  km_per_s,   [0,50],        L"v_{\mathrm{sys}} \;[\mathrm{km s}^{-1}]"], 
 ])
 
 f = create_corner_plot(results, plotting_props,

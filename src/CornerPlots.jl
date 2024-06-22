@@ -26,6 +26,22 @@ function createPlottingProps(props_matrix::Vector{Vector{Any}})
         names  = props_matrix[4,:])
 end
 
+function addPlottingProp(props_matrix::PlottingProps, new_prop::Vector{Any})
+    props  = props_matrix.props
+    units  = props_matrix.units 
+    ranges = props_matrix.ranges 
+    names  = props_matrix.names
+    push!(props,  new_prop[1])
+    push!(units , new_prop[2])
+    push!(ranges, new_prop[3])
+    push!(names,  new_prop[4])
+    return PlottingProps(
+        props  = props,
+        units  = units,
+        ranges = ranges,
+        names  = names)
+end
+
 
 """
     create_corner_plot(chain_values, names, names, fractions, fraction_1D, figure; 
@@ -53,14 +69,20 @@ end
 function create_corner_plot(results, plotting_props; 
         fig=Figure(), supertitle=missing,
         fractions=[0.68,0.95,0.997], fraction_1D=0.68, 
-        show_CIs=false, nbins=100,
-        rowcolgap=10, xticklabelrotation=20,
-        labelfontsize=16, tickfontsize=4, supertitlefontsize=30)
+        show_CIs=true, nbins=100,
+        rowcolgap=10, xticklabelrotation=pi/4,
+        labelfontsize=16, tickfontsize=10, supertitlefontsize=30)
 
     props = plotting_props.props
     units = plotting_props.units
     names = plotting_props.names
     ranges = plotting_props.ranges
+
+    # TODO: if extra plotting props are included that can't be used, scrap these and only plot the good ones. 
+    # Print a line about this, but don't throw a warning
+
+    # TODO: add a flag for plotting with observation or prior distribution
+    # This will require making sure the props are identical
 
     # Confirm requested props exist
     available_props = keys(results)
@@ -86,7 +108,7 @@ function create_corner_plot(results, plotting_props;
     num_col = num_props
     for ii in 1:num_col-1
         for  jj in ii+1:num_col
-            axis = Axis(fig[jj+1,ii], xtickalign=1, ytickalign=1, 
+            axis = Axis(fig[jj+1,ii], xtickalign=1, xtickcolor = :white, ytickalign=1, ytickcolor = :white, 
                         aspect=1,
                         xlabel=names[ii], ylabel=names[jj], 
                         xlabelsize=labelfontsize, ylabelsize=labelfontsize,

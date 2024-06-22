@@ -191,7 +191,7 @@ function post_supernova_circular_orbit_vsys(;m1, m2, a, m1_f=-1, m2_f, vkick=0, 
     if m1_f == -1
         m1_f = m1
     end
-    vrel = relative_velocity(m1=m1, m2=m2, a=a)
+    v_rel = relative_velocity(m1=m1, m2=m2, a=a)
     # convert trig functions to vars
     cosθ = cos(θ)
     sinθ = sin(θ)
@@ -199,7 +199,7 @@ function post_supernova_circular_orbit_vsys(;m1, m2, a, m1_f=-1, m2_f, vkick=0, 
     sinϕ = sin(ϕ)
 
     # Systemic velocity
-    Δp_x = (m2_f*m1 - m2*m1_f)/(m2 + m1)*vrel + m2_f*vkick*cosθ
+    Δp_x = (m2_f*m1 - m2*m1_f)/(m2 + m1)*v_rel + m2_f*vkick*cosθ
     Δp_y = m1_f*vimp + m2_f*vkick*sinθ*cosϕ
     Δp_z = m2_f*vkick*sinθ*sinϕ
     vsys_f = sqrt(Δp_x^2 + Δp_y^2 + Δp_z^2)/(m2_f + m1_f)

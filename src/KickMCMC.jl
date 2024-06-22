@@ -175,7 +175,7 @@ end
 
 
 """
-    createSimpleCircularMCMCModel(observations, observed_values, observed_errors)
+    createSimplifiedMCMCModel(observations, observed_values, observed_errors)
 
 Description
 Create a Turing model to perform an MCMC sampling of the pre-explosion 
@@ -192,7 +192,7 @@ assuming you know the eccentricity and don't care about radial velocity etc.
 # Output:
 - kickmodel: A Turing model for sampling
 """
-function createCircularMCMCModel(;
+function createSimplifiedMCMCModel(;
     observations::Observations,
     priors::Priors,
     likelihood = :Cauchy,
@@ -210,50 +210,50 @@ function createCircularMCMCModel(;
 
 
     # Define a new observation object for the net velocity
-    obs = deepcopy(observations)
-    use_vsys = false
-    # if any of the vsys objects are in the observations, check that
-    # they all are, then make sure that the venv priors are used
-    if any( [:vsys_N, :vsys_E, :vsys_r] .∈ (obs.props,))
-        if !all( [:vsys_N, :vsys_E, :vsys_r] .∈ (obs.props,))
-            println("Raise error, either set all vsys or none")
-            # RTW make this error proper
-        else
-            use_vsys = true
-        end
-    end
-    if use_vsys
-        if any( [:venv_N, :venv_E, :venv_r] .∈ (obs.props,))
-            if !all( [:venv_N, :venv_E, :venv_r] .∈ (obs.props,))
-                println("Raise error, either set all venv or none")
-            # RTW make this error proper
-            # If venv not supplied, treat them all as 0 - handled below
-            end
-        end    
+    #obs = deepcopy(observations)
+    #use_vsys = false
+    ## if any of the vsys objects are in the observations, check that
+    ## they all are, then make sure that the venv priors are used
+    #if any( [:vsys_N, :vsys_E, :vsys_r] .∈ (obs.props,))
+    #    if !all( [:vsys_N, :vsys_E, :vsys_r] .∈ (obs.props,))
+    #        println("Raise error, either set all vsys or none")
+    #        # RTW make this error proper
+    #    else
+    #        use_vsys = true
+    #    end
+    #end
+    #if use_vsys
+    #    if any( [:venv_N, :venv_E, :venv_r] .∈ (obs.props,))
+    #        if !all( [:venv_N, :venv_E, :venv_r] .∈ (obs.props,))
+    #            println("Raise error, either set all venv or none")
+    #        # RTW make this error proper
+    #        # If venv not supplied, treat them all as 0 - handled below
+    #        end
+    #    end    
 
-        # need to extract all the key values
-        vsysenv_vals = zeros(6, 1)
-        vsysenv_errs = zeros(6, 1)
-        props = [ :vsys_N, :vsys_E, :vsys_r, :venv_N, :venv_E, :venv_r]
-        for ii in eachindex(props)
-            if props[ii] ∈ obs.props
-                idx = findall(x->x==props[ii], obs.props)[1]
-                vsysenv_vals[ii] = obs.vals[idx]
-                vsysenv_errs[ii] = obs.errs[idx]
-            end
-        end
-        vnet_val = sqrt((vsysenv_vals[1]-vsysenv_vals[4])^2 +
-                        (vsysenv_vals[2]-vsysenv_vals[5])^2 +
-                        (vsysenv_vals[3]-vsysenv_vals[6])^2 )
-        vnet_err = (1/vnet_val) * sqrt( 
-                (vsysenv_errs[1]^2 + vsysenv_errs[4]^2)
-                    *(vsysenv_vals[1]-vsysenv_vals[4]) +
-                (vsysenv_errs[2]^2 + vsysenv_errs[5]^2)
-                    *(vsysenv_vals[2]-vsysenv_vals[5]) +
-                (vsysenv_errs[3]^2 + vsysenv_errs[6]^2)
-                    *(vsysenv_vals[3]-vsysenv_vals[6]))
-        obs = addObservation(obs, [:vnet, vnet_val, vnet_err, km_per_s])
-    end
+    #    # need to extract all the key values
+    #    vsysenv_vals = zeros(6, 1)
+    #    vsysenv_errs = zeros(6, 1)
+    #    props = [ :vsys_N, :vsys_E, :vsys_r, :venv_N, :venv_E, :venv_r]
+    #    for ii in eachindex(props)
+    #        if props[ii] ∈ obs.props
+    #            idx = findall(x->x==props[ii], obs.props)[1]
+    #            vsysenv_vals[ii] = obs.vals[idx]
+    #            vsysenv_errs[ii] = obs.errs[idx]
+    #        end
+    #    end
+    #    vnet_val = sqrt((vsysenv_vals[1]-vsysenv_vals[4])^2 +
+    #                    (vsysenv_vals[2]-vsysenv_vals[5])^2 +
+    #                    (vsysenv_vals[3]-vsysenv_vals[6])^2 )
+    #    vnet_err = (1/vnet_val) * sqrt( 
+    #            (vsysenv_errs[1]^2 + vsysenv_errs[4]^2)
+    #                *(vsysenv_vals[1]-vsysenv_vals[4]) +
+    #            (vsysenv_errs[2]^2 + vsysenv_errs[5]^2)
+    #                *(vsysenv_vals[2]-vsysenv_vals[5]) +
+    #            (vsysenv_errs[3]^2 + vsysenv_errs[6]^2)
+    #                *(vsysenv_vals[3]-vsysenv_vals[6]))
+    #    obs = addObservation(obs, [:vnet, vnet_val, vnet_err, km_per_s])
+    #end
 
     # Add back in later
     #rv_env_dist = priors.rv_env_dist
@@ -307,9 +307,9 @@ function createCircularMCMCModel(;
         P_f = kepler_P_from_a(m1=m1, m2=m2_f, a=a_f)
         K1 = RV_semiamplitude_K1(m1=m1, m2=m2_f, P=P_f, e=e_f, i=i_f)
         K2 = RV_semiamplitude_K1(m1=m2_f, m2=m1, P=P_f, e=e_f, i=i_f)
-        if use_vsys
-            vsys = post_supernova_circular_orbit_vsys( m1=m1, m2=m2, a=a, m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ)
-        end
+        #if use_vsys
+        #    vsys = post_supernova_circular_orbit_vsys( m1=m1, m2=m2, a=a, m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ)
+        #end
 
         likelihood == :Cauchy ?
             likelihood_dist = Cauchy :
@@ -329,8 +329,8 @@ function createCircularMCMCModel(;
                 param = m1
             elseif obs_symbol == :m2
                 param = m2_f
-            elseif obs_symbol == :vnet
-                param = vsys
+            #elseif obs_symbol == :vnet
+            #    param = vsys
             else
                 continue
             end
@@ -340,9 +340,9 @@ function createCircularMCMCModel(;
 
         # other params
         dm2 = m2 - m2_f
-        return     (m1,    m2,    P,   a,     i_f, vkick, m2_f,  a_f,   P_f,  e_f,  K1,       K2, frac, dm2, vsys)
+        return     (m1,    m2,    P,   a,     i_f, vkick, m2_f,  a_f,   P_f,  e_f,  K1,       K2, frac, dm2) #, vsys)
     end
-    return_props = [:m1,   :m2,   :P,  :a,    :i_f, :vkick, :m2_f, :a_f,  :P_f, :e_f, :K1,      :K2, :frac, :dm2, :vsys]
+    return_props = [:m1,   :m2,   :P,  :a,    :i_f, :vkick, :m2_f, :a_f,  :P_f, :e_f, :K1,      :K2, :frac, :dm2] #, :vsys]
 
     obs_vals_cgs = obs.vals .* obs.units
     obs_errs_cgs = obs.errs .* obs.units
@@ -351,7 +351,7 @@ end
 
 
 """
-    createEccentricMCMCModel(observations, observed_values, observed_errors)
+    createGeneralMCMCModel(observations, observed_values, observed_errors)
 
 Create a Turing model to perform an MCMC sampling of the pre-explosion 
 and kick properties of a system, assuming pre-explosion eccentricity.
@@ -367,7 +367,7 @@ and kick properties of a system, assuming pre-explosion eccentricity.
 # Output:
 - kickmodel: A Turing model for sampling
 """
-function createEccentricMCMCModel(;
+function createGeneralMCMCModel(;
     observations::Observations,
     priors::Priors,
     likelihood = :Cauchy,
@@ -466,59 +466,60 @@ function createEccentricMCMCModel(;
         use_cauchy = likelihood == :Cauchy
         for ii in eachindex(props)
             obs_symbol = props[ii]
-            if (obs_symbol != :Ω && obs_symbol != :omega) || likelihood == :Cauchy
-                error = obs_errs[ii]
-            else
-                error = 1/obs_errs[ii]^2 # adjusted parameter for vonMises distribution
-            end
+            # Why do we need to do this, why not do it in the function argument?
+            #if (obs_symbol != :Ω && obs_symbol != :omega) || likelihood == :Cauchy
+            #    error = obs_errs[ii]
+            #else
+            #    error = 1/obs_errs[ii]^2 # adjusted parameter for vonMises distribution
+            #end
             if obs_symbol == :P
                 use_cauchy ?
-                    obs_vals[ii] ~ Cauchy(P_f, error) :
-                    obs_vals[ii] ~ Normal(P_f, error)
+                    obs_vals[ii] ~ Cauchy(P_f, obs_errs[ii]) :
+                    obs_vals[ii] ~ Normal(P_f, obs_errs[ii])
             elseif obs_symbol == :e
                 use_cauchy ?
-                    obs_vals[ii] ~ Cauchy(e_f, error) :
-                    obs_vals[ii] ~ Normal(e_f, error)
+                    obs_vals[ii] ~ Cauchy(e_f, obs_errs[ii]) :
+                    obs_vals[ii] ~ Normal(e_f, obs_errs[ii])
             elseif obs_symbol == :K1
                 use_cauchy ?
-                    obs_vals[ii] ~ Cauchy(K1, error) :
-                    obs_vals[ii] ~ Normal(K1, error)
+                    obs_vals[ii] ~ Cauchy(K1, obs_errs[ii]) :
+                    obs_vals[ii] ~ Normal(K1, obs_errs[ii])
             elseif obs_symbol == :K2
                 use_cauchy ?
-                    obs_vals[ii] ~ Cauchy(K2, error) :
-                    obs_vals[ii] ~ Normal(K2, error)
+                    obs_vals[ii] ~ Cauchy(K2, obs_errs[ii]) :
+                    obs_vals[ii] ~ Normal(K2, obs_errs[ii])
             elseif obs_symbol == :m1
                 use_cauchy ?
-                    obs_vals[ii] ~ Cauchy(m1, error) :
-                    obs_vals[ii] ~ Normal(m1, error)
+                    obs_vals[ii] ~ Cauchy(m1, obs_errs[ii]) :
+                    obs_vals[ii] ~ Normal(m1, obs_errs[ii])
             elseif obs_symbol == :m2
                 use_cauchy ?
-                    obs_vals[ii] ~ Cauchy(m2_f, error) :
-                    obs_vals[ii] ~ Normal(m2_f, error)
+                    obs_vals[ii] ~ Cauchy(m2_f, obs_errs[ii]) :
+                    obs_vals[ii] ~ Normal(m2_f, obs_errs[ii])
             elseif obs_symbol == :i
                 use_cauchy ?
-                    obs_vals[ii] ~ Cauchy(i_f, error) :
-                    obs_vals[ii] ~ Normal(i_f, error)
+                    obs_vals[ii] ~ Cauchy(i_f, obs_errs[ii]) :
+                    obs_vals[ii] ~ Normal(i_f, obs_errs[ii])
             elseif obs_symbol == :Ω
                 use_cauchy ?
-                    obs_vals[ii] ~ WrappedCauchy(Ω_f, error) :
-                    obs_vals[ii] ~ VonMises(Ω_f, error)
+                    obs_vals[ii] ~ WrappedCauchy(Ω_f, obs_errs[ii]) :
+                    obs_vals[ii] ~ VonMises(Ω_f, 1/obs_errs[ii]^2)
             elseif obs_symbol == :ω
                 use_cauchy ?
-                    obs_vals[ii] ~ WrappedCauchy(ω_f, error) :
-                    obs_vals[ii] ~ VonMises(ω_f, error)
+                    obs_vals[ii] ~ WrappedCauchy(ω_f, obs_errs[ii]) :
+                    obs_vals[ii] ~ VonMises(Ω_f, 1/obs_errs[ii]^2)
             elseif obs_symbol == :v_N
                 use_cauchy ?
-                    obs_vals[ii] ~ Cauchy(vf_N, error) :
-                    obs_vals[ii] ~ Normal(vf_N, error)
+                    obs_vals[ii] ~ Cauchy(vf_N, obs_errs[ii]) :
+                    obs_vals[ii] ~ Normal(vf_N, obs_errs[ii])
             elseif obs_symbol == :v_E
                 use_cauchy ?
-                    obs_vals[ii] ~ Cauchy(vf_E, error) :
-                    obs_vals[ii] ~ Normal(vf_E, error)
+                    obs_vals[ii] ~ Cauchy(vf_E, obs_errs[ii]) :
+                    obs_vals[ii] ~ Normal(vf_E, obs_errs[ii])
             elseif obs_symbol == :v_r
                 use_cauchy ?
-                    obs_vals[ii] ~ Cauchy(vf_r, error) :
-                    obs_vals[ii] ~ Normal(vf_r, error)
+                    obs_vals[ii] ~ Cauchy(vf_r, obs_errs[ii]) :
+                    obs_vals[ii] ~ Normal(vf_r, obs_errs[ii])
             end
         end
 
@@ -538,17 +539,17 @@ function createEccentricMCMCModel(;
 end
 
 
-function RunKickMCMC(; pre_supernova_orbit, observations::Observations, priors::Priors,
+function RunKickMCMC(; which_model, observations::Observations, priors::Priors,
         nuts_warmup_count, nuts_acceptance_rate, nsamples, nchains)
 
-    if (pre_supernova_orbit==:circular)
-        mcmc_cauchy, props_cauchy = SideKicks.createCircularMCMCModel( observations=observations, priors=priors, likelihood=:Cauchy)
-        mcmc_normal, props_normal = SideKicks.createCircularMCMCModel( observations=observations, priors=priors, likelihood=:Normal)
-    elseif (pre_supernova_orbit==:eccentric)
-        mcmc_cauchy, props_cauchy = SideKicks.createEccentricMCMCModel( observations=observations, priors=priors, likelihood=:Cauchy)
-        mcmc_normal, props_normal = SideKicks.createEccentricMCMCModel( observations=observations, priors=priors, likelihood=:Normal)
+    if (which_model==:simplified)
+        mcmc_cauchy, props_cauchy = SideKicks.createSimplifiedMCMCModel( observations=observations, priors=priors, likelihood=:Cauchy)
+        mcmc_normal, props_normal = SideKicks.createSimplifiedMCMCModel( observations=observations, priors=priors, likelihood=:Normal)
+    elseif (which_model==:general)
+        mcmc_cauchy, props_cauchy = SideKicks.createGeneralMCMCModel( observations=observations, priors=priors, likelihood=:Cauchy)
+        mcmc_normal, props_normal = SideKicks.createGeneralMCMCModel( observations=observations, priors=priors, likelihood=:Normal)
     else
-        throw(ArgumentError("pre_supernova_orbit=:$pre_supernova_orbit is an invalid option. Can be either :circular or :eccentric"))
+        throw(ArgumentError("which_model=:$which_model is an invalid option. Can be either :simplified or :general"))
     end
 
     # Run the MCMC - this is the slow step!
