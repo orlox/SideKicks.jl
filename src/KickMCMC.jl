@@ -23,6 +23,44 @@ end
 Distributions.logpdf(d::WrappedCauchy, x::Real) = log(1/(2*π)*(sinh(d.σ)))-log(cosh(d.σ)-cos(x-d.μ))
 Distributions.pdf(d::WrappedCauchy, x::Real) = 1/(2*π)*(sinh(d.σ))/(cosh(d.σ)-cos(x-d.μ))
 
+"""
+    struct ModVonMises{T1<:Real, T2<:Real} <: ContinuousUnivariateDistribution
+
+This is just a wrapper on top of the VonMises distribution (as defined in Distributions.jl)
+to extend its domain. This is because the domain of VonMises is defined to be
+[μ-π, μ+π], and the angles we are concerned with range from [0,2π]
+"""
+struct ModVonMises{T1<:Real, T2<:Real, T3<:ContinuousUnivariateDistribution} <: ContinuousUnivariateDistribution
+    μ::T1
+    κ::T2
+    vonMisesDist::T3
+end
+function ModVonMises(μ, κ)
+    return ModVonMises(μ, κ, VonMises(μ, κ))
+end
+function Distributions.logpdf(d::ModVonMises, x::Real)
+    # If x is outside the range [μ-π, μ+π], we need to shift it by the correct
+    # amount of 2π to fit it there
+    if x > d.μ + π
+        return logpdf(d.vonMisesDist, x-2π)
+    elseif x < d.μ -π
+        return logpdf(d.vonMisesDist, x+2π)
+    else
+        return logpdf(d.vonMisesDist,x)
+    end
+end
+function Distributions.pdf(d::ModVonMises, x::Real)
+    # If x is outside the range [μ-π, μ+π], we need to shift it by the correct
+    # amount of 2π to fit it there
+    if x > d.μ + π
+        return pdf(d.vonMisesDist, x-2π)
+    elseif x < d.μ -π
+        return pdf(d.vonMisesDist, x+2π)
+    else
+        return pdf(d.vonMisesDist,x)
+    end
+end
+
 # RTW TODO: should these all be mutable? Do we want/need that?
 """
     mutable struct Observations
@@ -69,7 +107,8 @@ the chains that resulted from the MCMC, and the parameters that went into the sa
 """
 @kwdef mutable struct KickMCMCResults
     # TODO RTW: do I need types for everything? what do I use if non-trivial?
-    mcmc_model # RTW todo
+    mcmc_model_cauchy # RTW todo
+    mcmc_model_normal # RTW todo
     observations::Observations
     results::Dict{Symbol, Matrix{Float64}}
     chains # RTW todo
@@ -509,11 +548,11 @@ function createEccentricMCMCModel(;
             elseif obs_symbol == :Ω
                 use_cauchy ?
                     obs_vals[ii] ~ WrappedCauchy(Ω_f, error) :
-                    obs_vals[ii] ~ VonMises(Ω_f, error)
+                    obs_vals[ii] ~ ModVonMises(Ω_f, error)
             elseif obs_symbol == :ω
                 use_cauchy ?
                     obs_vals[ii] ~ WrappedCauchy(ω_f, error) :
-                    obs_vals[ii] ~ VonMises(ω_f, error)
+                    obs_vals[ii] ~ ModVonMises(ω_f, error)
             elseif obs_symbol == :v_N
                 use_cauchy ?
                     obs_vals[ii] ~ Cauchy(vf_N, error) :
@@ -571,7 +610,7 @@ function RunKickMCMC(; pre_supernova_orbit, observations::Observations, priors::
         # Compute weights to get sampling from a normal distribution
         loglikelihoods_cauchy = pointwise_loglikelihoods(mcmc_cauchy, chains)
         loglikelihoods_normal = pointwise_loglikelihoods(mcmc_normal, chains)
-        return (loglikelihoods_cauchy, loglikelihoods_cauchy)
+        return (loglikelihoods_cauchy, loglikelihoods_normal)
     end
 
     # Obtain the generated values from the chains
@@ -594,8 +633,8 @@ function RunKickMCMC(; pre_supernova_orbit, observations::Observations, priors::
     for i_chain in 1:nchains
         for i_sample in 1:nsamples
             for dict_key in keys(loglikelihoods_cauchy)
-                logweights[i_chain, i_sample] = loglikelihoods_normal[dict_key][i_sample, i_chain]
-                                            -loglikelihoods_cauchy[dict_key][i_sample, i_chain]
+                logweights[i_chain, i_sample] += 
+                   loglikelihoods_normal[dict_key][i_sample, i_chain] - loglikelihoods_cauchy[dict_key][i_sample, i_chain]
             end
         end
     end
@@ -615,7 +654,8 @@ function RunKickMCMC(; pre_supernova_orbit, observations::Observations, priors::
     #end
     
     return KickMCMCResults(
-        mcmc_model = mcmc_cauchy, 
+        mcmc_model_cauchy = mcmc_cauchy, 
+        mcmc_model_normal = mcmc_normal, 
         observations = observations,
         results = results,
         chains = chains,
@@ -624,4 +664,3 @@ function RunKickMCMC(; pre_supernova_orbit, observations::Observations, priors::
         nsamples = nsamples
     )
 end
-

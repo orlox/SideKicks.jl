@@ -87,6 +87,9 @@ plotting_props = SideKicks.createPlottingProps([
     #[:K2,    km_per_s,  missing,        L"K_2  \;[\mathrm{km s}^{-1}]"],
     #[:frac,  1,         missing,        L"f_{fb}"],
     [:vsys,  km_per_s, [0,50],        L"v_{\mathrm{sys}} \;[\mathrm{km s}^{-1}]"],
+    #[:i_f,  degree, [0,90],        L"i_f"],
+    #[:omega_f,  degree, [0,360],        L"\omega_f"],
+    #[:Omega_f,  degree, [0,360],        L"\Omega_f"],
 ])
 
 f = create_corner_plot(results, plotting_props,
