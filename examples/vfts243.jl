@@ -30,6 +30,9 @@ priors = SideKicks.Priors(
 )
 
 ##
+
+# Are these next sessions just for testing? We should move them to a separate file
+
 mcmc_cauchy, props_cauchy = SideKicks.createGeneralMCMCModel( observations=obs, priors=priors, likelihood=:Cauchy)
 
 ##
@@ -47,7 +50,7 @@ using Random
 
 ##
 
-use_general_model = true
+use_general_model = false
 if use_general_model
     which_model  = :general
 else
@@ -84,6 +87,7 @@ plotting_props_obs_check = SideKicks.createPlottingProps([
     #[:vf_r,    km_per_s, [257,263],        L"v_r  \;[\mathrm{km s}^{-1}]"],
 
 f = create_corner_plot(results, plotting_props_obs_check,
+    observations=obs,
     tickfontsize=10 ,
     xticklabelrotation=pi/4, 
     show_CIs=true,

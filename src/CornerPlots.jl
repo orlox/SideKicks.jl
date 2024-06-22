@@ -67,33 +67,36 @@ end
 """
 
 function create_corner_plot(results, plotting_props; 
+        observations=missing,
         fig=Figure(), supertitle=missing,
         fractions=[0.68,0.95,0.997], fraction_1D=0.68, 
         show_CIs=true, nbins=100,
         rowcolgap=10, xticklabelrotation=pi/4,
         labelfontsize=16, tickfontsize=10, supertitlefontsize=30)
 
-    props = plotting_props.props
-    units = plotting_props.units
-    names = plotting_props.names
-    ranges = plotting_props.ranges
-
-    # TODO: if extra plotting props are included that can't be used, scrap these and only plot the good ones. 
-    # Print a line about this, but don't throw a warning
-
     # TODO: add a flag for plotting with observation or prior distribution
     # This will require making sure the props are identical
 
-    # Confirm requested props exist
+    props  = [] 
+    units  = [] 
+    names  = [] 
+    ranges = [] 
+
+    # If extra plotting props are included that can't be used, scrap these and only plot the good ones. 
     available_props = keys(results)
-    for prop ∈ props
-        if prop ∉ available_props
-            throw(DomainError(prop, "Allowed props are only "*join([String(aprop) for aprop in available_props], ", ")))
+    for ii in eachindex(plotting_props.props)
+        if plotting_props.props[ii] ∈ available_props
+            push!(props,  plotting_props.props[ii])
+            push!(units,  plotting_props.units[ii])
+            push!(names,  plotting_props.names[ii])
+            push!(ranges, plotting_props.ranges[ii]) 
+        else
+            println("Prop "*string(plotting_props.props[ii])*" ignored")
         end
     end
 
-    # Add ranges if none supplied
     num_props = length(props)
+    # Add ranges if none supplied
     for ii in 1:num_props
         values = vec(results[props[ii]])/units[ii]
         minval = minimum(values)

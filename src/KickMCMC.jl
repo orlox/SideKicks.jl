@@ -248,72 +248,11 @@ function createSimplifiedMCMCModel(;
     vkick_dist = priors.vkick_dist
     frac_dist = priors.frac_dist
 
-
-    # Define a new observation object for the net velocity
-    #obs = deepcopy(observations)
-    #use_vsys = false
-    ## if any of the vsys objects are in the observations, check that
-    ## they all are, then make sure that the venv priors are used
-    #if any( [:vsys_N, :vsys_E, :vsys_r] .∈ (obs.props,))
-    #    if !all( [:vsys_N, :vsys_E, :vsys_r] .∈ (obs.props,))
-    #        println("Raise error, either set all vsys or none")
-    #        # RTW make this error proper
-    #    else
-    #        use_vsys = true
-    #    end
-    #end
-    #if use_vsys
-    #    if any( [:venv_N, :venv_E, :venv_r] .∈ (obs.props,))
-    #        if !all( [:venv_N, :venv_E, :venv_r] .∈ (obs.props,))
-    #            println("Raise error, either set all venv or none")
-    #        # RTW make this error proper
-    #        # If venv not supplied, treat them all as 0 - handled below
-    #        end
-    #    end    
-
-    #    # need to extract all the key values
-    #    vsysenv_vals = zeros(6, 1)
-    #    vsysenv_errs = zeros(6, 1)
-    #    props = [ :vsys_N, :vsys_E, :vsys_r, :venv_N, :venv_E, :venv_r]
-    #    for ii in eachindex(props)
-    #        if props[ii] ∈ obs.props
-    #            idx = findall(x->x==props[ii], obs.props)[1]
-    #            vsysenv_vals[ii] = obs.vals[idx]
-    #            vsysenv_errs[ii] = obs.errs[idx]
-    #        end
-    #    end
-    #    vnet_val = sqrt((vsysenv_vals[1]-vsysenv_vals[4])^2 +
-    #                    (vsysenv_vals[2]-vsysenv_vals[5])^2 +
-    #                    (vsysenv_vals[3]-vsysenv_vals[6])^2 )
-    #    vnet_err = (1/vnet_val) * sqrt( 
-    #            (vsysenv_errs[1]^2 + vsysenv_errs[4]^2)
-    #                *(vsysenv_vals[1]-vsysenv_vals[4]) +
-    #            (vsysenv_errs[2]^2 + vsysenv_errs[5]^2)
-    #                *(vsysenv_vals[2]-vsysenv_vals[5]) +
-    #            (vsysenv_errs[3]^2 + vsysenv_errs[6]^2)
-    #                *(vsysenv_vals[3]-vsysenv_vals[6]))
-    #    obs = addObservation(obs, [:vnet, vnet_val, vnet_err, km_per_s])
-    #end
-
-    # Add back in later
-    #rv_env_dist = priors.rv_env_dist
-    #pmra_env_dist = priors.pmra_env_dist
-    #pmdec_env_dist = priors.pmdec_env_dist
-    #parallax_dist = priors.parallax_dist
-
-    # RTW: why do we need this?
-    ## provided observed values
-    #valid_values = [:P, :e, :K1, :K2, :m1, :m2]
-    #for obs ∈ observations.props
-    #    if obs ∉ valid_values
-    #        throw(DomainError(obs, "Allowed observations are only [:P, :e, :K1, :K2, :m1, :m2]"))
-    #    end
-    #end
     if !(likelihood == :Cauchy || likelihood == :Normal)
         throw(DomainError(likelihood, "likelihood must be either :Cauchy or :Normal"))
     end
 
-    @model function create_MCMC_model(obs_vals, obs_errs) 
+    @model function create_MCMC_model(props, obs_vals, obs_errs) 
 
         # set priors
         #Pre-explosion masses and orbital period
@@ -347,16 +286,13 @@ function createSimplifiedMCMCModel(;
         P_f = kepler_P_from_a(m1=m1, m2=m2_f, a=a_f)
         K1 = RV_semiamplitude_K1(m1=m1, m2=m2_f, P=P_f, e=e_f, i=i_f)
         K2 = RV_semiamplitude_K1(m1=m2_f, m2=m1, P=P_f, e=e_f, i=i_f)
-        #if use_vsys
-        #    vsys = post_supernova_circular_orbit_vsys( m1=m1, m2=m2, a=a, m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ)
-        #end
 
         likelihood == :Cauchy ?
             likelihood_dist = Cauchy :
             likelihood_dist = Normal
 
-        for ii in eachindex(obs.props)
-            obs_symbol = obs.props[ii]
+        for ii in eachindex(props)
+            obs_symbol = props[ii]
             if obs_symbol == :P
                 param = P_f
             elseif obs_symbol == :e
@@ -369,8 +305,6 @@ function createSimplifiedMCMCModel(;
                 param = m1
             elseif obs_symbol == :m2
                 param = m2_f
-            #elseif obs_symbol == :vnet
-            #    param = vsys
             else
                 continue
             end
@@ -384,9 +318,9 @@ function createSimplifiedMCMCModel(;
     end
     return_props = [:m1,   :m2,   :P,  :a,    :i_f, :vkick, :m2_f, :a_f,  :P_f, :e_f, :K1,      :K2, :frac, :dm2] #, :vsys]
 
-    obs_vals_cgs = obs.vals .* obs.units
-    obs_errs_cgs = obs.errs .* obs.units
-    return [create_MCMC_model(obs_vals_cgs, obs_errs_cgs), return_props]
+    obs_vals_cgs = observations.vals .* observations.units
+    obs_errs_cgs = observations.errs .* observations.units
+    return [create_MCMC_model(observations.props, obs_vals_cgs, obs_errs_cgs), return_props]
 end
 
 
