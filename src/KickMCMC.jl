@@ -1,5 +1,6 @@
 using Turing
 using Distributions
+using Logging
 
 ########################
 ### 
@@ -21,6 +22,44 @@ struct WrappedCauchy{T1<:Real, T2<:Real} <: ContinuousUnivariateDistribution
 end
 Distributions.logpdf(d::WrappedCauchy, x::Real) = log(1/(2*π)*(sinh(d.σ)))-log(cosh(d.σ)-cos(x-d.μ))
 Distributions.pdf(d::WrappedCauchy, x::Real) = 1/(2*π)*(sinh(d.σ))/(cosh(d.σ)-cos(x-d.μ))
+
+"""
+    struct ModVonMises{T1<:Real, T2<:Real} <: ContinuousUnivariateDistribution
+
+This is just a wrapper on top of the VonMises distribution (as defined in Distributions.jl)
+to extend its domain. This is because the domain of VonMises is defined to be
+[μ-π, μ+π], and the angles we are concerned with range from [0,2π]
+"""
+struct ModVonMises{T1<:Real, T2<:Real, T3<:ContinuousUnivariateDistribution} <: ContinuousUnivariateDistribution
+    μ::T1
+    κ::T2
+    vonMisesDist::T3
+end
+function ModVonMises(μ, κ)
+    return ModVonMises(μ, κ, VonMises(μ, κ))
+end
+function Distributions.logpdf(d::ModVonMises, x::Real)
+    # If x is outside the range [μ-π, μ+π], we need to shift it by the correct
+    # amount of 2π to fit it there
+    if x > d.μ + π
+        return logpdf(d.vonMisesDist, x-2π)
+    elseif x < d.μ -π
+        return logpdf(d.vonMisesDist, x+2π)
+    else
+        return logpdf(d.vonMisesDist,x)
+    end
+end
+function Distributions.pdf(d::ModVonMises, x::Real)
+    # If x is outside the range [μ-π, μ+π], we need to shift it by the correct
+    # amount of 2π to fit it there
+    if x > d.μ + π
+        return pdf(d.vonMisesDist, x-2π)
+    elseif x < d.μ -π
+        return pdf(d.vonMisesDist, x+2π)
+    else
+        return pdf(d.vonMisesDist,x)
+    end
+end
 
 # RTW TODO: should these all be mutable? Do we want/need that?
 """
@@ -68,7 +107,8 @@ the chains that resulted from the MCMC, and the parameters that went into the sa
 """
 @kwdef mutable struct KickMCMCResults
     # TODO RTW: do I need types for everything? what do I use if non-trivial?
-    mcmc_model # RTW todo
+    mcmc_model_cauchy # RTW todo
+    mcmc_model_normal # RTW todo
     observations::Observations
     results::Dict{Symbol, Matrix{Float64}}
     chains # RTW todo
@@ -418,11 +458,17 @@ function createGeneralMCMCModel(;
         normΩ = 1/sqrt(xΩ^2+yΩ^2)
         cosΩ = xΩ*normΩ
         Ω = acos(cosΩ)
+        if yΩ < 0
+            Ω = 2π - Ω
+        end
         xω ~ Normal()
         yω ~ Normal()
         normω = 1/sqrt(xω^2+yω^2)
         cosω = xω*normω
         ω = acos(cosω)
+        if yω < 0
+            ω = 2π - ω
+        end
 
         #Post-explosion masses
         frac ~ frac_dist
@@ -503,11 +549,11 @@ function createGeneralMCMCModel(;
             elseif obs_symbol == :Ω
                 use_cauchy ?
                     obs_vals[ii] ~ WrappedCauchy(Ω_f, obs_errs[ii]) :
-                    obs_vals[ii] ~ VonMises(Ω_f, 1/obs_errs[ii]^2)
+                    obs_vals[ii] ~ ModVonMises(Ω_f, 1/obs_errs[ii]^2)
             elseif obs_symbol == :ω
                 use_cauchy ?
                     obs_vals[ii] ~ WrappedCauchy(ω_f, obs_errs[ii]) :
-                    obs_vals[ii] ~ VonMises(Ω_f, 1/obs_errs[ii]^2)
+                    obs_vals[ii] ~ ModVonMises(Ω_f, 1/obs_errs[ii]^2)
             elseif obs_symbol == :v_N
                 use_cauchy ?
                     obs_vals[ii] ~ Cauchy(vf_N, obs_errs[ii]) :
@@ -525,10 +571,10 @@ function createGeneralMCMCModel(;
 
         # other params
         dm2 = m2 - m2_f
-        return     ( m1,  m2,  P,  e,  a,  i_f,  vkick,  m2_f,  a_f,  P_f,  e_f,  K1,  K2,  frac,  dm2,  vf_N,  vf_E,  vf_r,  vsys)
+        return     ( m1,  m2,  P,  e,  a,  i_f, ω_f, Ω_f,  vkick,  m2_f,  a_f,  P_f,  e_f,  K1,  K2,  frac,  dm2,  vf_N,  vf_E,  vf_r,  vsys)
     end
     # RTW : fix the props later
-    return_props = [:m1, :m2, :P, :e, :a, :i_f, :vkick, :m2_f, :a_f, :P_f, :e_f, :K1, :K2, :frac, :dm2, :vf_N, :vf_E, :vf_r, :vsys]
+    return_props = [:m1, :m2, :P, :e, :a, :i_f, :ω_f, :Ω_f, :vkick, :m2_f, :a_f, :P_f, :e_f, :K1, :K2, :frac, :dm2, :vf_N, :vf_E, :vf_r, :vsys]
 
     # Need to combine some of the observations to compare against the predicted output
     obs_vals_cgs = observations.vals .* observations.units
@@ -559,9 +605,14 @@ function RunKickMCMC(; which_model, observations::Observations, priors::Priors,
                     nsamples,
                     nchains);
 
-    # Compute weights to get sampling from a normal distribution
-    loglikelihoods_cauchy = pointwise_loglikelihoods(mcmc_cauchy, chains)
-    loglikelihoods_normal = pointwise_loglikelihoods(mcmc_normal, chains)
+    # pointwise_loglikelihood can give a lot of spurious warnings. We suppress them
+    # by doing this part with a specific logger.
+    (loglikelihoods_cauchy, loglikelihoods_normal) = with_logger(ConsoleLogger(Error)) do
+        # Compute weights to get sampling from a normal distribution
+        loglikelihoods_cauchy = pointwise_loglikelihoods(mcmc_cauchy, chains)
+        loglikelihoods_normal = pointwise_loglikelihoods(mcmc_normal, chains)
+        return (loglikelihoods_cauchy, loglikelihoods_normal)
+    end
 
     # Obtain the generated values from the chains
     output_values = generated_quantities(mcmc_cauchy, chains)
@@ -583,8 +634,8 @@ function RunKickMCMC(; which_model, observations::Observations, priors::Priors,
     for i_chain in 1:nchains
         for i_sample in 1:nsamples
             for dict_key in keys(loglikelihoods_cauchy)
-                logweights[i_chain, i_sample] = loglikelihoods_normal[dict_key][i_sample, i_chain]
-                                               -loglikelihoods_cauchy[dict_key][i_sample, i_chain]
+                logweights[i_chain, i_sample] += 
+                   loglikelihoods_normal[dict_key][i_sample, i_chain] - loglikelihoods_cauchy[dict_key][i_sample, i_chain]
             end
         end
     end
@@ -594,9 +645,7 @@ function RunKickMCMC(; which_model, observations::Observations, priors::Priors,
     if (all(isfinite(weights)))
         results[:weights] = weights 
     else
-        println("Weights are off!!")
-        results[:weights] = ones(size(weights)) 
-        # TODO: throw an exception here
+        throw(ErrorException("Failed to reweight samples"))
     end
 
     #RTW this was from the previous iteration, is this still relevant?
@@ -604,9 +653,10 @@ function RunKickMCMC(; which_model, observations::Observations, priors::Priors,
     #if model_type==:general
     #    res[:weight] .= res[:weight].*sqrt.(1 .- res[:e_f].^2).^3 ./ (1 .+ res[:e_f].*cos.(res[:ν])).^2
     #end
-   
+    
     return KickMCMCResults(
-        mcmc_model = mcmc_cauchy, 
+        mcmc_model_cauchy = mcmc_cauchy, 
+        mcmc_model_normal = mcmc_normal, 
         observations = observations,
         results = results,
         chains = chains,
@@ -615,4 +665,3 @@ function RunKickMCMC(; which_model, observations::Observations, priors::Priors,
         nsamples = nsamples
     )
 end
-

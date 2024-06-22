@@ -13,7 +13,8 @@ obs = SideKicks.createObservations([
     [:K1,  81.4,     1.3,    km_per_s],
     [:v_N,  143,     12,    km_per_s],
     [:v_E,  408,     8,     km_per_s],
-    [:v_r,  260.2,   0.9,    km_per_s]
+    [:v_r,  260.2,   0.9,    km_per_s],
+    [:ω,  66,   53,    degree]
 ]) 
 
 priors = SideKicks.Priors(
@@ -63,14 +64,19 @@ mcmcStruct = SideKicks.RunKickMCMC(
         nchains = 8)
 
 ##
-
 results = mcmcStruct.results
+
+##
 
 plotting_props_obs_check = SideKicks.createPlottingProps([
     [:m1,    m_sun,    [15,40],        L"M_1\;[M_{\odot}]"],
     [:P_f,   day,      [10.3,10.5],    L"P_f\;[\mathrm{days}]"],
     [:e_f,   1,        [0,0.1],        L"e_f"],
     [:K1,    km_per_s, [77,85],        L"K_1  \;[\mathrm{km s}^{-1}]"],
+    [:vf_N,    km_per_s, [130,170],        L"v_N  \;[\mathrm{km s}^{-1}]"],
+    [:vf_E,    km_per_s, [380,430],        L"v_E  \;[\mathrm{km s}^{-1}]"],
+    [:vf_r,    km_per_s, [257,263],        L"v_r  \;[\mathrm{km s}^{-1}]"],
+    [:omega_f,   degree, [0,360],        L"\omega_f  \;[\mathrm{rad}]"],
 ])
 
     #[:vf_N,    km_per_s, [130,170],        L"v_N  \;[\mathrm{km s}^{-1}]"],
@@ -108,7 +114,10 @@ plotting_props = SideKicks.createPlottingProps([
     #[:K1,    km_per_s,  missing,        L"K_1  \;[\mathrm{km s}^{-1}]"],
     #[:K2,    km_per_s,  missing,        L"K_2  \;[\mathrm{km s}^{-1}]"],
     #[:frac,  1,         missing,        L"f_{fb}"],
-    [:vsys,  km_per_s, [0,50],        L"v_{\mathrm{sys}} \;[\mathrm{km s}^{-1}]"], 
+    [:vsys,  km_per_s, [0,50],        L"v_{\mathrm{sys}} \;[\mathrm{km s}^{-1}]"],
+    #[:i_f,  degree, [0,90],        L"i_f"],
+    #[:omega_f,  degree, [0,360],        L"\omega_f"],
+    #[:Omega_f,  degree, [0,360],        L"\Omega_f"],
 ])
 
 f = create_corner_plot(results, plotting_props,
@@ -116,6 +125,7 @@ f = create_corner_plot(results, plotting_props,
     xticklabelrotation=pi/4, 
     show_CIs=true,
     supertitle="VFTS "*vfts_id *" - derived quantities"
+    fraction_1D = 0.9,
     )
 
 save("vfts"*vfts_id *"_derived.png", f)
@@ -144,9 +154,9 @@ plotting_props = SideKicks.createPlottingProps([
     #[:K2,    km_per_s,  missing,        L"K_2  \;[\mathrm{km s}^{-1}]"],
     #[:frac,  1,         missing,        L"f_{fb}"],
     [:vsys,  km_per_s, [0,50],        L"v_{\mathrm{sys}} \;[\mathrm{km s}^{-1}]"], 
-    [:v_N,  km_per_s, [0,50],        L"v_{\mathrm{N}} \;[\mathrm{km s}^{-1}]"], 
-    [:v_E,  km_per_s, [0,50],        L"v_{\mathrm{E}} \;[\mathrm{km s}^{-1}]"], 
-    [:v_r,  km_per_s, [0,50],        L"v_{\mathrm{r}} \;[\mathrm{km s}^{-1}]"], 
+    [:vf_N,  km_per_s, [0,50],        L"v_{\mathrm{N}} \;[\mathrm{km s}^{-1}]"], 
+    [:vf_E,  km_per_s, [0,50],        L"v_{\mathrm{E}} \;[\mathrm{km s}^{-1}]"], 
+    [:vf_r,  km_per_s, [0,50],        L"v_{\mathrm{r}} \;[\mathrm{km s}^{-1}]"], 
 ])
 
 f = create_corner_plot(results, plotting_props,
