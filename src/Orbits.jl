@@ -129,7 +129,7 @@ function post_supernova_circular_orbit_a(;m1, m2, a, m1_f=-1.0, m2_f, vkick=0.0,
 
     # Orbital parameters
     a_f = a/(2-ξ)
-    e_f = sqrt(1 + (ξ-2)*η)
+    e_f = sqrt(1 + (ξ-2)*η + 1e-10) # including safety floor
 
     return (a_f, e_f)
 end
@@ -191,7 +191,7 @@ function post_supernova_circular_orbit_vsys(;m1, m2, a, m1_f=-1, m2_f, vkick=0, 
     if m1_f == -1
         m1_f = m1
     end
-    vrel = relative_velocity(m1=m1, m2=m2, a=a)
+    v_rel = relative_velocity(m1=m1, m2=m2, a=a)
     # convert trig functions to vars
     cosθ = cos(θ)
     sinθ = sin(θ)
@@ -199,7 +199,7 @@ function post_supernova_circular_orbit_vsys(;m1, m2, a, m1_f=-1, m2_f, vkick=0, 
     sinϕ = sin(ϕ)
 
     # Systemic velocity
-    Δp_x = (m2_f*m1 - m2*m1_f)/(m2 + m1)*vrel + m2_f*vkick*cosθ
+    Δp_x = (m2_f*m1 - m2*m1_f)/(m2 + m1)*v_rel + m2_f*vkick*cosθ
     Δp_y = m1_f*vimp + m2_f*vkick*sinθ*cosϕ
     Δp_z = m2_f*vkick*sinθ*sinϕ
     vsys_f = sqrt(Δp_x^2 + Δp_y^2 + Δp_z^2)/(m2_f + m1_f)
@@ -289,7 +289,7 @@ function post_supernova_general_orbit_parameters(;m1, m2, a, e=0, m1_f=-1, m2_f,
     a_f = f_ν*a/(2 - ξ)
     Lvec_norm = sqrt(α^2*sinθ^2*sinϕ^2 + (h_ν*α*sinθ*cosϕ - j_ν*(1 + α*cosθ))^2)
     η = f_ν*g_ν^2*M/M_f*Lvec_norm^2
-    e_f = sqrt(1 + (ξ - 2)*η)
+    e_f = sqrt(1 + (ξ-2)*η + 1e-10) # including safety floor
 
     #angle between x and direction of motion
     # perhaps can be skipped to save some time, just get directly cos and sin
