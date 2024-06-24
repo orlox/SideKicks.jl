@@ -135,8 +135,21 @@ function create_corner_plot(results, plotting_props;
                         xticklabelrotation=xticklabelrotation,
                         xticklabelsize=tickfontsize, yticklabelsize=tickfontsize)
         (xmin, xmode, xmax) = create_compound_1D_densities(axis, results[props[ii]]/units[ii], ranges[ii], results[:weights], fraction_1D, nbins)
-        hideydecorations!(axis)
-        if ii !=num_col
+        # Add observations?
+        if observations != nothing
+            if props[ii] ∈ observations.props
+                println("adding prior for "*String(props[ii]))
+                # find index of prop and get mean and std
+                idx = findall(x->x==props[ii], observations.props)[1]
+                mean = observations.vals[idx]
+                errs = observations.errs[idx]
+                xarr = LinRange(ranges[ii][1], ranges[ii][2], 100)
+                lines!(axis, xarr, pdf(Normal(mean, errs), xarr), color=(:red, 0.4), linewidth=3) # linestyle=:dot, 
+            end
+        end
+
+        #hideydecorations!(axis)
+        if ii != num_col
             hidexdecorations!(axis,ticks=false, minorticks=false)
         end
         str_xmode = round(xmode, sigdigits=3)
@@ -285,7 +298,7 @@ end
 #TODO
 - 
 """
-function create_1D_density(axis, values, range, chain_weights, fraction_1D, nbins; color, linewidth)
+function create_1D_density(axis, values, range, chain_weights, fraction_1D, nbins; color, linewidth, testing=false)
 
     filter = values .> range[1] .&& values .< range[2]
     values = values[filter]
@@ -293,8 +306,19 @@ function create_1D_density(axis, values, range, chain_weights, fraction_1D, nbin
     
     h = fit(Histogram, values, chain_weights, nbins=nbins)
     x =(h.edges[1][2:end] .+ h.edges[1][1:end-1])./2
-    lines!(axis, x, h.weights/sum(h.weights), color=color, linewidth=linewidth)
-    return x, h
+    println(x)
+    dx = 1
+    if length(x) > 1
+        if x[2]-x[1] > 0
+
+            dx = x[2]-x[1]
+        end
+    end
+    y = h.weights/sum(h.weights*dx)
+    if !testing
+        lines!(axis, x, y, color=color, linewidth=linewidth)
+    end
+    return x, h, y
 end
 
 """
@@ -321,22 +345,22 @@ function create_compound_1D_densities(axis, values_matrix, range, chain_weights_
     for ii in 1:size(values_matrix)[1] # nchains
         values = values_matrix[ii,:]
         chain_weights = chain_weights_matrix[ii,:]
-        create_1D_density(axis, values, range, chain_weights, fraction_1D, nbins, color=(:gray, 0.4), linewidth=1)
+        create_1D_density(axis, values, range, chain_weights, fraction_1D, nbins, color=(:gray, 0.25), linewidth=1)
     end
 
     # Plot once for all the values
-    x, h = create_1D_density(axis, vec(values_matrix), range, vec(chain_weights_matrix), fraction_1D, nbins, color=(:blue, 1.0), linewidth=2)
+    x, h, y = create_1D_density(axis, vec(values_matrix), range, vec(chain_weights_matrix), fraction_1D, nbins, color=(:blue, 1.0), linewidth=1)#, testing=true)
 
     bound = get_bounds_for_fractions(h, [fraction_1D])[1]
     xmin = minimum(x[h.weights .>= bound])
     xmode = x[argmax(h.weights)]
     xmax = maximum(x[h.weights .>= bound])
 
-    filter = x .>= xmin .&& x.<= xmax
-    band!(axis, x[filter], zeros(length(x[filter])), h.weights[filter]/sum(h.weights), color=(:gray, 0.4))
-    lines!(axis, x, h.weights/sum(h.weights))
+    filter = x .>= xmin .&& x .<= xmax
+    band!(axis, x[filter], zeros(length(x[filter])), y[filter], color=(:gray, 0.4))
     vlines!(axis, xmode, color=(:black, 1.0), linewidth=0.5)
     xlims!(axis, range[1], range[2])
+    ylims!(axis, -.1*maximum(y), 4/3*maximum(y))
 
     return (xmin, xmode, xmax)
    

@@ -293,9 +293,9 @@ function createSimplifiedMCMCModel(;
 
         for ii in eachindex(props)
             obs_symbol = props[ii]
-            if obs_symbol == :P
+            if obs_symbol == :P_f
                 param = P_f
-            elseif obs_symbol == :e
+            elseif obs_symbol == :e_f
                 param = e_f
             elseif obs_symbol == :K1
                 param = K1
@@ -303,7 +303,7 @@ function createSimplifiedMCMCModel(;
                 param = K2
             elseif obs_symbol == :m1
                 param = m1
-            elseif obs_symbol == :m2
+            elseif obs_symbol == :m2_f
                 param = m2_f
             else
                 continue
@@ -357,7 +357,7 @@ function createGeneralMCMCModel(;
     v_E_100kms_dist = priors.v_E_100kms_dist
     v_r_100kms_dist = priors.v_r_100kms_dist
 
-    valid_values = [:P, :e, :K1, :K2, :m1, :m2, :Ω, :ω, :i, :v_N, :v_E, :v_r]
+    valid_values = [:P_f, :e_f, :K1, :K2, :m1, :m2, :Ω, :ω, :i, :v_N, :v_E, :v_r]
     for prop ∈ observations.props
         if prop ∉ valid_values
             throw(DomainError(observation.props, "Allowed observations are only [:P, :e, :K1, :K2, :m1, :m2, :Ω, :ω, :i, :v_N, :v_E, :v_r]"))
@@ -452,11 +452,11 @@ function createGeneralMCMCModel(;
             #else
             #    error = 1/obs_errs[ii]^2 # adjusted parameter for vonMises distribution
             #end
-            if obs_symbol == :P
+            if obs_symbol == :P_f
                 use_cauchy ?
                     obs_vals[ii] ~ Cauchy(P_f, obs_errs[ii]) :
                     obs_vals[ii] ~ Normal(P_f, obs_errs[ii])
-            elseif obs_symbol == :e
+            elseif obs_symbol == :e_f
                 use_cauchy ?
                     obs_vals[ii] ~ Cauchy(e_f, obs_errs[ii]) :
                     obs_vals[ii] ~ Normal(e_f, obs_errs[ii])
