@@ -68,14 +68,21 @@ end
 ##
 
 vals1 = all_par
-vals2 = all_pmdec
+#vals2 = all_pmdec
+vals2 = all_pmra
+xlabel = L"π (mas)"
+#ylabel = L"pm_{\delta}"
+ylabel = L"pm_{\alpha}"
+
 #vals1 = all_μ1
 #vals2 = all_μ2
 
 chain_weights = ones(Float64, size(vals1))
+fontsize=20
 
 f = Figure()
-ax = Axis(f[1,1])
+ax = Axis(f[1,1], xlabel=xlabel, ylabel=ylabel,
+                xlabelsize=fontsize, ylabelsize=fontsize)
 SideKicks.create_2D_density(ax, 
                             vals1, [minimum(vals1), maximum(vals1)], 
                             vals2, [minimum(vals2), maximum(vals2)], 
