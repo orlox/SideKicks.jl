@@ -92,7 +92,7 @@ f = create_corner_plot(results, plotting_props_obs_check,
     xticklabelrotation=pi/4, 
     show_CIs=true,
     rowcolgap=8,
-    nbins=30,
+    nbins=50,
     fraction_1D = 0.9,
     supertitle="VFTS "*vfts_id *" - observables"
     )
@@ -129,7 +129,7 @@ f = create_corner_plot(results, plotting_props,
     tickfontsize=10 ,
     xticklabelrotation=pi/4, 
     show_CIs=true,
-    supertitle="VFTS "*vfts_id *" - derived quantities"
+    supertitle="VFTS "*vfts_id *" - derived quantities",
     fraction_1D = 0.9,
     )
 

@@ -136,7 +136,7 @@ function create_corner_plot(results, plotting_props;
                         xticklabelsize=tickfontsize, yticklabelsize=tickfontsize)
         (xmin, xmode, xmax) = create_compound_1D_densities(axis, results[props[ii]]/units[ii], ranges[ii], results[:weights], fraction_1D, nbins)
         # Add observations?
-        if observations != nothing
+        if observations !isnothing
             if props[ii] ∈ observations.props
                 println("adding prior for "*String(props[ii]))
                 # find index of prop and get mean and std
