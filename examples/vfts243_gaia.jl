@@ -26,11 +26,16 @@ pmra_pmdec_corr = -0.0039443113
 @model function sample_vfts_243_dist(μ, Σ)
     d ~ Normal(50.0,3.0) # in kpc
     par_true = 1/d # in mas
-    pmra ~ Uniform(-5.0,5.0)
-    pmdec ~ Uniform(-5.0,5.0)
+
+    vra ~ Uniform(-500.0,500.0)
+    vdec ~ Uniform(-500.0,500.0)
+    pmra = vra / (4.7*d)
+    pmdec = vdec / (4.7*d)
+    #pmra ~ Uniform(-5.0,5.0)
+    #pmdec ~ Uniform(-5.0,5.0)
     μ ~ MvNormal([par_true, pmra, pmdec],Σ)
 
-    return (d, par_true, pmra, pmdec, μ)
+    return (d, vra, vdec, par_true, pmra, pmdec)
 end
 
 
@@ -48,41 +53,36 @@ out_vals = reduce(hcat,output_vals) # stack chains into matrix
 ##
 
 all_d     = zeros(size(out_vals))
+all_vra   = zeros(size(out_vals))
+all_vdec  = zeros(size(out_vals))
 all_par   = zeros(size(out_vals))
 all_pmra  = zeros(size(out_vals))
 all_pmdec = zeros(size(out_vals))
-all_μ1     = zeros(size(out_vals))
-all_μ2     = zeros(size(out_vals))
-all_μ3     = zeros(size(out_vals))
 
 for ii in eachindex(out_vals)
     all_d[ii]     = out_vals[ii][1]
-    all_par[ii]   = out_vals[ii][2]
-    all_pmra[ii]  = out_vals[ii][3]
-    all_pmdec[ii] = out_vals[ii][4]
-    all_μ1[ii]     = out_vals[ii][5][1]
-    all_μ2[ii]     = out_vals[ii][5][2]
-    all_μ3[ii]     = out_vals[ii][5][3]
+    all_vra[ii]   = out_vals[ii][2]
+    all_vdec[ii]  = out_vals[ii][3]
+    all_par[ii]   = out_vals[ii][4]
+    all_pmra[ii]  = out_vals[ii][5]
+    all_pmdec[ii] = out_vals[ii][6]
 end
 
 ##
 
 vals1 = all_par
-#vals2 = all_pmdec
-vals2 = all_pmra
 xlabel = L"π (mas)"
-#ylabel = L"pm_{\delta}"
-ylabel = L"pm_{\alpha}"
-
-#vals1 = all_μ1
-#vals2 = all_μ2
+vals2 = all_pmdec
+ylabel = L"pm_{\delta}"
+#vals2 = all_pmra
+#ylabel = L"pm_{\alpha}"
 
 chain_weights = ones(Float64, size(vals1))
 fontsize=20
 
 f = Figure()
 ax = Axis(f[1,1], xlabel=xlabel, ylabel=ylabel,
-                xlabelsize=fontsize, ylabelsize=fontsize)
+          xlabelsize=fontsize, ylabelsize=fontsize)
 SideKicks.create_2D_density(ax, 
                             vals1, [minimum(vals1), maximum(vals1)], 
                             vals2, [minimum(vals2), maximum(vals2)], 
