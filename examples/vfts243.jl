@@ -7,8 +7,8 @@ vfts_id = "243"
 
 # Velocity components ignored for :simplified model
 obs = SideKicks.createObservations([
-    [:P,   10.4031,  0.01,   day],
-    [:e,   0.017,    0.012,  1],
+    [:P_f, 10.4031,  0.01,   day],
+    [:e_f, 0.017,    0.012,  1],
     [:m1,  25.0,     2.3,    m_sun],
     [:K1,  81.4,     1.3,    km_per_s],
     [:v_N,  143,     12,    km_per_s],
@@ -30,6 +30,9 @@ priors = SideKicks.Priors(
 )
 
 ##
+
+# Are these next sessions just for testing? We should move them to a separate file
+
 mcmc_cauchy, props_cauchy = SideKicks.createGeneralMCMCModel( observations=obs, priors=priors, likelihood=:Cauchy)
 
 ##
@@ -47,7 +50,7 @@ using Random
 
 ##
 
-use_general_model = true
+use_general_model = false
 if use_general_model
     which_model  = :general
 else
@@ -76,7 +79,7 @@ plotting_props_obs_check = SideKicks.createPlottingProps([
     [:vf_N,    km_per_s, [130,170],        L"v_N  \;[\mathrm{km s}^{-1}]"],
     [:vf_E,    km_per_s, [380,430],        L"v_E  \;[\mathrm{km s}^{-1}]"],
     [:vf_r,    km_per_s, [257,263],        L"v_r  \;[\mathrm{km s}^{-1}]"],
-    [:omega_f,   degree, [0,360],        L"\omega_f  \;[\mathrm{rad}]"],
+    [:ω_f,   degree, [0,360],        L"\omega_f  \;[\mathrm{rad}]"],
 ])
 
     #[:vf_N,    km_per_s, [130,170],        L"v_N  \;[\mathrm{km s}^{-1}]"],
@@ -84,10 +87,12 @@ plotting_props_obs_check = SideKicks.createPlottingProps([
     #[:vf_r,    km_per_s, [257,263],        L"v_r  \;[\mathrm{km s}^{-1}]"],
 
 f = create_corner_plot(results, plotting_props_obs_check,
+    observations=obs,
     tickfontsize=10 ,
     xticklabelrotation=pi/4, 
     show_CIs=true,
     rowcolgap=8,
+    nbins=50,
     fraction_1D = 0.9,
     supertitle="VFTS "*vfts_id *" - observables"
     )
@@ -124,7 +129,7 @@ f = create_corner_plot(results, plotting_props,
     tickfontsize=10 ,
     xticklabelrotation=pi/4, 
     show_CIs=true,
-    supertitle="VFTS "*vfts_id *" - derived quantities"
+    supertitle="VFTS "*vfts_id *" - derived quantities",
     fraction_1D = 0.9,
     )
 
