@@ -24,7 +24,7 @@ pmra_pmdec_corr = -0.0039443113
 
 
 @model function sample_vfts_243_dist(μ, Σ)
-    d ~ Normal(50.0,3.0) # in kpc
+    d ~ Normal(50.0,30.0) # in kpc
     par_true = 1/d # in mas
 
     vra ~ Uniform(-500.0,500.0)

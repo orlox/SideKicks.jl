@@ -1,67 +1,4 @@
-using SideKicks
-using BenchmarkTools
-using CairoMakie
-using Distributions
-
 vfts_id = "243"
-
-# Velocity components ignored for :simplified model
-obs = SideKicks.createObservations([
-    [:P,   10.4031,  0.01,   day],
-    [:e,   0.017,    0.012,  1],
-    [:m1,  25.0,     2.3,    m_sun],
-    [:K1,  81.4,     1.3,    km_per_s],
-    [:v_N,  143,     12,    km_per_s],
-    [:v_E,  408,     8,     km_per_s],
-    [:v_r,  260.2,   0.9,    km_per_s],
-    [:ω,  66,   53,    degree]
-]) 
-
-priors = SideKicks.Priors(
-    logm1_dist = Uniform(0.1,3), # in log(Msun)
-    logm2_dist = Uniform(0.1,3), # in log(Msun)
-    logP_dist  = Uniform(-1,3),   # in log(days)
-    vkick_dist = Exponential(1), # in 100 km/s
-    frac_dist  = Uniform(0,1.0),
-    e_dist = Uniform(0,0.01),
-    v_N_100kms_dist = Normal(145/100, 12/100),
-    v_E_100kms_dist = Normal(396/100, 12/100),
-    v_r_100kms_dist = Normal(271.6/100, 12.2/100)
-)
-
-##
-mcmc_cauchy, props_cauchy = SideKicks.createGeneralMCMCModel( observations=obs, priors=priors, likelihood=:Cauchy)
-
-##
-using Turing
-using Random
-@code_warntype mcmc_cauchy.f(
-    mcmc_cauchy,
-    Turing.VarInfo(mcmc_cauchy),
-    Turing.SamplingContext(
-        Random.GLOBAL_RNG, Turing.SampleFromPrior(), Turing.DefaultContext(),
-    ),
-    mcmc_cauchy.args...,
-)
-
-
-##
-
-use_general_model = true
-if use_general_model
-    which_model  = :general
-else
-    which_model  = :simplified
-end
-
-mcmcStruct = SideKicks.RunKickMCMC(
-        which_model = which_model,
-        observations = obs,
-        priors = priors,
-        nuts_warmup_count = 200,
-        nuts_acceptance_rate = 0.8,
-        nsamples = 200,
-        nchains = 8)
 
 ##
 results = mcmcStruct.results
@@ -76,7 +13,7 @@ plotting_props_obs_check = SideKicks.createPlottingProps([
     [:vf_N,    km_per_s, [130,170],        L"v_N  \;[\mathrm{km s}^{-1}]"],
     [:vf_E,    km_per_s, [380,430],        L"v_E  \;[\mathrm{km s}^{-1}]"],
     [:vf_r,    km_per_s, [257,263],        L"v_r  \;[\mathrm{km s}^{-1}]"],
-    [:omega_f,   degree, [0,360],        L"\omega_f  \;[\mathrm{rad}]"],
+    [:ω_f,   degree, [0,360],        L"\omega_f  \;[\mathrm{rad}]"],
 ])
 
     #[:vf_N,    km_per_s, [130,170],        L"v_N  \;[\mathrm{km s}^{-1}]"],
@@ -89,7 +26,7 @@ f = create_corner_plot(results, plotting_props_obs_check,
     show_CIs=true,
     rowcolgap=8,
     fraction_1D = 0.9,
-    supertitle="VFTS "*vfts_id *" - observables"
+    supertitle="VFTS "*vfts_id *" - observables",
     )
 save("vfts"*vfts_id *"_observables.png", f)
 
@@ -124,7 +61,7 @@ f = create_corner_plot(results, plotting_props,
     tickfontsize=10 ,
     xticklabelrotation=pi/4, 
     show_CIs=true,
-    supertitle="VFTS "*vfts_id *" - derived quantities"
+    supertitle="VFTS "*vfts_id *" - derived quantities",
     fraction_1D = 0.9,
     )
 
@@ -193,9 +130,9 @@ plotting_props = SideKicks.createPlottingProps([
     [:K2,    km_per_s,  missing,  L"K_2  \;[\mathrm{km s}^{-1}]"],
     [:frac,  1,         missing,  L"f_{fb}"],
     [:vsys,  km_per_s,  missing, L"v_{\mathrm{sys}} \;[\mathrm{km s}^{-1}]"], 
-    [:v_N,   km_per_s,  missing, L"v_{\mathrm{N}} \;[\mathrm{km s}^{-1}]"], 
-    [:v_E,   km_per_s,  missing, L"v_{\mathrm{E}} \;[\mathrm{km s}^{-1}]"], 
-    [:v_r,   km_per_s,  missing, L"v_{\mathrm{r}} \;[\mathrm{km s}^{-1}]"], 
+    [:vf_N,   km_per_s,  missing, L"v_{\mathrm{N}} \;[\mathrm{km s}^{-1}]"], 
+    [:vf_E,   km_per_s,  missing, L"v_{\mathrm{E}} \;[\mathrm{km s}^{-1}]"], 
+    [:vf_r,   km_per_s,  missing, L"v_{\mathrm{r}} \;[\mathrm{km s}^{-1}]"], 
 ])
 
 f = create_corner_plot(results, plotting_props,
@@ -208,3 +145,7 @@ f = create_corner_plot(results, plotting_props,
 save("vfts"*vfts_id *"_master.png", f)
 
 f   
+
+
+
+##
