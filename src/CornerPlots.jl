@@ -85,7 +85,7 @@ function create_corner_plot(results, plotting_props;
     # This will require making sure the props are identical
 
     # Confirm requested props exist
-    available_props = keys(results)
+    available_props = map(Symbol, keys(results))
     for prop ∈ props
         if prop ∉ available_props
             throw(DomainError(prop, "Allowed props are only "*join([String(aprop) for aprop in available_props], ", ")))
