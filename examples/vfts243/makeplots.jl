@@ -1,8 +1,15 @@
+using SideKicks
+using HDF5
+using CairoMakie
+
+##
+
 system_id = last(split(@__DIR__, "/"))
 
 ##
 fid = h5open("examples/$system_id/results.hdf5", "r") 
 results = fid["results"]
+#close(fid)
 #do fid
 #    observations = create_group(fid, "observations")
 #    observations["props"] = string.(mcmcStruct.observations.props)
@@ -21,7 +28,6 @@ results = fid["results"]
 #    fid["nsamples"] = mcmcStruct.nsamples
 #end
 
-##
 #results = mcmcStruct.results
 
 ##
@@ -47,7 +53,7 @@ f = create_corner_plot(results, plotting_props_obs_check,
     show_CIs=true,
     rowcolgap=8,
     fraction_1D = 0.9,
-    supertitle="VFTS "*vfts_id *" - observables",
+    supertitle="VFTS "*system_id *" - observables",
     )
 save(system_id*"_observables.png", f)
 
