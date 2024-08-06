@@ -43,20 +43,4 @@ mcmcStruct = SideKicks.RunKickMCMC(
 
 ##
 
-h5open("examples/$system_id/results.hdf5", "w") do fid
-    observations = create_group(fid, "observations")
-    observations["props"] = string.(mcmcStruct.observations.props)
-    observations["vals"] = string.(mcmcStruct.observations.vals)
-    observations["errs"] = string.(mcmcStruct.observations.errs)
-    observations["units"] = string.(mcmcStruct.observations.units)
-    fid["priors"] = priors_string
-    results = create_group(fid, "results")
-    dict_keys = keys(mcmcStruct.results)
-    results["results_keys"] = string.(dict_keys)
-    for key in dict_keys
-        results[string(key)] = mcmcStruct.results[key]
-    end
-    fid["nuts_warmup_count"] = mcmcStruct.nuts_warmup_count
-    fid["nuts_acceptance_rate"] = mcmcStruct.nuts_acceptance_rate
-    fid["nsamples"] = mcmcStruct.nsamples
-end
+SideKicks.SaveResults("examples/$system_id/results.hdf5", mcmcStruct, obs_string, priors_string)
