@@ -2,33 +2,10 @@ using SideKicks
 using HDF5
 using CairoMakie
 
-##
-
 system_id = last(split(@__DIR__, "/"))
+results_file = String(@__DIR__) * "/results.hdf5"
 
-##
-fid = h5open("examples/$system_id/results.hdf5", "r") 
-results = fid["results"]
-#close(fid)
-#do fid
-#    observations = create_group(fid, "observations")
-#    observations["props"] = string.(mcmcStruct.observations.props)
-#    observations["vals"] = string.(mcmcStruct.observations.vals)
-#    observations["errs"] = string.(mcmcStruct.observations.errs)
-#    observations["units"] = string.(mcmcStruct.observations.units)
-#    fid["priors"] = priors_string
-#    results = create_group(fid, "results")
-#    dict_keys = keys(mcmcStruct.results)
-#    results["results_keys"] = string.(dict_keys)
-#    for key in dict_keys
-#        results[string(key)] = mcmcStruct.results[key]
-#    end
-#    fid["nuts_warmup_count"] = mcmcStruct.nuts_warmup_count
-#    fid["nuts_acceptance_rate"] = mcmcStruct.nuts_acceptance_rate
-#    fid["nsamples"] = mcmcStruct.nsamples
-#end
-
-#results = mcmcStruct.results
+results, observations, priors, metadata = SideKicks.ExtractResults(results_file)
 
 ##
 
@@ -55,7 +32,7 @@ f = create_corner_plot(results, plotting_props_obs_check,
     fraction_1D = 0.9,
     supertitle="VFTS "*system_id *" - observables",
     )
-save(system_id*"_observables.png", f)
+save(String(@__DIR__)*"/"*system_id*"_observables.png", f)
 
 f
 
@@ -88,11 +65,11 @@ f = create_corner_plot(results, plotting_props,
     tickfontsize=10 ,
     xticklabelrotation=pi/4, 
     show_CIs=true,
-    supertitle="VFTS "*vfts_id *" - derived quantities",
+    supertitle="VFTS "*system_id *" - derived quantities",
     fraction_1D = 0.9,
     )
 
-save(system_id*"_derived.png", f)
+save(String(@__DIR__)*"/"*system_id*"_derived.png", f)
 
 f   
 
@@ -127,13 +104,12 @@ f = create_corner_plot(results, plotting_props,
     tickfontsize=10 ,
     xticklabelrotation=pi/4, 
     show_CIs=true,
-    supertitle="VFTS "*vfts_id *" - derived quantities (ecc)"
+    supertitle="VFTS "*system_id *" - derived quantities (ecc)"
     )
 
-save(system_id*"_derived_ecc.png", f)
+save(String(@__DIR__)*"/"*system_id*"_derived_ecc.png", f)
 
 f   
-
 
 ##
 
@@ -166,13 +142,11 @@ f = create_corner_plot(results, plotting_props,
     tickfontsize=10 ,
     xticklabelrotation=pi/4, 
     show_CIs=true,
-    supertitle="VFTS "*vfts_id *" - master plot"
+    supertitle="VFTS "*system_id *" - master plot"
     )
 
-save(system_id*"_master.png", f)
+save(String(@__DIR__)*"/"*system_id*"_master.png", f)
 
 f   
-
-
 
 ##

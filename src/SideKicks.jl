@@ -9,5 +9,6 @@ include("Orbits.jl")
 include("BHFallback.jl")
 include("KickMCMC.jl")
 include("CornerPlots.jl")
+include("OutputStorage.jl")
 
 end # module
