@@ -1,3 +1,5 @@
 *.png
 Manifest.toml
 .vscode
+*.hdf5
+*.csv
