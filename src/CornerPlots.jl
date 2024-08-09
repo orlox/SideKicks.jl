@@ -67,28 +67,50 @@ end
 """
 
 function create_corner_plot(results, plotting_props; 
-        fig=Figure(), supertitle=missing,
+        observations=nothing,
+        fig=Figure(), supertitle=nothing,
         fractions=[0.68,0.95,0.997], fraction_1D=0.68, 
         show_CIs=true, nbins=100,
         rowcolgap=10, xticklabelrotation=pi/4,
         labelfontsize=16, tickfontsize=10, supertitlefontsize=30)
 
-    props = plotting_props.props
-    units = plotting_props.units
-    names = plotting_props.names
-    ranges = plotting_props.ranges
+    #props = plotting_props.props
+    #units = plotting_props.units
+    #names = plotting_props.names
+    #ranges = plotting_props.ranges
 
-    # TODO: if extra plotting props are included that can't be used, scrap these and only plot the good ones. 
-    # Print a line about this, but don't throw a warning
+    ## TODO: if extra plotting props are included that can't be used, scrap these and only plot the good ones. 
+    ## Print a line about this, but don't throw a warning
 
     # TODO: add a flag for plotting with observation or prior distribution
     # This will require making sure the props are identical
+    if !isnothing(observations)
+        println("using observations - test RTW")
+        println(observations.props)
+    end
 
-    # Confirm requested props exist
+    ## Confirm requested props exist
+    #available_props = keys(results)
+    #for prop ∈ props
+    #    if prop ∉ available_props
+    #        throw(DomainError(prop, "Allowed props are only "*join([String(aprop) for aprop in available_props], ", ")))
+    #    end
+    #end
+    props  = [] 
+    units  = [] 
+    names  = [] 
+    ranges = [] 
+
+    # If extra plotting props are included that can't be used, scrap these and only plot the good ones. 
     available_props = keys(results)
-    for prop ∈ props
-        if prop ∉ available_props
-            throw(DomainError(prop, "Allowed props are only "*join([String(aprop) for aprop in available_props], ", ")))
+    for ii in eachindex(plotting_props.props)
+        if plotting_props.props[ii] ∈ available_props
+            push!(props,  plotting_props.props[ii])
+            push!(units,  plotting_props.units[ii])
+            push!(names,  plotting_props.names[ii])
+            push!(ranges, plotting_props.ranges[ii]) 
+        else
+            println("Prop "*string(plotting_props.props[ii])*" ignored")
         end
     end
 
@@ -132,7 +154,23 @@ function create_corner_plot(results, plotting_props;
                         xticklabelrotation=xticklabelrotation,
                         xticklabelsize=tickfontsize, yticklabelsize=tickfontsize)
         (xmin, xmode, xmax) = create_compound_1D_densities(axis, results[props[ii]]/units[ii], ranges[ii], results[:weights], fraction_1D, nbins)
+        
+        # Add observations?
+        if !isnothing(observations)
+            if props[ii] ∈ observations.props
+                println("adding obs for "*String(props[ii]))
+                # find index of prop and get mean and std
+                idx = findall(x->x==props[ii], observations.props)[1]
+                mean = observations.vals[idx]
+                errs = observations.errs[idx]
+                xarr = LinRange(ranges[ii][1], ranges[ii][2], 100)
+                lines!(axis, xarr, pdf(Normal(mean, errs), xarr), color=(:red, 0.4), linewidth=3) # linestyle=:dot, 
+            end
+        end
+
+        #hideydecorations!(axis)
         hideydecorations!(axis)
+        # RTW: what is this doing \/ ?
         if ii !=num_col
             hidexdecorations!(axis,ticks=false, minorticks=false)
         end
@@ -170,7 +208,7 @@ function create_corner_plot(results, plotting_props;
     rowgap!(fig.layout, rowcolgap)
     colgap!(fig.layout, rowcolgap)
 
-    if !ismissing(supertitle)
+    if !isnothing(supertitle)
         Label(fig[0,:], text=supertitle, fontsize=supertitlefontsize)
     end
 
@@ -290,8 +328,15 @@ function create_1D_density(axis, values, range, chain_weights, fraction_1D, nbin
     
     h = fit(Histogram, values, chain_weights, nbins=nbins)
     x =(h.edges[1][2:end] .+ h.edges[1][1:end-1])./2
-    lines!(axis, x, h.weights/sum(h.weights), color=color, linewidth=linewidth)
-    return x, h
+    dx = 1
+    if length(x) > 1
+        if x[2]-x[1] > 0
+            dx = x[2]-x[1]
+        end
+    end
+    y = h.weights/sum(h.weights*dx)
+    lines!(axis, x, y, color=color, linewidth=linewidth)
+    return x, h, y
 end
 
 """
@@ -318,22 +363,22 @@ function create_compound_1D_densities(axis, values_matrix, range, chain_weights_
     for ii in 1:size(values_matrix)[1] # nchains
         values = values_matrix[ii,:]
         chain_weights = chain_weights_matrix[ii,:]
-        create_1D_density(axis, values, range, chain_weights, fraction_1D, nbins, color=(:gray, 0.4), linewidth=1)
+        create_1D_density(axis, values, range, chain_weights, fraction_1D, nbins, color=(:gray, 0.25), linewidth=1)
     end
 
     # Plot once for all the values
-    x, h = create_1D_density(axis, vec(values_matrix), range, vec(chain_weights_matrix), fraction_1D, nbins, color=(:blue, 1.0), linewidth=2)
+    x, h, y = create_1D_density(axis, vec(values_matrix), range, vec(chain_weights_matrix), fraction_1D, nbins, color=(:blue, 1.0), linewidth=1)
 
     bound = get_bounds_for_fractions(h, [fraction_1D])[1]
     xmin = minimum(x[h.weights .>= bound])
     xmode = x[argmax(h.weights)]
     xmax = maximum(x[h.weights .>= bound])
 
-    filter = x .>= xmin .&& x.<= xmax
-    band!(axis, x[filter], zeros(length(x[filter])), h.weights[filter]/sum(h.weights), color=(:gray, 0.4))
-    lines!(axis, x, h.weights/sum(h.weights))
-    vlines!(axis, xmode, color=(:black, 1.0), linewidth=0.5)
+    filter = x .>= xmin .&& x .<= xmax
+    band!(axis, x[filter], zeros(length(x[filter])), y[filter], color=(:gray, 0.4))
+    vlines!(axis, xmode, color=(:black, 1.0), linewidth=1)
     xlims!(axis, range[1], range[2])
+    ylims!(axis, -.1*maximum(y), 5/3*maximum(y))
 
     return (xmin, xmode, xmax)
    

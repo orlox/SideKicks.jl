@@ -3,7 +3,7 @@ using HDF5
 using CairoMakie
 
 system_id = last(split(@__DIR__, "/"))
-results_file = String(@__DIR__) * "/results.hdf5"
+results_file = String(@__DIR__) * "/results-small.hdf5"
 
 results, observations, priors, metadata = SideKicks.ExtractResults(results_file)
 
@@ -15,9 +15,9 @@ plotting_props_obs_check = SideKicks.createPlottingProps([
     [:e_f,   1,        [0,0.1],        L"e_f"],
     [:K1,    km_per_s, [77,85],        L"K_1  \;[\mathrm{km s}^{-1}]"],
     [:vf_N,    km_per_s, [130,170],        L"v_N  \;[\mathrm{km s}^{-1}]"],
-    [:vf_E,    km_per_s, [380,430],        L"v_E  \;[\mathrm{km s}^{-1}]"],
-    [:vf_r,    km_per_s, [257,263],        L"v_r  \;[\mathrm{km s}^{-1}]"],
-    [:ω_f,   degree, [0,360],        L"\omega_f  \;[\mathrm{rad}]"],
+    #[:vf_E,    km_per_s, [380,430],        L"v_E  \;[\mathrm{km s}^{-1}]"],
+    #[:vf_r,    km_per_s, [257,263],        L"v_r  \;[\mathrm{km s}^{-1}]"],
+    #[:ω_f,   degree, [0,360],        L"\omega_f  \;[\mathrm{rad}]"],
 ])
 
     #[:vf_N,    km_per_s, [130,170],        L"v_N  \;[\mathrm{km s}^{-1}]"],
@@ -25,9 +25,11 @@ plotting_props_obs_check = SideKicks.createPlottingProps([
     #[:vf_r,    km_per_s, [257,263],        L"v_r  \;[\mathrm{km s}^{-1}]"],
 
 f = create_corner_plot(results, plotting_props_obs_check,
+    observations=observations,
     tickfontsize=10 ,
     xticklabelrotation=pi/4, 
     show_CIs=true,
+    nbins=100, # RTW - play with this, it may look better with larger samples
     rowcolgap=8,
     fraction_1D = 0.9,
     supertitle="VFTS "*system_id *" - observables",
