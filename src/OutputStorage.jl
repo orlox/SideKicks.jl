@@ -39,6 +39,7 @@ function ExtractResults(fname)
     priors_string = strings["priors"][]
     priors = eval(Meta.parse(priors_string))
     metadata = fid["metadata"]
+    close(fid)
     return [results, observations, priors, metadata ]
 end
 
