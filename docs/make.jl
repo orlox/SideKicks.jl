@@ -4,14 +4,15 @@ using Literate
 
 # Parse examples using Literate
 pkg_path = pkgdir(SideKicks)
+@show
 
 function ignore_code_blocks(content)
     content = replace(content, "##\n" => "\n")  # remove code blocks
     content = replace(content, "###" => "##")  # make level 3 headers level 2
 end
 
-Literate.markdown(pkg_path * "/examples/run_inference.jl", pkg_path * "/docs/src/", preprocess=ignore_code_blocks, name="1_run_inference")
-Literate.markdown(pkg_path * "/examples/plot_results.jl", pkg_path * "/docs/src/", preprocess=ignore_code_blocks, name="2_plot_results")
+Literate.markdown(pkg_path * "/examples/run_inference_vfts243.jl", pkg_path * "/docs/src/", preprocess=ignore_code_blocks, name="1_run_inference")
+Literate.markdown(pkg_path * "/examples/plot_results_vfts243.jl", pkg_path * "/docs/src/", preprocess=ignore_code_blocks, name="2_plot_results")
 
 DocMeta.setdocmeta!(SideKicks, :DocTestSetup, :(using SideKicks); recursive=true)
 
