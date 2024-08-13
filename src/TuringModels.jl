@@ -77,76 +77,12 @@ function create_simplified_mcmc_model(;
     bhModel = arbitraryEjectaBH
     )
 
-    # Verify priors are set correctly
-    # Need m1, m2, vkick, and frac
-
     logm1_dist = priors.logm1_dist
     logm2_dist = priors.logm2_dist
     logP_dist = priors.logP_dist
     vkick_dist = priors.vkick_dist
     frac_dist = priors.frac_dist
 
-
-    # Define a new observation object for the net velocity
-    #obs = deepcopy(observations)
-    #use_vsys = false
-    ## if any of the vsys objects are in the observations, check that
-    ## they all are, then make sure that the venv priors are used
-    #if any( [:vsys_N, :vsys_E, :vsys_r] .∈ (obs.props,))
-    #    if !all( [:vsys_N, :vsys_E, :vsys_r] .∈ (obs.props,))
-    #        println("Raise error, either set all vsys or none")
-    #        # RTW make this error proper
-    #    else
-    #        use_vsys = true
-    #    end
-    #end
-    #if use_vsys
-    #    if any( [:venv_N, :venv_E, :venv_r] .∈ (obs.props,))
-    #        if !all( [:venv_N, :venv_E, :venv_r] .∈ (obs.props,))
-    #            println("Raise error, either set all venv or none")
-    #        # RTW make this error proper
-    #        # If venv not supplied, treat them all as 0 - handled below
-    #        end
-    #    end    
-
-    #    # need to extract all the key values
-    #    vsysenv_vals = zeros(6, 1)
-    #    vsysenv_errs = zeros(6, 1)
-    #    props = [ :vsys_N, :vsys_E, :vsys_r, :venv_N, :venv_E, :venv_r]
-    #    for ii in eachindex(props)
-    #        if props[ii] ∈ obs.props
-    #            idx = findall(x->x==props[ii], obs.props)[1]
-    #            vsysenv_vals[ii] = obs.vals[idx]
-    #            vsysenv_errs[ii] = obs.errs[idx]
-    #        end
-    #    end
-    #    vnet_val = sqrt((vsysenv_vals[1]-vsysenv_vals[4])^2 +
-    #                    (vsysenv_vals[2]-vsysenv_vals[5])^2 +
-    #                    (vsysenv_vals[3]-vsysenv_vals[6])^2 )
-    #    vnet_err = (1/vnet_val) * sqrt( 
-    #            (vsysenv_errs[1]^2 + vsysenv_errs[4]^2)
-    #                *(vsysenv_vals[1]-vsysenv_vals[4]) +
-    #            (vsysenv_errs[2]^2 + vsysenv_errs[5]^2)
-    #                *(vsysenv_vals[2]-vsysenv_vals[5]) +
-    #            (vsysenv_errs[3]^2 + vsysenv_errs[6]^2)
-    #                *(vsysenv_vals[3]-vsysenv_vals[6]))
-    #    obs = addObservation(obs, [:vnet, vnet_val, vnet_err, km_per_s])
-    #end
-
-    # Add back in later
-    #rv_env_dist = priors.rv_env_dist
-    #pmra_env_dist = priors.pmra_env_dist
-    #pmdec_env_dist = priors.pmdec_env_dist
-    #parallax_dist = priors.parallax_dist
-
-    # RTW: why do we need this?
-    ## provided observed values
-    #valid_values = [:P, :e, :K1, :K2, :m1, :m2]
-    #for obs ∈ observations.props
-    #    if obs ∉ valid_values
-    #        throw(DomainError(obs, "Allowed observations are only [:P, :e, :K1, :K2, :m1, :m2]"))
-    #    end
-    #end
     if !(likelihood == :Cauchy || likelihood == :Normal)
         throw(DomainError(likelihood, "likelihood must be either :Cauchy or :Normal"))
     end
@@ -156,18 +92,18 @@ function create_simplified_mcmc_model(;
         # set priors
         #Pre-explosion masses and orbital period
         logm1 ~ logm1_dist
-        m1 = 10^(logm1)*m_sun
+        m1_i = 10^(logm1)*m_sun
         logm2 ~ logm2_dist
-        m2 = 10^(logm2)*m_sun
+        m2_i = 10^(logm2)*m_sun
         logP ~ logP_dist
-        P = 10^(logP)*day
-        a = kepler_a_from_P(m1=m1, m2=m2, P=P)
+        P_i = 10^(logP)*day
+        a_i = kepler_a_from_P(m1=m1, m2=m2, P=P_i)
         cosi ~ Uniform(0,1)
         i_f = acos(cosi)
 
         #Post-explosion masses
         frac ~ frac_dist
-        m2_f = bhModel(m2, frac) # star 2 explodes, star 1 is kept fixed
+        m2_f = bhModel(m2_i, frac) # star 2 explodes, star 1 is kept fixed
 
         #Kick parameters
         vkick_100kms ~ vkick_dist  
@@ -181,13 +117,11 @@ function create_simplified_mcmc_model(;
         ϕ = acos(cosϕ)
 
         #m1 is assumed to remain constant
-        a_f, e_f = post_supernova_circular_orbit_a(m1=m1, m2=m2, a=a, m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ)
-        P_f = kepler_P_from_a(m1=m1, m2=m2_f, a=a_f)
-        K1 = RV_semiamplitude_K1(m1=m1, m2=m2_f, P=P_f, e=e_f, i=i_f)
-        K2 = RV_semiamplitude_K1(m1=m2_f, m2=m1, P=P_f, e=e_f, i=i_f)
-        #if use_vsys
-        #    vsys = post_supernova_circular_orbit_vsys( m1=m1, m2=m2, a=a, m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ)
-        #end
+        m1_f = m1_i
+        a_f, e_f = post_supernova_circular_orbit_a(m1_i=m1_i, m2_i=m2_i, a=a_i, m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ)
+        P_f = kepler_P_from_a(m1=m1_f, m2=m2_f, a=a_f)
+        K1 = RV_semiamplitude_K1(m1=m1_f, m2=m2_f, P=P_f, e=e_f, i=i_f)
+        K2 = RV_semiamplitude_K1(m1=m2_f, m2=m1_f, P=P_f, e=e_f, i=i_f)
 
         likelihood == :Cauchy ?
             likelihood_dist = Cauchy :
@@ -195,32 +129,30 @@ function create_simplified_mcmc_model(;
 
         for ii in eachindex(obs.props)
             obs_symbol = obs.props[ii]
-            if obs_symbol == :P
+            if obs_symbol == :P_f
                 param = P_f
-            elseif obs_symbol == :e
+            elseif obs_symbol == :e_f
                 param = e_f
             elseif obs_symbol == :K1
                 param = K1
             elseif obs_symbol == :K2
                 param = K2
-            elseif obs_symbol == :m1
-                param = m1
-            elseif obs_symbol == :m2
+            elseif obs_symbol == :m1_f
+                param = m1_f
+            elseif obs_symbol == :m2_f
                 param = m2_f
-            #elseif obs_symbol == :vnet
-            #    param = vsys
             else
                 continue
             end
 
-            obs_vals[ii] ~ likelihood_dist(param, obs_errs[ii]) # Needs to have this [ii] in the obs arrays, no idea why...
+            obs_vals[ii] ~ likelihood_dist(param, obs_errs[ii]) 
         end
 
         # other params
-        dm2 = m2 - m2_f
-        return     (m1,    m2,    P,   a,     i_f, vkick, m2_f,  a_f,   P_f,  e_f,  K1,       K2, frac, dm2) #, vsys)
+        dm2 = m2_i - m2_f
+        return     (m1_i,    m2_i,    P_i,   a_i,     i_f,  vkick,  m2_f,  a_f,   P_f,  e_f,  K1,  K2, frac, dm2) 
     end
-    return_props = [:m1,   :m2,   :P,  :a,    :i_f, :vkick, :m2_f, :a_f,  :P_f, :e_f, :K1,      :K2, :frac, :dm2] #, :vsys]
+    return_props = [:m1_i,   :m2_i,   :P_i,  :a_i,    :i_f, :vkick, :m2_f, :a_f,  :P_f, :e_f, :K1, :K2, :frac, :dm2] 
 
     obs_vals_cgs = obs.vals .* obs.units
     obs_errs_cgs = obs.errs .* obs.units
@@ -257,16 +189,16 @@ function create_general_mcmc_model(;
     e_dist = priors.e_dist
     vkick_dist = priors.vkick_dist
     frac_dist = priors.frac_dist
-    v_N_100kms_dist = priors.v_N_100kms_dist
-    v_E_100kms_dist = priors.v_E_100kms_dist
-    v_r_100kms_dist = priors.v_r_100kms_dist
+    venv_N_100kms_dist = priors.venv_N_100kms_dist
+    venv_E_100kms_dist = priors.venv_E_100kms_dist
+    venv_r_100kms_dist = priors.venv_r_100kms_dist
 
-    valid_values = [:P, :e, :K1, :K2, :m1, :m2, :Ω, :ω, :i, :v_N, :v_E, :v_r]
-    for prop ∈ observations.props
-        if prop ∉ valid_values
-            throw(DomainError(observation.props, "Allowed observations are only [:P, :e, :K1, :K2, :m1, :m2, :Ω, :ω, :i, :v_N, :v_E, :v_r]"))
-        end
-    end
+    #valid_values = [:P_f, :e_f, :K1, :K2, :m1_f, :m2_f, :Ω_i, :ω_i, :i_f, :v_N, :v_E, :v_r]
+    #for prop ∈ observations.props
+    #    if prop ∉ valid_values
+    #        throw(DomainError(observation.props, "Allowed observations are only [:P_f, :e_f, :K1, :K2, :m1_f, :m2_f, :Ω_i, :ω_i, :i_f, :v_N, :v_E, :v_r]
+    #    end
+    #end
     if !(likelihood == :Cauchy || likelihood == :Normal)
         throw(DomainError(likelihood, "likelihood must be either :Cauchy or :Normal"))
     end
@@ -275,42 +207,43 @@ function create_general_mcmc_model(;
         # set priors
         #Pre-explosion masses and orbital period
         logm1 ~ logm1_dist
-        m1 = 10^(logm1)*m_sun
+        m1_i = 10^(logm1)*m_sun
         logm2 ~ logm2_dist
-        m2 = 10^(logm2)*m_sun
+        m2_i = 10^(logm2)*m_sun
         logP ~ logP_dist
-        P = 10^(logP)*day
-        a = kepler_a_from_P(m1=m1, m2=m2, P=P)
-        e ~ e_dist
-        cosi ~ Uniform(0,1)
-        i = acos(cosi)
+        P_i = 10^(logP)*day
+        a_i = kepler_a_from_P(m1=m1_i, m2=m2_i, P=P_i)
+        e_i ~ e_dist
+
         #azimuthal angles are computed by sampling random points with a circularly symmetric distribution
         #we take all true anomalies to be equally likely. This is corrected by weighting later
         xν ~ Normal()
         yν ~ Normal()
         normν = 1/sqrt(xν^2+yν^2)
         cosν = xν*normν
-        ν = acos(cosν)
+        ν_i = acos(cosν)
         xΩ ~ Normal()
         yΩ ~ Normal()
         normΩ = 1/sqrt(xΩ^2+yΩ^2)
         cosΩ = xΩ*normΩ
-        Ω = acos(cosΩ)
+        Ω_i = acos(cosΩ)
         if yΩ < 0
-            Ω = 2π - Ω
+            Ω_i = 2π - Ω_i
         end
         xω ~ Normal()
         yω ~ Normal()
         normω = 1/sqrt(xω^2+yω^2)
         cosω = xω*normω
-        ω = acos(cosω)
+        ω_i = acos(cosω)
         if yω < 0
-            ω = 2π - ω
+            ω_i = 2π - ω_i
         end
+        cosi ~ Uniform(0,1)
+        i_i = acos(cosi)
 
         #Post-explosion masses
         frac ~ frac_dist
-        m2_f = bhModel(m2, frac) # star 2 explodes, star 1 is kept fixed
+        m2_f = bhModel(m2_i, frac) # star 2 explodes, star 1 is kept fixed
 
         #Kick parameters
         vkick_100kms ~ vkick_dist
@@ -327,40 +260,35 @@ function create_general_mcmc_model(;
         end
 
         #Initial systemic velocity parameters
-        vi_N_100kms ~ v_N_100kms_dist
-        vi_E_100kms ~ v_E_100kms_dist
-        vi_r_100kms ~ v_r_100kms_dist
-        vi_N = vi_N_100kms*100*km_per_s 
-        vi_E = vi_E_100kms*100*km_per_s 
-        vi_r = vi_r_100kms*100*km_per_s 
+        venv_N_100kms ~ venv_N_100kms_dist
+        venv_E_100kms ~ venv_E_100kms_dist
+        venv_r_100kms ~ venv_r_100kms_dist
+        venv_N = venv_N_100kms*100*km_per_s 
+        venv_E = venv_E_100kms*100*km_per_s 
+        venv_r = venv_r_100kms*100*km_per_s 
 
-        #m1 is assumed to remain constant, no impact velocity
-        a_f, e_f, Ω_f, ω_f, i_f, v_N, v_E, v_r = 
-            post_supernova_general_orbit_parameters(m1=m1, m2=m2, a=a, e=e, m2_f=m2_f, 
-                vkick=vkick, θ=θ, ϕ=ϕ, ν=ν, Ω=Ω, ω=ω, i=i)
-        P_f = kepler_P_from_a(m1=m1, m2=m2_f, a=a_f)
-        K1 = RV_semiamplitude_K1(m1=m1, m2=m2_f, P=P_f, e=e_f, i=i_f)
-        K2 = RV_semiamplitude_K1(m1=m2_f, m2=m1, P=P_f, e=e_f, i=i_f)
-        vsys = sqrt( v_N^2 + v_E^2 + v_r^2)
+        #m1 is assumed to remain constant, no impact velocity - TODO: relax this later
+        m1_f = m1_i
+        a_f, e_f, Ω_f, ω_f, i_f, vsys_N, vsys_E, vsys_r = 
+            post_supernova_general_orbit_parameters(m1_i=m1_i, m2_i=m2_i, a_i=a_i, e_i=e_i, m2_f=m2_f, 
+                vkick=vkick, θ=θ, ϕ=ϕ, ν_i=ν_i, Ω_i=Ω_i, ω_i=ω_i, i_i=i_i)
+        P_f = kepler_P_from_a(m1=m1_f, m2=m2_f, a=a_f)
+        K1 = RV_semiamplitude_K1(m1=m1_f, m2=m2_f, P=P_f, e=e_f, i=i_f)
+        K2 = RV_semiamplitude_K1(m1=m2_f, m2=m1_f, P=P_f, e=e_f, i=i_f)
+        vsys = sqrt( vsys_N^2 + vsys_E^2 + vsys_r^2)
 
-        vf_N = vi_N + v_N
-        vf_E = vi_E + v_E
-        vf_r = vi_r + v_r
+        v_N = venv_N + vsys_N
+        v_E = venv_E + vsys_E
+        v_r = venv_r + vsys_r
         
         use_cauchy = likelihood == :Cauchy
         for ii in eachindex(props)
             obs_symbol = props[ii]
-            # Why do we need to do this, why not do it in the function argument?
-            #if (obs_symbol != :Ω && obs_symbol != :omega) || likelihood == :Cauchy
-            #    error = obs_errs[ii]
-            #else
-            #    error = 1/obs_errs[ii]^2 # adjusted parameter for vonMises distribution
-            #end
-            if obs_symbol == :P
+            if obs_symbol == :P_f
                 use_cauchy ?
                     obs_vals[ii] ~ Cauchy(P_f, obs_errs[ii]) :
                     obs_vals[ii] ~ Normal(P_f, obs_errs[ii])
-            elseif obs_symbol == :e
+            elseif obs_symbol == :e_f
                 use_cauchy ?
                     obs_vals[ii] ~ Cauchy(e_f, obs_errs[ii]) :
                     obs_vals[ii] ~ Normal(e_f, obs_errs[ii])
@@ -372,47 +300,45 @@ function create_general_mcmc_model(;
                 use_cauchy ?
                     obs_vals[ii] ~ Cauchy(K2, obs_errs[ii]) :
                     obs_vals[ii] ~ Normal(K2, obs_errs[ii])
-            elseif obs_symbol == :m1
+            elseif obs_symbol == :m1_f
                 use_cauchy ?
-                    obs_vals[ii] ~ Cauchy(m1, obs_errs[ii]) :
-                    obs_vals[ii] ~ Normal(m1, obs_errs[ii])
-            elseif obs_symbol == :m2
+                    obs_vals[ii] ~ Cauchy(m1_f, obs_errs[ii]) :
+                    obs_vals[ii] ~ Normal(m1_f, obs_errs[ii])
+            elseif obs_symbol == :m2_f
                 use_cauchy ?
                     obs_vals[ii] ~ Cauchy(m2_f, obs_errs[ii]) :
                     obs_vals[ii] ~ Normal(m2_f, obs_errs[ii])
-            elseif obs_symbol == :i
+            elseif obs_symbol == :i_f
                 use_cauchy ?
                     obs_vals[ii] ~ Cauchy(i_f, obs_errs[ii]) :
                     obs_vals[ii] ~ Normal(i_f, obs_errs[ii])
-            elseif obs_symbol == :Ω
+            elseif obs_symbol == :Ω_f
                 use_cauchy ?
                     obs_vals[ii] ~ WrappedCauchy(Ω_f, obs_errs[ii]) :
                     obs_vals[ii] ~ ModVonMises(Ω_f, 1/obs_errs[ii]^2)
-            elseif obs_symbol == :ω
+            elseif obs_symbol == :ω_f
                 use_cauchy ?
                     obs_vals[ii] ~ WrappedCauchy(ω_f, obs_errs[ii]) :
                     obs_vals[ii] ~ ModVonMises(Ω_f, 1/obs_errs[ii]^2)
             elseif obs_symbol == :v_N
                 use_cauchy ?
-                    obs_vals[ii] ~ Cauchy(vf_N, obs_errs[ii]) :
-                    obs_vals[ii] ~ Normal(vf_N, obs_errs[ii])
+                    obs_vals[ii] ~ Cauchy(v_N, obs_errs[ii]) :
+                    obs_vals[ii] ~ Normal(v_N, obs_errs[ii])
             elseif obs_symbol == :v_E
                 use_cauchy ?
-                    obs_vals[ii] ~ Cauchy(vf_E, obs_errs[ii]) :
-                    obs_vals[ii] ~ Normal(vf_E, obs_errs[ii])
+                    obs_vals[ii] ~ Cauchy(v_E, obs_errs[ii]) :
+                    obs_vals[ii] ~ Normal(v_E, obs_errs[ii])
             elseif obs_symbol == :v_r
                 use_cauchy ?
-                    obs_vals[ii] ~ Cauchy(vf_r, obs_errs[ii]) :
-                    obs_vals[ii] ~ Normal(vf_r, obs_errs[ii])
+                    obs_vals[ii] ~ Cauchy(v_r, obs_errs[ii]) :
+                    obs_vals[ii] ~ Normal(v_r, obs_errs[ii])
             end
         end
 
-        # other params
-        dm2 = m2 - m2_f
-        return     ( m1,  m2,  P,  e,  a,  i_f, ω_f, Ω_f,  vkick,  m2_f,  a_f,  P_f,  e_f,  K1,  K2,  frac,  dm2,  vf_N,  vf_E,  vf_r,  vsys)
+        dm2 = m2_i - m2_f
+        return     ( m1_i,  m2_i,  P_i,  e_i,  a_i,  vkick,  frac,  dm2,  i_f,  ω_f,  Ω_f,  m1_f, m2_f,  a_f,  P_f,  e_f,  K1,  K2,  v_N,  v_E,  v_r,  vsys)
     end
-    # RTW : fix the props later
-    return_props = [:m1, :m2, :P, :e, :a, :i_f, :ω_f, :Ω_f, :vkick, :m2_f, :a_f, :P_f, :e_f, :K1, :K2, :frac, :dm2, :vf_N, :vf_E, :vf_r, :vsys]
+    return_props = [:m1_i, :m2_i, :P_i, :e_i, :a_i, :vkick, :frac, :dm2, :i_f, :ω_f, :Ω_f, :m1_f,:m2_f, :a_f, :P_f, :e_f, :K1, :K2, :v_N, :v_E, :v_r, :vsys]
 
     # Need to combine some of the observations to compare against the predicted output
     obs_vals_cgs = observations.vals .* observations.units
