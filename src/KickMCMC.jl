@@ -219,10 +219,8 @@ end
 
 Description
 Create a Turing model to perform an MCMC sampling of the pre-explosion 
-and kick properties of a system, assuming pre-explosion circularity.
-
-RTW this is more simplistic than just using a circular model, it's also
-assuming you know the eccentricity and don't care about radial velocity etc.
+and supernova properties of a simplified system, assuming pre-explosion 
+circularity and no constraints on the systemic velocity. 
 
 # Arguments:
 - observations:    the parameters taken from observations [Vector{Symbol}]
@@ -423,10 +421,10 @@ function createGeneralMCMCModel(;
     v_E_100kms_dist = priors.v_E_100kms_dist
     v_r_100kms_dist = priors.v_r_100kms_dist
 
-    valid_values = [:P, :e, :K1, :K2, :m1, :m2, :Ω, :ω, :i, :v_N, :v_E, :v_r]
+    valid_values = [:P_f, :e_f, :K1, :K2, :m1, :m2, :Ω, :ω, :i, :v_N, :v_E, :v_r]
     for prop ∈ observations.props
         if prop ∉ valid_values
-            throw(DomainError(observation.props, "Allowed observations are only [:P, :e, :K1, :K2, :m1, :m2, :Ω, :ω, :i, :v_N, :v_E, :v_r]"))
+            throw(DomainError(prop, "Allowed observations are only [:P, :e, :K1, :K2, :m1, :m2, :Ω, :ω, :i, :v_N, :v_E, :v_r]"))
         end
     end
     if !(likelihood == :Cauchy || likelihood == :Normal)
@@ -518,11 +516,11 @@ function createGeneralMCMCModel(;
             #else
             #    error = 1/obs_errs[ii]^2 # adjusted parameter for vonMises distribution
             #end
-            if obs_symbol == :P
+            if obs_symbol == :P_f
                 use_cauchy ?
                     obs_vals[ii] ~ Cauchy(P_f, obs_errs[ii]) :
                     obs_vals[ii] ~ Normal(P_f, obs_errs[ii])
-            elseif obs_symbol == :e
+            elseif obs_symbol == :e_f
                 use_cauchy ?
                     obs_vals[ii] ~ Cauchy(e_f, obs_errs[ii]) :
                     obs_vals[ii] ~ Normal(e_f, obs_errs[ii])
