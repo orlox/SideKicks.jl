@@ -38,4 +38,4 @@ kick_mcmc = SideKicks.KickMCMC(
 
 ##
 
-SideKicks.SaveResults("examples/vfts243_results.hdf5", kick_mcmc)
+SideKicks.SaveResults(String(@__DIR__)*"/vfts243/results.hdf5", kick_mcmc)

@@ -22,7 +22,6 @@ mutable struct KickMCMC
     nsamples::Int
 end
 
-
 function KickMCMC(; which_model, observations::Tuple{Observations, String}, priors::Tuple{Priors, String},
         nuts_warmup_count, nuts_acceptance_rate, nsamples, nchains)
 
