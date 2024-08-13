@@ -160,8 +160,8 @@ function post_supernova_circular_orbit_P(;m1_i, m2_i, P_i, m1_f=-1.0, m2_f, vkic
     if m1_f == -1.0
         m1_f = m1_i
     end
-    a = kepler_a_from_P(m1=m1_i, m2=m2_i, P=P_i)
-    (a_f, e_f) = post_supernova_circular_orbit_a(m1=m1_i, m2=m2_i, a=a,
+    a_i = kepler_a_from_P(m1=m1_i, m2=m2_i, P=P_i)
+    (a_f, e_f) = post_supernova_circular_orbit_a(m1_i=m1_i, m2_i=m2_i, a_i=a_i,
                     m1_f=m1_f, m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=vimp)
     P_f = kepler_P_from_a(m1=m1_f, m2=m2_f, a=a_f)
 
