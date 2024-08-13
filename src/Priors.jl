@@ -5,7 +5,6 @@ using Distributions
 
 Priors contains the prior distribution of each of the desired parameters
 
-RTW: check that N and E are identical to RA and Dec...
 """
 @kwdef mutable struct Priors
     logm1_dist::Union{ContinuousUnivariateDistribution,Missing} = missing
@@ -14,9 +13,9 @@ RTW: check that N and E are identical to RA and Dec...
     vkick_dist::Union{ContinuousUnivariateDistribution,Missing} = missing
     frac_dist::Union{ContinuousUnivariateDistribution,Missing} = missing 
     e_dist::Union{ContinuousUnivariateDistribution,Missing} = missing       
-    v_N_100kms_dist::Union{ContinuousUnivariateDistribution,Missing} = missing       
-    v_E_100kms_dist::Union{ContinuousUnivariateDistribution,Missing} = missing       
-    v_r_100kms_dist::Union{ContinuousUnivariateDistribution,Missing} = missing       
+    venv_N_100kms_dist::Union{ContinuousUnivariateDistribution,Missing} = missing       
+    venv_E_100kms_dist::Union{ContinuousUnivariateDistribution,Missing} = missing       
+    venv_r_100kms_dist::Union{ContinuousUnivariateDistribution,Missing} = missing       
     rv_env_dist::Union{ContinuousUnivariateDistribution,Missing} = missing 
     pmra_dist::Union{ContinuousUnivariateDistribution,Missing} = missing  
     pmdec_dist::Union{ContinuousUnivariateDistribution,Missing} = missing 
