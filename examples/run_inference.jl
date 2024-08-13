@@ -1,39 +1,34 @@
 using SideKicks
 using BenchmarkTools
-using CairoMakie
 using Distributions
-using HDF5
 
-# USER sets this! - Ensure this matches a directory in examples/ which has the appropriate files and filenames
-system_id = "vfts243" 
+obs = SideKicks.@Observations([
+    [:P,   10.4031,  0.01,   day],
+    [:e,   0.017,    0.012,  1],
+    [:m1,  25.0,     2.3,    m_sun],
+    [:K1,  81.4,     1.3,    km_per_s],
+    [:v_N,  143,     12,    km_per_s],
+    [:v_E,  408,     8,     km_per_s],
+    [:v_r,  260.2,   0.9,    km_per_s],
+    [:ω,  66,   53,    degree]
+]) 
 
-## 
-
-# Obtain observations and priors from external files
-obs_string = open("examples/$system_id/observations.jl", "r") do file
-        read(file, String)
-end
-obs = eval(Meta.parse(obs_string))
-
-
-priors_string = open("examples/$system_id/priors.jl", "r") do file
-    read(file, String)
-end
-priors = eval(Meta.parse(priors_string))
-
-mcmc_cauchy, props_cauchy = SideKicks.createGeneralMCMCModel( observations=obs, priors=priors, likelihood=:Cauchy)
+priors = SideKicks.@Priors(
+    logm1_dist = Uniform(0.1,3), # in log(Msun)
+    logm2_dist = Uniform(0.1,3), # in log(Msun)
+    logP_dist  = Uniform(-1,3),   # in log(days)
+    vkick_dist = Exponential(1), # in 100 km/s
+    frac_dist  = Uniform(0,1.0),
+    e_dist = Uniform(0,0.01),
+    v_N_100kms_dist = Normal(145/100, 12/100),
+    v_E_100kms_dist = Normal(396/100, 12/100),
+    v_r_100kms_dist = Normal(271.6/100, 12.2/100)
+)
 
 ##
 
-use_general_model = true
-if use_general_model
-    which_model  = :general
-else
-    which_model  = :simplified
-end
-
-mcmcStruct = SideKicks.RunKickMCMC(
-        which_model = which_model,
+kick_mcmc = SideKicks.KickMCMC(
+        which_model = :general,
         observations = obs,
         priors = priors,
         nuts_warmup_count = 200,
@@ -43,4 +38,4 @@ mcmcStruct = SideKicks.RunKickMCMC(
 
 ##
 
-SideKicks.SaveResults("examples/$system_id/results.hdf5", mcmcStruct, obs_string, priors_string)
+SideKicks.SaveResults("examples/vfts243_results.hdf5", kick_mcmc)
