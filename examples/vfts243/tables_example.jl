@@ -105,10 +105,11 @@ end
 ## 
 
 # TODO: Define here the v_r_fix and v_r_error_fix from Almeida sample
-v_r_fix = zeros(length(pmra))
-v_r_error_fix = zeros(length(pmra))
 
-
+df = DataFrame(CSV.File(String(@__DIR__)*"/Almeida_truncated.csv")) 
+id = df[!,"id"]
+v_r_fix = df[!,"vr"]
+v_r_error_fix = df[!,"vr_err"]
 
 ##
 f = Figure()
@@ -173,6 +174,24 @@ lines!(ax, xvals, pdf.(dist, xvals))
 f
 
 ##
+# now do RV
+iterations = 10_000
+model = v_model(v_r_fix, v_r_error_fix)
+chain = sample(model, NUTS(10_000,0.8), MCMCThreads(), iterations, 8);
+@show median(chain[:σ_v])
+@show median(chain[:μ_v])
+
+##
+# compare to RV results
+f = Figure()
+ax = Axis(f[1,1])
+hist!(ax, v_r_fix, normalization=:pdf)
+dist = Normal(median(chain[:μ_v]), median(chain[:σ_v]))
+xvals = LinRange(minimum(v_r_fix), maximum(v_r_fix), 100)
+lines!(ax, xvals, pdf.(dist, xvals))
+f
+
+##
 # extract properties for VFTS 243
 par = -0.04681187690491371
 pmra = 1.7220500229370916
@@ -192,6 +211,7 @@ pmra_pmdec_corr = -0.0039443113
     par_pmdec_corr*par_err*pmdec_err   pmra_pmdec_corr*pmra_err*pmdec_err  pmdec_err^2]
 nsamples = 5_000
 nchains = 8
+##
 chains = sample(sample_vfts_243_dist(μ,Σ), NUTS(0.8), MCMCThreads(), nsamples, nchains)
 
 ##
