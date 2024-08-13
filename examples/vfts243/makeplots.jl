@@ -3,7 +3,7 @@ using HDF5
 using CairoMakie
 
 system_id = last(split(@__DIR__, "/"))
-results_file = String(@__DIR__) * "/results-small.hdf5"
+results_file = String(@__DIR__) * "/results-large.hdf5"
 
 results, observations, priors, metadata = SideKicks.ExtractResults(results_file)
 
@@ -27,12 +27,12 @@ plotting_props_obs_check = SideKicks.createPlottingProps([
 f = create_corner_plot(results, plotting_props_obs_check,
     observations=observations,
     tickfontsize=10 ,
-    xticklabelrotation=pi/4, 
+    xticklabelrotation=3*pi/8, 
     show_CIs=true,
-    nbins=100, # RTW - play with this, it may look better with larger samples
-    rowcolgap=8,
+    nbins=50, # RTW - play with this, it may look better with larger samples
+    rowcolgap=10,
     fraction_1D = 0.9,
-    supertitle="VFTS "*system_id *" - observables",
+    supertitle=system_id *" - observables",
     )
 save(String(@__DIR__)*"/"*system_id*"_observables.png", f)
 
@@ -67,7 +67,7 @@ f = create_corner_plot(results, plotting_props,
     tickfontsize=10 ,
     xticklabelrotation=pi/4, 
     show_CIs=true,
-    supertitle="VFTS "*system_id *" - derived quantities",
+    supertitle=system_id *" - derived quantities",
     fraction_1D = 0.9,
     )
 
@@ -106,7 +106,7 @@ f = create_corner_plot(results, plotting_props,
     tickfontsize=10 ,
     xticklabelrotation=pi/4, 
     show_CIs=true,
-    supertitle="VFTS "*system_id *" - derived quantities (ecc)"
+    supertitle=system_id *" - derived quantities (ecc)"
     )
 
 save(String(@__DIR__)*"/"*system_id*"_derived_ecc.png", f)
@@ -144,7 +144,7 @@ f = create_corner_plot(results, plotting_props,
     tickfontsize=10 ,
     xticklabelrotation=pi/4, 
     show_CIs=true,
-    supertitle="VFTS "*system_id *" - master plot"
+    supertitle=system_id *" - master plot"
     )
 
 save(String(@__DIR__)*"/"*system_id*"_master.png", f)
