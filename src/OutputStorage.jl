@@ -2,24 +2,24 @@ using HDF5
 
 # TODO: close the files, but for the ExtractResults need to be able to keep the results around
 
-function SaveResults(fname, mcmcStruct, obs_string, priors_string)
+function SaveResults(fname, kick_mcmc)
     h5open(fname, "w") do fid
         # Define results group
         results = create_group(fid, "results")
-        dict_keys = keys(mcmcStruct.results)
+        dict_keys = keys(kick_mcmc.results)
         results["results_keys"] = string.(dict_keys)
         for key in dict_keys
-            results[string(key)] = mcmcStruct.results[key]
+            results[string(key)] = kick_mcmc.results[key]
         end
         # Define strings group
         strings  = create_group(fid, "strings")
-        strings["observations"] = obs_string
-        strings["priors"] = priors_string
+        strings["observations"] = kick_mcmc.observations_string
+        strings["priors"] = kick_mcmc.priors_string
         # Define metadata group
         meta  = create_group(fid, "metadata")
-        meta["nuts_warmup_count"] = mcmcStruct.nuts_warmup_count
-        meta["nuts_acceptance_rate"] = mcmcStruct.nuts_acceptance_rate
-        meta["nsamples"] = mcmcStruct.nsamples
+        meta["nuts_warmup_count"] = kick_mcmc.nuts_warmup_count
+        meta["nuts_acceptance_rate"] = kick_mcmc.nuts_acceptance_rate
+        meta["nsamples"] = kick_mcmc.nsamples
     end
 end
 
