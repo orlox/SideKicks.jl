@@ -86,7 +86,7 @@ function KickMCMC(; which_model, observations::Tuple{Observations, String}, prio
     end
 
     # for the general model, need to reweight by the true anomaly
-    if model_type==:general
+    if which_model==:general
         results[:weights] .= results[:weights].*sqrt.(1 .- results[:e_i].^2).^3 ./ (1 .+ results[:e_i].*cos.(results[:ν_i])).^2
     end
     
