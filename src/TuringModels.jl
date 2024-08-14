@@ -355,6 +355,7 @@ function create_general_mcmc_model(;
         return     ( m1_i,  m2_i,  P_i,  e_i,  a_i,  ν_i,  vkick,  frac,  dm2,  i_f,  ω_f,  Ω_f,  m1_f, m2_f,  a_f,  P_f,  e_f,  K1,  K2,  v_N,  v_E,  v_r,  vsys)
     end
     return_props = [:m1_i, :m2_i, :P_i, :e_i, :a_i, :ν_i, :vkick, :frac, :dm2, :i_f, :ω_f, :Ω_f, :m1_f,:m2_f, :a_f, :P_f, :e_f, :K1, :K2, :v_N, :v_E, :v_r, :vsys]
+
     # Need to combine some of the observations to compare against the predicted output
     obs_vals_cgs = observations.vals .* observations.units
     obs_errs_cgs = observations.errs .* observations.units
