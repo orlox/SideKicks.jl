@@ -351,17 +351,16 @@ function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-
         Ω_f = 2π - Ω_f
     end
     # compute post-explosion argument of periastron
+    ν_f = 0 
     if (e_f > 0)
-        periastron_angle = acos(max(-1, min(1, 1/e_f*(a_f/(a_i*f_ν)*(1 - e_f^2)-1))))
-    else
-        periastron_angle = 0 # need to check this, though maybe irrelevant as chance of this is null
+        ν_f = acos(max(-1, min(1, 1/e_f*(a_f*(1 - e_f^2)/(a_i*f_ν) - 1))))
     end
-    # the periastron angle is the same as the true anomaly if the star is moving
-    # away from periastron. We need to compute the component of velocity
-    # along the line joining both objects (in the COM frame).
-    v1y_cm = vimp - h_ν*(m2_i/M_i*v_rel + v_par) - j_ν*v_per
-    if v1y_cm<0
-        periastron_angle = 2π-periastron_angle
+    # The periastron angle is the same as the true anomaly if the star is moving
+    # away from periastron. Otherwise we need to correct for this by computing the 
+    # component of velocity along the line joining both objects (in the COM frame).
+    v1y_cm = vimp + h_ν*(m2_i/M_i*v_rel - v_par) - j_ν*v_per
+    if v1y_cm>0
+        ν_f = 2π - ν_f
     end
     # compute the angle from current location to ascending node
     # in the rotated frame. This is R*\hat{y}
@@ -381,9 +380,9 @@ function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-
     cross_vec_dot_L = cross_vec_w*L_w + cross_vec_n*L_n + cross_vec_o*L_o
 
     if cross_vec_dot_L > 0
-        ω_f = angle_to_asc_node - periastron_angle
+        ω_f = angle_to_asc_node - ν_f
     else
-        ω_f = 2π - (angle_to_asc_node + periastron_angle)
+        ω_f = 2π - (angle_to_asc_node + ν_f)
     end
     if ω_f < 0
         ω_f = 2π + ω_f

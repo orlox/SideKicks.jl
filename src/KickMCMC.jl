@@ -85,11 +85,10 @@ function KickMCMC(; which_model, observations::Tuple{Observations, String}, prio
         throw(ErrorException("Failed to reweight samples"))
     end
 
-    #RTW this was from the previous iteration, is this still relevant?
-    # if we did a general model, we need to weight the true anomaly
-    #if model_type==:general
-    #    res[:weight] .= res[:weight].*sqrt.(1 .- res[:e_f].^2).^3 ./ (1 .+ res[:e_f].*cos.(res[:ν])).^2
-    #end
+    # for the general model, need to reweight by the true anomaly
+    if model_type==:general
+        results[:weights] .= results[:weights].*sqrt.(1 .- results[:e_i].^2).^3 ./ (1 .+ results[:e_i].*cos.(results[:ν_i])).^2
+    end
     
     return KickMCMC(
         mcmc_cauchy, 
