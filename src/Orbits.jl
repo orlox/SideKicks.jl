@@ -340,7 +340,7 @@ function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-
     i_f = acos(min(1, abs(L_o)))
 
     # compute longitude of the ascending node
-    # this is obtained by taking the vector n = k x L, where k=(0,0,1) points to the observer
+    # this is obtained by taking the vector n = L × \hat{O}, which points to the observer
     # then n = (n_w, n_n, 0) points to the ascending node
     # TODO RTW: need to check the code below, the subscripts look wrong
     n_w = -L_n
@@ -359,8 +359,8 @@ function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-
     # the periastron angle is the same as the true anomaly if the star is moving
     # away from periastron. We need to compute the component of velocity
     # along the line joining both objects (in the COM frame).
-    v1y_cm = vimp + h_ν*(m2_i/M_i*v_rel - v_par) - j_ν*v_per
-    if v1y_cm>0
+    v1y_cm = vimp - h_ν*(m2_i/M_i*v_rel + v_par) - j_ν*v_per
+    if v1y_cm<0
         periastron_angle = 2π-periastron_angle
     end
     # compute the angle from current location to ascending node
