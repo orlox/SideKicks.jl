@@ -90,9 +90,9 @@ function symbolic_kick_functions_vcm_and_orbital_elements()
 
     Lvec_rot = Rtotal*[L_x,L_y,L_z]
 
-    Nvec = Lvec_rot×[0,0,1]
+    Nvec = Lvec_rot×[0,0,1] # vector pointing towards ascending node
     N_norm = sqrt(Nvec⋅Nvec)
-    Nvec_norm = Nvec/N_norm
+    Nvec_norm = Nvec/N_norm 
     Ω_final = IfElse.ifelse(Nvec[1]<=0,acos(Nvec_norm[2]),2*π-acos(Nvec_norm[2]))
 
     #angle between current position vector and periastron
@@ -102,9 +102,11 @@ function symbolic_kick_functions_vcm_and_orbital_elements()
 
     #apply rotation to unit vector pointing in direction of star #1
     rhat_final = Rtotal*[0,1,0]
-    L_cross_L_cross_N = Lvec_rot×(Lvec_rot×[0,0,1])
     angle_to_asc_node = acos(max(-1,min(1,rhat_final⋅Nvec_norm)))
-    uncorrected_ω_final = IfElse.ifelse(L_cross_L_cross_N⋅rhat_final>0,
+
+    y_cross_N_dot_L = (rhat_final × Nvec_norm) ⋅ Lvec_rot
+
+    uncorrected_ω_final = IfElse.ifelse(y_cross_N_dot_L<0,
                                         angle_to_asc_node-ν_final, 2*π-(angle_to_asc_node+ν_final))
     ω_final = IfElse.ifelse(uncorrected_ω_final>0,
         uncorrected_ω_final, 2*π+uncorrected_ω_final)
@@ -124,7 +126,7 @@ function symbolic_kick_functions_vcm_and_orbital_elements()
 
     global v_N_function = build_function(v_cm_rot[2], 
                [a, a_final, e, e_final, ν, L_x, L_y, L_z, v_xcm, v_ycm, v_zcm, v_1y, Ω, ω, i],  expression=Val{false});
-    global v_E_function = build_function(v_cm_rot[1], 
+    global v_E_function = build_function(-v_cm_rot[1], 
                [a, a_final, e, e_final, ν, L_x, L_y, L_z, v_xcm, v_ycm, v_zcm, v_1y, Ω, ω, i],  expression=Val{false});
     global v_r_function = build_function(-v_cm_rot[3], 
                [a, a_final, e, e_final, ν, L_x, L_y, L_z, v_xcm, v_ycm, v_zcm, v_1y, Ω, ω, i],  expression=Val{false});
@@ -178,8 +180,8 @@ function symbolic_post_kick_parameters_a_e(; a, e, m_1, m_2, ν, vkick, θ, ϕ, 
         return (NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN)
     end
 
-    a_f = -cgrav*m_1f*m_2f/(2*energy)
-    e_f = sqrt(1-(L_x^2+L_y^2+L_z^2)*(m_1f+m_2f)/(cgrav*a_final*m_1f^2*m_2f^2)+1e-15)
+    a_final = -cgrav*m_1f*m_2f/(2*energy)
+    e_final = sqrt(1-(L_x^2+L_y^2+L_z^2)*(m_1f+m_2f)/(cgrav*a_final*m_1f^2*m_2f^2)+1e-15)
 
     values2 = (a, a_final, e, e_final, ν, L_x, L_y, L_z, v_xcm, v_ycm, v_zcm, v_1y, Ω, ω, i)
 
@@ -191,5 +193,5 @@ function symbolic_post_kick_parameters_a_e(; a, e, m_1, m_2, ν, vkick, θ, ϕ, 
     v_E = function_list[13](values2) 
     v_r = function_list[14](values2) 
 
-    return (a_f, e_f, v_N, v_E, v_r, Ω_f, ω_f, ι_f)
+    return (a_final, e_final, v_N, v_E, v_r, Ω_f, ω_f, ι_f)
 end
