@@ -24,9 +24,11 @@ obs = SideKicks.@Observations([
     [:e_f,  0.017,   0.012,  1],
     [:m1_f, 25.0,    2.3,    m_sun],
     [:K1,   81.4,    1.3,    km_per_s],
-    [:v_N,  143,     12,     km_per_s],
-    [:v_E,  408,     8,      km_per_s],
-    [:v_r,  260.2,   0.9,    km_per_s],
+    #[:v_N,  143,     12,     km_per_s],
+    #[:v_E,  408,     8,      km_per_s],
+    [:v_N,  138.8,    7.6,     km_per_s], # Gaia 4' w/ MCMC
+    [:v_E,  409.3,    9.3,     km_per_s], # Gaia 4' w/ MCMC
+    [:v_r,  261.5,   0.42,    km_per_s], # Almeida
     [:ω_f,  66,      53,     degree]
 ]) 
 
@@ -41,9 +43,12 @@ priors = SideKicks.@Priors(
     vkick_dist = Uniform(0,4), # in 100 km/s
     frac_dist  = Uniform(0,1.0),
     e_dist = Uniform(0,0.01),
-    venv_N_100kms_dist = Normal(145/100, 12/100),
-    venv_E_100kms_dist = Normal(396/100, 12/100),
-    venv_r_100kms_dist = Normal(271.6/100, 12.2/100)
+    #venv_N_100kms_dist = Normal(145/100, 12/100),
+    #venv_E_100kms_dist = Normal(396/100, 12/100),
+    #venv_r_100kms_dist = Normal(271.6/100, 12.2/100)
+    venv_N_100kms_dist = Normal(146/100, 40/100), # Gaia 4' w/ MCMC
+    venv_E_100kms_dist = Normal(393/100, 42/100), # Gaia 4' w/ MCMC
+    venv_r_100kms_dist = Normal(270.3/100, 11.1/100) # Almeida w/ MCMC
 )
 
 ##
