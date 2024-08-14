@@ -103,162 +103,52 @@ params_gen_orbit = SideKicks.post_supernova_general_orbit_parameters(m1_i=m1_i, 
 ### 
 ##########################################################
 
-#m1_i = 10
-#m2_i = 15
-#m2_f = 15
-#P_i = 50 # day
-#a_i = SideKicks.kepler_a_from_P( m1_i=m1, m2=m2_i, P=P_i)
-#vkick = 0
-#vim = 0
-#θ = 2
-#ϕ = 1
-#Ω=3
-#ω=6
-#i=0.4
-#e_i=0.4
-#ν=2
-#
-#create_symbolic_functions_list()
-#
-#a_f, e_f, Ω_f, ω_f, i_f, v_n, v_w, v_rad = 
-#    symbolic_post_kick_parameters_a_e( a_i, e_i, m1_i*m_sun, m2_i*m_sun, ν, vkick, 
-#    θ, ϕ, vim, m1_i*m_sun, m2_f*m_sun, Ω, ω, i, symbolic_functions_list)
-#P_f = SideKicks.kepler_P_from_a( m1=m1, m2=m2_f, a=a_f)
-#
-#@test isapprox(P, P_f) #test that the period remains the same
-#@test isapprox(a, a_f) #test that the semi-major axis remains the same
-#@test isapprox(e, e_f, atol=1e-7) #test that the eccentricity remains the same
-#@test isapprox(v_N, 0.0, atol=1e-7) #test that the velocity is zero
-#@test isapprox(v_E, 0.0, atol=1e-7) #test that the velocity is zero
-#@test isapprox(v_r, 0.0, atol=1e-7) #test that the velocity is zero
-#@test isapprox(Ω, Ω_f) #test that Ω remains the same
-#@test isapprox(ω, ω_f) #test that ω remains the same
-#@test isapprox(i, i_f) #test that i remains the same
-#
-#
-##Verify consistency of variables upon no mass loss and no kick
-#SideKicks.create_symbolic_functions_list()
-#m1 = 10
-#m2 = 15
-#m2_f = 15
-#P = 50 # day
-#a = SideKicks.kepler_a_from_P(P,m1,m2)
-#vkick = 0
-#vim = 0
-#θ = 2
-#ϕ = 1
-#Ω=3
-#ω=6
-#i=0.4
-#e=0.4
-#ν=2
-#
-#a_f, e_f, v_N, v_E, v_r, Ω_f, ω_f, i_f = SideKicks.symbolic_post_kick_parameters_a_e(
-#    a,e,m1*m_sun,m2*m_sun,ν,vkick,
-#    θ,ϕ,vim, m1*m_sun, m2_f*m_sun,Ω,ω,i,SideKicks.symbolic_functions_list)
-#P_f = SideKicks.kepler_P_from_a(a_f,m1,m2_f)
-#
-#@test isapprox(P, P_f) #test that the period remains the same
-#@test isapprox(a, a_f) #test that the semi-major axis remains the same
-#@test isapprox(e, e_f, atol=1e-7) #test that the eccentricity remains the same
-#@test isapprox(v_N, 0.0, atol=1e-7) #test that the velocity is zero
-#@test isapprox(v_E, 0.0, atol=1e-7) #test that the velocity is zero
-#@test isapprox(v_r, 0.0, atol=1e-7) #test that the velocity is zero
-#@test isapprox(Ω, Ω_f) #test that Ω remains the same
-#@test isapprox(ω, ω_f) #test that ω remains the same
-#@test isapprox(i, i_f) #test that i remains the same
-#
-##Verify consistency of variables upon reversing a kick
-#SideKicks.create_symbolic_functions_list()
-#m1 = 10
-#m2 = 15
-#m2_f = m2
-#P = 50 # day
-#a = SideKicks.kepler_a_from_P(P,m1,m2)
-#vkick = 100e5
-#θ = 2
-#ϕ = 1
-#Ω=3
-#ω=6
-#i=0.4
-#e=0
-#ν=0
-#
-#a_f1, e_f1, v_N1, v_E1, v_r1, Ω_f1, ω_f1, i_f1 = SideKicks.generalized_post_kick_parameters_a_e(
-#    a,e,sin(ν),cos(ν),m1*m_sun,m2*m_sun,m2_f*m_sun,vkick,
-#    sin(θ),cos(θ),sin(ϕ),cos(ϕ),sin(Ω),cos(Ω),sin(ω),cos(ω),sin(i),cos(i),SideKicks.symbolic_functions_list)
-#
-#a_f, e_f, v_N, v_E, v_r, Ω_f, ω_f, i_f = SideKicks.generalized_post_kick_parameters_a_e(
-#    a_f1,e_f1,sin(ν),cos(ν),m1*m_sun,m2*m_sun,m2_f*m_sun,-vkick,
-#    sin(θ),cos(θ),sin(ϕ),cos(ϕ),sin(Ω_f1),cos(Ω_f1),sin(ω_f1),cos(ω_f1),sin(i_f1),cos(i_f1),SideKicks.symbolic_functions_list)
-#P_f = SideKicks.kepler_P_from_a(a_f,m1,m2_f)
-#
-#@test isapprox(P, P_f, rtol=1e-5) #test that the period remains the same
-#@test isapprox(a, a_f, rtol=1e-5) #test that the semi-major axis remains the same
-#@test isapprox(e, e_f, atol=1e-7) #test that the eccentricity remains the same
-#@test isapprox(v_N1, -v_N, atol=1e-10) #test that the velocity is zero
-#@test isapprox(v_E1, -v_E, atol=1e-10) #test that the velocity is zero
-#@test isapprox(v_r1, -v_r, atol=1e-10) #test that the velocity is zero
-#@test isapprox(Ω, Ω_f) #test that Ω remains the same
-#@test isapprox(i, i_f) #test that i remains the same
-#
-##Verify reversing orbital velocity, with mass loss (Hills 1982)
-#SideKicks.create_symbolic_functions_list()
-#m1 = 10
-#m2 = 15
-#m2_f = 10
-#P = 50 # day
-#a = SideKicks.kepler_a_from_P(P,m1,m2)
-#θ = π
-#ϕ = 0
-#Ω=3
-#ω=6
-#i=0.4
-#e=0.5
-#ν=0 #TODO: DOES NOT WORK FOR ALL VALUES OF ν
-#r = a*(1-abs2(e))/(1+e*cos(ν))
-#vkick = sqrt(cgrav*(m1+m2)*m_sun/a)*2*sqrt(2*a/r-1)
-#
-#a_f1, e_f1, v_N1, v_E1, v_r1, Ω_f1, ω_f1, i_f1 = SideKicks.symbolic_post_kick_parameters_a_e(
-#    a,e,sin(ν),cos(ν),m1*m_sun,m2*m_sun,m2_f*m_sun,0,
-#    sin(θ),cos(θ),sin(ϕ),cos(ϕ),sin(Ω),cos(Ω),sin(ω),cos(ω),sin(i),cos(i),SideKicks.symbolic_functions_list)
-#P_f1 = SideKicks.kepler_P_from_a(a_f1,m1,m2_f)
-#
-#a_f2, e_f2, v_N2, v_E2, v_r2, Ω_f2, ω_f2, i_f2 = SideKicks.generalized_post_kick_parameters_a_e(
-#    a,e,sin(ν),cos(ν),m1*m_sun,m2*m_sun,m2_f*m_sun,vkick,
-#    sin(θ),cos(θ),sin(ϕ),cos(ϕ),sin(Ω),cos(Ω),sin(ω),cos(ω),sin(i),cos(i),SideKicks.symbolic_functions_list)
-#P_f2 = SideKicks.kepler_P_from_a(a_f2,m1,m2_f)
-#
-#@test isapprox(P_f1, P_f2, rtol=1e-5) #test that the period remains the same
-#@test isapprox(a_f1, a_f2, rtol=1e-5) #test that the semi-major axis remains the same
-#@test isapprox(e_f1, e_f2, atol=1e-7) #test that the eccentricity remains the same
-#@test isapprox(Ω_f1+π, Ω_f2) || isapprox(Ω_f1-π, Ω_f2) #test that Ω shifts a factor of π
-#@test isapprox(i_f1, i_f2) #test that i remains the same
-#
-##Verify vanishing orbital velocity, with mass loss (Hills 1982)
-#SideKicks.create_symbolic_functions_list()
-#m1 = 10
-#m2 = 15
-#m2_f = 10
-#P = 50 # day
-#a = SideKicks.kepler_a_from_P(P,m1,m2)
-#θ = π
-#ϕ = 0
-#Ω=3
-#ω=6
-#i=0.4
-#e=0.5
-#ν=0 #TODO: DOES NOT WORK FOR ALL VALUES OF ν
-#r = a*(1-abs2(e))/(1+e*cos(ν))
-#vkick = sqrt(cgrav*(m1+m2)*m_sun/a)*sqrt(2*a/r-1)
-#
-#a_f, e_f, v_N, v_E, v_r, Ω_f, ω_f, i_f = SideKicks.generalized_post_kick_parameters_a_e(
-#    a,e,sin(ν),cos(ν),m1*m_sun,m2*m_sun,m2_f*m_sun,vkick,
-#    sin(θ),cos(θ),sin(ϕ),cos(ϕ),sin(Ω),cos(Ω),sin(ω),cos(ω),sin(i),cos(i),SideKicks.symbolic_functions_list)
-#P_f = SideKicks.kepler_P_from_a(a_f,m1,m2_f)
-#
-#@test isapprox(a_f, r/2) #test that the eccentricity becomes 1
-#@test isapprox(1., e_f, atol=1e-7) #test that the eccentricity becomes 1
-#@test isapprox(Ω, Ω_f) || isapprox(Ω+π, Ω_f) || isapprox(Ω-π, Ω_f) #test that Ω remains the same or flips
-#@test isapprox(i, i_f) #test that i remains the same
-#
+include("SymbolicFuncs.jl")
+create_symbolic_functions_list()
+
+# run a series of tests against the symbolic functions
+# the symbolic functions directly compute cross and dot products,
+# as well as matrix rotations, so they serve to verify the algebra
+# done to obtain the more compact results in the paper
+
+for vkick in [0, 30*km_per_s]
+    for vimp in [0, 20*km_per_s]
+        for Ω_i in [0.1π, 0.9π, 1.5π, 1.9π]
+            for ω_i in [0.1π, 0.9π, 1.5π, 1.9π]
+                for i_i in [0.1π/2, 0.5π/2, 0.9π/2]
+                    for ν_i in [0.1π, 0.9π, 1.5π, 1.9π]
+                        for m1_f in [0.9*m1_i, 0.95*m1_i, m1_i]
+                            for m2_f in [0.9*m2_i, 0.95*m2_i, m2_i]
+                                a_f_s, e_f_s, v_N_s, v_E_s, v_r_s, Ω_f_s, ω_f_s, i_f_s = 
+                                    symbolic_post_kick_parameters_a_e( a=a_i, e=e_i, m_1=m1_i, m_2=m2_i, ν=ν_i, vkick=vkick, 
+                                    θ=θ, ϕ=ϕ, v_im=vimp, m_1f = m1_f, m_2f = m2_f, Ω=Ω_i, ω=ω_i, i=i_i, function_list=symbolic_functions_list)
+                                a_f, e_f, Ω_f, ω_f, i_f, v_ra, v_dec, v_rad = SideKicks.post_supernova_general_orbit_parameters(m1_i=m1_i, m2_i=m2_i, a_i=a_i, e_i=e_i, m1_f=m1_f, m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ, vimp=vimp, ν_i=ν_i, Ω_i=Ω_i, ω_i=ω_i, i_i=i_i)
+                                #@show vkick, vimp, Ω_i, ω_i, ν_i, m1_f, m2_f
+                                @test a_f_s ≈ a_f
+                                @test e_f_s ≈ e_f
+                                @test Ω_f_s ≈ Ω_f atol=1e-6
+                                #@test ω_f_s ≈ ω_f atol=1e-6
+                                @test i_f_s ≈ i_f atol=1e-6
+                                @test v_E_s ≈ v_ra atol=1e-6
+                                @test v_N_s ≈ v_dec atol=1e-6
+                                @test v_r_s ≈ v_rad atol=1e-6
+
+                                if (vimp == 0 && vkick == 0 && m1_f == m1_i && m2_f == m2_i)
+                                    # no kick example, verify we recover the input values
+                                    @test a_f ≈ a_i
+                                    @test e_f ≈ e_i
+                                    @test Ω_f ≈ Ω_i atol=1e-6
+                                    @test ω_f ≈ ω_i atol=1e-6
+                                    @test i_f ≈ i_i atol=1e-6
+                                    @test v_ra ≈ 0
+                                    @test v_dec ≈ 0
+                                    @test v_rad ≈ 0
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end

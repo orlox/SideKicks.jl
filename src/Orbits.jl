@@ -331,7 +331,7 @@ function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-
     # obtain inclination from direction of orbital angular momentum vector
     L_par = j_ν*α*sinθ*sinϕ/Lvec_norm
     L_per = -h_ν*α*sinθ*sinϕ/Lvec_norm
-    L_z = h_ν*α*sinθ*cosϕ - j_ν*(1 + α*cosθ)/Lvec_norm
+    L_z = (h_ν*α*sinθ*cosϕ - j_ν*(1 + α*cosθ))/Lvec_norm
 
     L_w = R_w_par*L_par + R_w_per*L_per + R_w_z*L_z
     L_n = R_n_par*L_par + R_n_per*L_per + R_n_z*L_z
