@@ -76,7 +76,7 @@ Function to create corner plot for selected (sub-)set of parameters from the MCM
 function create_corner_plot(results, plotting_props; 
         observations=nothing,
         fig=Figure(), supertitle=nothing,
-        fractions=[0.68,0.95,0.997], fraction_1D=0.68, 
+        fractions_2D=[0.68,0.95,0.997], fraction_1D=0.68, 
         show_CIs=true, nbins=100,
         rowcolgap=10, xticklabelrotation=pi/4,
         labelfontsize=16, tickfontsize=10, supertitlefontsize=30)
@@ -89,6 +89,7 @@ function create_corner_plot(results, plotting_props;
     ranges = [] 
     # If extra plotting props are included that can't be used, scrap these and only plot the good ones. 
     available_props = keys(results)
+    print_avail = false
     for ii in eachindex(plotting_props.props)
         if plotting_props.props[ii] ∈ available_props
             push!(props,  plotting_props.props[ii])
@@ -97,7 +98,11 @@ function create_corner_plot(results, plotting_props;
             push!(ranges, plotting_props.ranges[ii]) 
         else
             println("Prop "*string(plotting_props.props[ii])*" ignored")
+            print_avail = true
         end
+    end
+    if print_avail
+        println("Available props are "*string(available_props))
     end
     # Add ranges if none supplied
     num_props = length(props)
@@ -120,8 +125,8 @@ function create_corner_plot(results, plotting_props;
                         xlabelsize=labelfontsize, ylabelsize=labelfontsize,
                         xticklabelrotation=xticklabelrotation,
                         xticklabelsize=tickfontsize, yticklabelsize=tickfontsize)
-            #create_2D_density(axis, vec(results[props[ii]])/units[ii], ranges[ii], vec(results[props[jj]])/units[jj], ranges[jj], vec(results[:weights]), fractions, nbins)
-            create_2D_density(axis, vec(results[props[ii]])/units[ii], ranges[ii], vec(results[props[jj]])/units[jj], ranges[jj], vec(results[:weights]), nbins)
+            create_2D_density(axis, vec(results[props[ii]])/units[ii], ranges[ii], vec(results[props[jj]])/units[jj], ranges[jj], vec(results[:weights]), fractions_2D, nbins)
+            #create_2D_density(axis, vec(results[props[ii]])/units[ii], ranges[ii], vec(results[props[jj]])/units[jj], ranges[jj], vec(results[:weights]), nbins)
             if ii>1
                 hideydecorations!(axis, ticks=false, minorticks=false)
             end
@@ -210,9 +215,10 @@ Make the 2D density plots given the parameter values, ranges, and weights.
 - values2:        the values for the y-coordinate        
 - ranges2:        the ranges for the y-coordinate        
 - chain_weights:  the sample weighting from the MCMC
+- fractions:      area fractions for defining contours
 - nbins:          number of bins, identical for all parameters   
 """
-function create_2D_density(axis, values1, ranges1, values2, ranges2, chain_weights, nbins)
+function create_2D_density(axis, values1, ranges1, values2, ranges2, chain_weights, fractions, nbins)
 
     filter1 = values1 .> ranges1[1] .&& values1 .< ranges1[2] 
     filter2 = values2 .> ranges2[1] .&& values2 .< ranges2[2]
@@ -235,8 +241,24 @@ function create_2D_density(axis, values1, ranges1, values2, ranges2, chain_weigh
     h = fit(Histogram, (values1, values2), chain_weights, nbins=nbins)
     x = (h.edges[2][2:end] .+ h.edges[2][1:end-1])./2
     y = (h.edges[1][2:end] .+ h.edges[1][1:end-1])./2
-    heatmap!(axis, y, x, h.weights, colormap=:dense)
-    #bounds = get_bounds_for_fractions(h, fractions)
+    bounds = get_bounds_for_fractions(h, fractions)
+    contour_matrix = zeros(size(h.weights))
+    nbounds = length(bounds)
+    for ii in 1:nbounds
+        contour_matrix[h.weights .> bounds[ii]] .= (ii-1)/(nbounds-1)
+    end
+    #colormap=(Reverse(:dense), 0.2) # 2nd number is alpha
+    colormap=(:dense, 1.0) # 2nd number is alpha
+    #contourf!(axis, y, x, contour_matrix, colormap=colormap, colorrange=(0,1), extendlow=:white)
+    println(maximum(h.weights))
+    println(minimum(h.weights))
+    println(bounds)
+    #contourf!(axis, h.weights, levels=bounds, colormap=colormap, 
+    #heatmap!(axis, y, x, h.weights, colormap=:dense)
+    heatmap!(axis, y, x, h.weights, colormap=colormap)
+    colormap = [:red, :red, :red]
+    contour!(axis, y, x, h.weights, levels=bounds, colormap=colormap, linewidth=1)
+              #extendlow=:white)#, extendhigh=:auto)
 end  
 
 """
@@ -271,7 +293,7 @@ function get_bounds_for_fractions(h, fractions)
         end
         bounds[jj] = newbound
     end 
-    return bounds
+    return sort(bounds)
 end
 
 """
