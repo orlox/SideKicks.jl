@@ -83,10 +83,10 @@ function create_simplified_mcmc_model(;
     vkick_dist = priors.vkick_dist
     frac_dist = priors.frac_dist
 
-    valid_values = [:P_f, :e_f, :K1, :K2, :m1_f, :m2_f, :i_f]
+    valid_values = [:P_f, :e_f, :K1, :K2, :m1_f, :m2_f, :i_f, :vsys]
     for prop ∈ observations.props
         if prop ∉ valid_values
-            throw(DomainError(observation.props, "Allowed observations are only [:P_f, :e_f, :K1, :K2, :m1_f, :m2_f, :i_f]"))
+            throw(DomainError(observation.props, "Allowed observations are only [:P_f, :e_f, :K1, :K2, :m1_f, :m2_f, :i_f, :vsys]"))
         end
     end
 
@@ -122,6 +122,9 @@ function create_simplified_mcmc_model(;
         normϕ = 1/sqrt(xϕ^2 + yϕ^2)
         cosϕ = xϕ*normϕ
         ϕ = acos(cosϕ)
+        if yϕ < 0
+            ϕ = 2π - ϕ
+        end
 
         #m1 is assumed to remain constant
         m1_f = m1_i
@@ -129,6 +132,8 @@ function create_simplified_mcmc_model(;
         P_f = kepler_P_from_a(m1=m1_f, m2=m2_f, a=a_f)
         K1 = RV_semiamplitude_K1(m1=m1_f, m2=m2_f, P=P_f, e=e_f, i=i_f)
         K2 = RV_semiamplitude_K1(m1=m2_f, m2=m1_f, P=P_f, e=e_f, i=i_f)
+
+        vsys = post_supernova_circular_orbit_vsys(m1_i=m1_i, m2_i=m2_i, a_i=a_i, m1_f=m1_i, m2_f=m2_f, vkick=vkick, θ=θ, ϕ=ϕ)
 
         use_cauchy = likelihood == :Cauchy
         for ii in eachindex(props)
@@ -161,14 +166,18 @@ function create_simplified_mcmc_model(;
                 use_cauchy ?
                     obs_vals[ii] ~ Cauchy(i_f, obs_errs[ii]) :
                     obs_vals[ii] ~ Normal(i_f, obs_errs[ii])
+            elseif obs_symbol == :vsys
+                use_cauchy ?
+                    obs_vals[ii] ~ Cauchy(vsys, obs_errs[ii]) :
+                    obs_vals[ii] ~ Normal(vsys, obs_errs[ii])
             end
         end
 
         # other params
         dm2 = m2_i - m2_f
-        return     (m1_i,    m2_i,    P_i,   a_i,     i_f,  vkick,  m2_f,  a_f,   P_f,  e_f,  K1,  K2, frac, dm2) 
+        return     (m1_i,    m2_i,    P_i,   a_i,     i_f,  vkick, θ, ϕ,  m2_f,  a_f,   P_f,  e_f,  K1,  K2, frac, dm2, vsys) 
     end
-    return_props = [:m1_i,   :m2_i,   :P_i,  :a_i,    :i_f, :vkick, :m2_f, :a_f,  :P_f, :e_f, :K1, :K2, :frac, :dm2] 
+    return_props = [:m1_i,   :m2_i,   :P_i,  :a_i,    :i_f, :vkick, :θ, :ϕ, :m2_f, :a_f,  :P_f, :e_f, :K1, :K2, :frac, :dm2, :vsys] 
 
     obs_vals_cgs = observations.vals .* observations.units
     obs_errs_cgs = observations.errs .* observations.units
@@ -352,9 +361,9 @@ function create_general_mcmc_model(;
         end
 
         dm2 = m2_i - m2_f
-        return     ( m1_i,  m2_i,  P_i,  e_i,  a_i,  ν_i,  vkick,  frac,  dm2,  i_f,  ω_f,  Ω_f,  m1_f, m2_f,  a_f,  P_f,  e_f,  K1,  K2,  v_N,  v_E,  v_r,  vsys)
+        return     ( m1_i,  m2_i,  P_i,  e_i,  a_i,  ν_i,  vkick, θ, ϕ,  frac,  dm2,  i_f,  ω_f,  Ω_f,  m1_f, m2_f,  a_f,  P_f,  e_f,  K1,  K2,  v_N,  v_E,  v_r,  vsys)
     end
-    return_props = [:m1_i, :m2_i, :P_i, :e_i, :a_i, :ν_i, :vkick, :frac, :dm2, :i_f, :ω_f, :Ω_f, :m1_f,:m2_f, :a_f, :P_f, :e_f, :K1, :K2, :v_N, :v_E, :v_r, :vsys]
+    return_props = [:m1_i, :m2_i, :P_i, :e_i, :a_i, :ν_i, :vkick, :θ, :ϕ, :frac, :dm2, :i_f, :ω_f, :Ω_f, :m1_f,:m2_f, :a_f, :P_f, :e_f, :K1, :K2, :v_N, :v_E, :v_r, :vsys]
 
     # Need to combine some of the observations to compare against the predicted output
     obs_vals_cgs = observations.vals .* observations.units

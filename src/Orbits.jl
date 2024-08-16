@@ -168,44 +168,45 @@ function post_supernova_circular_orbit_P(;m1_i, m2_i, P_i, m1_f=-1.0, m2_f, vkic
     return (P_f,e_f)
 end
 
-#"""
-#    post_supernova_circular_orbit_vsys(;m1_i, m2_i, a_i, m1_f=-1, m2_f, vkick=0, θ=0, ϕ=0, vimp=0)
-#
-#Compute post-kick properties for a circular pre-explosion orbit using equations from Tauris & Takens (1999)
-#
-## Arguments:
-#- m1_i:  pre-explosion  mass of non-exploding component   [g]           
-#- m2_i:  pre-explosion  mass of exploding component       [g]       
-#- a_i:   pre-explosion orbital separation                 [cm]
-#- m1_f:  post-explosion mass of non-exploding component [g]           
-#- m2_f:  post-explosion mass of exploding component     [g]   
-#- vkick: kick velocity                                  [cm/s] 
-#- θ:     polar kick angle (away from e_par)             [rad]
-#- ϕ:     azimuthal kick angle (off of e_perp)           [rad]
-#- vimp:  imparted kick velocity on companion            [cm/s]     
-#    
-## Output:
-#- vsys_f: post-explosion systemic velocity              [cm/s]
-#"""
-#function post_supernova_circular_orbit_vsys(;m1_i, m2_i, a_i, m1_f=-1, m2_f, vkick=0, θ=0, ϕ=0, vimp=0)
-#    if m1_f == -1
-#        m1_f = m1_i
-#    end
-#    v_rel = relative_velocity(m1=m1_i, m2=m2_i, a=a_i)
-#    # convert trig functions to vars
-#    cosθ = cos(θ)
-#    sinθ = sin(θ)
-#    cosϕ = cos(ϕ)
-#    sinϕ = sin(ϕ)
-#
-#    # Systemic velocity
-#    Δp_x = (m2_f*m1_i - m2_i*m1_f)/(m2_i + m1_i)*v_rel + m2_f*vkick*cosθ
-#    Δp_y = m1_f*vimp + m2_f*vkick*sinθ*cosϕ
-#    Δp_z = m2_f*vkick*sinθ*sinϕ
-#    vsys_f = sqrt(Δp_x^2 + Δp_y^2 + Δp_z^2)/(m2_f + m1_f)
-#
-#    return vsys_f
-#end
+"""
+    post_supernova_circular_orbit_vsys(;m1_i, m2_i, a_i, m1_f=-1, m2_f, vkick=0, θ=0, ϕ=0, vimp=0)
+
+Compute post-kick systemic velocity for a circular orbit
+Tauris et al. (1999): Monthly Notices of the Royal Astronomical Society, Volume 310, Issue 4, pp. 1165-1169.
+
+# Arguments:
+- m1_i:  pre-explosion  mass of non-exploding component   [g]           
+- m2_i:  pre-explosion  mass of exploding component       [g]       
+- a_i:   pre-explosion orbital separation                 [cm]
+- m1_f:  post-explosion mass of non-exploding component [g]           
+- m2_f:  post-explosion mass of exploding component     [g]   
+- vkick: kick velocity                                  [cm/s] 
+- θ:     polar kick angle (away from e_par)             [rad]
+- ϕ:     azimuthal kick angle (off of e_perp)           [rad]
+- vimp:  imparted kick velocity on companion            [cm/s]     
+    
+# Output:
+- vsys_f: post-explosion systemic velocity              [cm/s]
+"""
+function post_supernova_circular_orbit_vsys(;m1_i, m2_i, a_i, m1_f=-1, m2_f, vkick=0, θ=0, ϕ=0, vimp=0)
+    if m1_f == -1
+        m1_f = m1_i
+    end
+    v_rel = relative_velocity(m1=m1_i, m2=m2_i, a=a_i)
+    # convert trig functions to vars
+    cosθ = cos(θ)
+    sinθ = sin(θ)
+    cosϕ = cos(ϕ)
+    sinϕ = sin(ϕ)
+
+    # Systemic velocity
+    Δp_x = (m2_f*m1_i - m2_i*m1_f)/(m2_i + m1_i)*v_rel + m2_f*vkick*cosθ
+    Δp_y = m1_f*vimp + m2_f*vkick*sinθ*cosϕ + m2_f*vimp
+    Δp_z = m2_f*vkick*sinθ*sinϕ
+    vsys_f = sqrt(Δp_x^2 + Δp_y^2 + Δp_z^2)/(m2_f + m1_f)
+
+    return vsys_f
+end
 
 
 
