@@ -333,7 +333,7 @@ function create_1D_density(axis, values, range, chain_weights, fraction_1D, nbin
     end
     y = h.weights/sum(h.weights*dx)
     lines!(axis, x, y, color=color, linewidth=linewidth)
-    return x, h, y
+    return x, h, y, dx
 end
 
 """
@@ -378,12 +378,12 @@ function create_compound_1D_densities(axis, values_matrix, range, chain_weights_
     end
 
     # Plot once for all the values
-    x, h, y = create_1D_density(axis, vec(values_matrix), range, vec(chain_weights_matrix), fraction_1D, nbins, color=(:blue, 1.0), linewidth=1)
+    x, h, y, dx = create_1D_density(axis, vec(values_matrix), range, vec(chain_weights_matrix), fraction_1D, nbins, color=(:blue, 1.0), linewidth=1)
 
     bound = get_bounds_for_fractions(h, [fraction_1D])[1]
-    xmin = minimum(x[h.weights .>= bound])
+    xmin = minimum(x[h.weights .>= bound]) - dx/2 # get left most value of bin
     xmode = x[argmax(h.weights)]
-    xmax = maximum(x[h.weights .>= bound])
+    xmax = maximum(x[h.weights .>= bound]) + dx/2
 
     filter = x .>= xmin .&& x .<= xmax
     band!(axis, x[filter], zeros(length(x[filter])), y[filter], color=(:gray, 0.4))
