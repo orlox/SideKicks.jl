@@ -208,6 +208,8 @@ end
 Description
 Make the 2D density plots given the parameter values, ranges, and weights.
 
+# TODO: check that x- and y- descripters are correct, here and in below functions
+
 # Arguments:
 - axis:           the axis to make the plot
 - values1:        the values for the x-coordinate        
@@ -342,31 +344,17 @@ end
 #TODO Description
 
 # Arguments:
-- axis:                      
-- values_matrix:                      
-- range:                      
-- chain_weights_matrix:                      
-- fraction_1D:                      
-- nbins:                      
-- axis:           the axis to make the plot
-- values:         the values for the x-coordinate        
-- range:          the ranges for the x-coordinate        
-- chain_weights:  the sample weighting from the MCMC
-- fraction_1D:    the fractional area from which to compute the confidence intervals
-- nbins:          number of bins, identical for all parameters   
-- color:          the color of the density curve
-- linewidth:      the linewidth of the density curve
-#TODO
-- values:
-- range:
-- chain_weights:
-- fraction_1D:
-- axis:
-- nbins:
+- axis:                 the axis to make the plot
+- values_matrix:        the values for each chain of the parameter 
+- range:                the ranges for the x-coordinate        
+- chain_weights_matrix: the sample weighting for each chain 
+- fraction_1D:          the fractional area from which to compute the confidence intervals
+- nbins:                number of bins, identical for all parameters   
 
 # Output:
-#TODO
-- 
+- xmin:                 the left boundary of the fraction_1D  
+- xmode:      
+- xmax:      
 """
 function create_compound_1D_densities(axis, values_matrix, range, chain_weights_matrix, fraction_1D, nbins)
 
@@ -382,8 +370,13 @@ function create_compound_1D_densities(axis, values_matrix, range, chain_weights_
 
     bound = get_bounds_for_fractions(h, [fraction_1D])[1]
     xmin = minimum(x[h.weights .>= bound]) - dx/2 # get left most value of bin
-    xmode = x[argmax(h.weights)]
     xmax = maximum(x[h.weights .>= bound]) + dx/2
+    xmode = x[argmax(h.weights)]
+    if xmode - dx/2 < range[1]
+        xmode = range[1]
+    elseif xmode + dx/2 > range[2]
+        xmode = range[2]
+    end
 
     filter = x .>= xmin .&& x .<= xmax
     band!(axis, x[filter], zeros(length(x[filter])), y[filter], color=(:gray, 0.4))
