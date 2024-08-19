@@ -352,9 +352,9 @@ end
 - nbins:                number of bins, identical for all parameters   
 
 # Output:
-- xmin:                 the left boundary of the fraction_1D  
-- xmode:      
-- xmax:      
+- xmin:                 the left boundary of the fraction_1D area interval
+- xmode:                the mode of the data, within the provided range
+- xmax:                 the right boundary of the fraction_1D area interval
 """
 function create_compound_1D_densities(axis, values_matrix, range, chain_weights_matrix, fraction_1D, nbins)
 
