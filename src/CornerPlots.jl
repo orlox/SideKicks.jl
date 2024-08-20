@@ -1,6 +1,5 @@
 using StatsBase
 using CairoMakie
-using KernelDensity
 
 export create_corner_plot 
 
