@@ -1,5 +1,6 @@
 using StatsBase
 using CairoMakie
+using Interpolations
 
 export create_corner_plot 
 
@@ -195,7 +196,7 @@ function create_corner_plot(results, plotting_props;
         Label(fig[0,:], text=supertitle, fontsize=supertitlefontsize)
     end
 
-    resolution=600 .*(1,1)
+    resolution=600 .*(1,1.12) # This accounts for the extra height of the title
     resize!(fig.scene, resolution)
     return fig
 end
@@ -285,10 +286,18 @@ function create_2D_density(axis, values1, ranges1, values2, ranges2, chain_weigh
     h = fit(Histogram, (values1, values2), weights(chain_weights), (x_edges,y_edges))
     x = (h.edges[1][2:end] .+ h.edges[1][1:end-1])./2
     y = (h.edges[2][2:end] .+ h.edges[2][1:end-1])./2
+    z = h.weights
 
+    # make heatmap
+    heatmap!(axis, x, y, z, colormap=:dense)
+    # make contours - use interpolation to smooth them
     bounds = get_bounds_for_fractions(h, fractions)
-    heatmap!(axis, x, y, h.weights, colormap=:dense)
-    contour!(axis, x, y, h.weights, levels=bounds, color=(:black, 0.5))
+    itp = LinearInterpolation((x, y), z, extrapolation_bc=Line())
+    x2 = range(start=ranges1[1], stop=ranges1[2], length=20)
+    y2 = range(start=ranges2[1], stop=ranges2[2], length=20)
+    z2 = [itp(x,y) for y in y2, x in x2]
+    #contour!(axis, x, y, h.weights, levels=bounds, color=(:black, 0.5))
+    contour!(axis, x2, y2, transpose(z2), levels=bounds, color=(:black, 0.5))
 
 end  
 
