@@ -18,13 +18,14 @@ consistency check is to verify these are consistent with the MCMC samples.
 
 plotting_props_obs_check = SideKicks.createPlottingProps([
     [:m1_f,    m_sun,    [15,40],        L"M_1\;[M_{\odot}]"],
-    [:P_f,   day,      [10.3,10.5],    L"P_f\;[\mathrm{days}]"],
+    #[:P_f,   day,      [10.3,10.5],    L"P_f\;[\mathrm{days}]"],
+    [:P_f,   day,      [10.3,10.45],    L"P_f\;[\mathrm{days}]"],
     [:e_f,   1,        [0,0.1],        L"e_f"],
-    [:K1,    km_per_s, [77,85],        L"K_1  \;[\mathrm{km s}^{-1}]"],
-    [:v_N,    km_per_s, [130,170],        L"v_N  \;[\mathrm{km s}^{-1}]"],
-    [:v_E,    km_per_s, [380,430],        L"v_E  \;[\mathrm{km s}^{-1}]"],
-    [:v_r,    km_per_s, [257,263],        L"v_r  \;[\mathrm{km s}^{-1}]"],
-    [:ω_f,   degree, [0,360],        L"\omega_f  \;[\mathrm{rad}]"],
+    [:K1,    km_per_s, [77,90],        L"K_1  \;[\mathrm{km s}^{-1}]"],
+    #[:v_N,    km_per_s, [130,170],        L"v_N  \;[\mathrm{km s}^{-1}]"],
+    #[:v_E,    km_per_s, [380,430],        L"v_E  \;[\mathrm{km s}^{-1}]"],
+    #[:v_r,    km_per_s, [257,263],        L"v_r  \;[\mathrm{km s}^{-1}]"],
+    #[:ω_f,   degree, [0,360],        L"\omega_f  \;[\mathrm{rad}]"],
 ])
 
 f = create_corner_plot(results, plotting_props_obs_check,
@@ -33,6 +34,8 @@ f = create_corner_plot(results, plotting_props_obs_check,
     show_CIs=true,
     rowcolgap=8,
     fraction_1D = 0.9,
+    nbins=100,
+    fractions_2D = [0.393, 0.865, 0.989], #, .9999, .99999 ], 
     supertitle="VFTS 243 - observables",
     )
 save("vfts243_observables.png", f)
@@ -59,14 +62,16 @@ f = create_corner_plot(results, plotting_props,
     show_CIs=true,
     supertitle="VFTS 243 - derived quantities",
     fraction_1D = 0.9,
+    fractions_2D = [0.393, 0.865, 0.989], #, .9999, .99999 ], 
     )
 
 save("vfts243_derived.png", f)
 
 f
 
+
 ##
-#=
+ #=
 As you might see, the results are not very flattering, but this is a consequence of
 the very small number of samples used.
 =#
