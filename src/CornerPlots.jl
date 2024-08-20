@@ -258,93 +258,41 @@ Make the 2D density plots given the parameter values, ranges, and weights.
 """
 function create_2D_density(axis, values1, ranges1, values2, ranges2, chain_weights, fractions, nbins)
 
-    #filter1 = values1 .> ranges1[1] .&& values1 .< ranges1[2] 
-    #filter2 = values2 .> ranges2[1] .&& values2 .< ranges2[2]
-    ## RTW: make this check more robust
-    #if sum(filter1) == 0
-    #    println("problem with 1")
-    #    println(ranges1, " ", minimum(values1), " ", maximum(values1))
-    #    return
-    #end
-    #if sum(filter2) == 0
-    #    println("problem with 2")
-    #    println(ranges2, " ", minimum(values2), " ", maximum(values2))
-    #    return
-    #end
-    #filter = filter1 .&& filter2
-    #values1 = values1[filter]
-    #values2 = values2[filter]
-    #chain_weights = weights(chain_weights[filter]) # weights is a StatsBase function
-    
+    # User should supply ranges and nbins, assuming nbins span the provided range.
+    # Internally, we wish to evaluate the histogram over the full domain of the data, 
+    # in order to correctly calculate the relevant enclosed area. Thus we calculate 
+    # a histogram over the specified range, divided into nbins, with additional bin 
+    # edges appended to the front and back of the array, if the data exceeds these limits.
+    # Thus in these cases, the outermost bins may be much different sizes than those within
+    # the range, but this corrects for the normalization.
 
-    xwidth = ranges1[2]-ranges1[1]
-    newlox = ranges1[1] - xwidth/2
-    newhix = ranges1[2] + xwidth/2
-    x = LinRange(newlox, newhix, nbins*2)
-    #x = LinRange(ranges1[1], ranges1[2], nbins)
-    #println(x)
-    ywidth = ranges2[2]-ranges2[1]
-    newloy = ranges2[1] - ywidth/2
-    newhiy = ranges2[2] + ywidth/2
-    y = LinRange(newloy, newhiy, nbins*2)
-    #y = LinRange(ranges2[1], ranges2[2], nbins)
-    h = fit(Histogram, (values1, values2), weights(chain_weights), (x,y))
-    #x = (h.edges[2][2:end] .+ h.edges[2][1:end-1])./2
-    #y = (h.edges[1][2:end] .+ h.edges[1][1:end-1])./2
-    #x = (h.edges[2][2:end] .+ h.edges[2][1:end-1])./2
-    #y = (h.edges[1][2:end] .+ h.edges[1][1:end-1])./2
+    x_lo = []
+    x_hi = []
+    y_lo = []
+    y_hi = []
+    if minimum(values1) < ranges1[1] 
+        x_lo = [minimum(values1)]
+    end
+    if minimum(values2) < ranges2[1] 
+        y_lo = [minimum(values2)]
+    end
+    if maximum(values1) > ranges1[2] 
+        x_hi = [maximum(values1)]
+    end
+    if maximum(values2) > ranges2[2] 
+        y_hi = [maximum(values2)]
+    end
+    x_edges = cat(x_lo, LinRange(ranges1[1], ranges1[2], nbins+1), x_hi, dims=1)
+    y_edges = cat(y_lo, LinRange(ranges2[1], ranges2[2], nbins+1), y_hi, dims=1)
+
+    h = fit(Histogram, (values1, values2), weights(chain_weights), (x_edges,y_edges))
+    x = (h.edges[1][2:end] .+ h.edges[1][1:end-1])./2
+    y = (h.edges[2][2:end] .+ h.edges[2][1:end-1])./2
+
     bounds = get_bounds_for_fractions(h, fractions)
-    #contour_matrix = zeros(size(h.weights))
-    nbounds = length(bounds)
-    #colormap_contour = [ (:green, 0.5), (:green, 0.5), (:green, 1.0), (:green, 1.0), (:green, 1.0)]
-    #colormap_contour = [ (:green, 0.3), (:green, 0.5), (:green, 1.0)] #, (:green, 1.0), (:green, 1.0)]
-    println(bounds)
-    #for ii in 1:nbounds
-    #    #contour_matrix[h.weights .> bounds[ii]] .= (ii-1)/(nbounds-1)
-    #    #myval = ((nbounds-ii+1)/nbounds)^2
-    #    myval = bounds[ii]/bounds[nbounds]
-    #    #println(ii, " ", myval, " ", nbounds)
-    #    #colormap_contour[ii] = (:blue, myval)
-    #end
-    #colormap=(Reverse(:dense), 0.2) # 2nd number is alpha
-    colormap=(:dense, 1.0) # 2nd number is alpha
-    #contourf!(axis, y, x, contour_matrix, colormap=colormap, colorrange=(0,1), extendlow=:white)
-    #println(maximum(h.weights))
-    #println(minimum(h.weights))
-    #println(bounds)
-    #contourf!(axis, h.weights, levels=bounds, colormap=colormap, 
-    #heatmap!(axis, y, x, h.weights, colormap=:dense)
-    #
-    # THIS ONE
-    heatmap!(axis, x, y, h.weights, colormap=colormap)
-    contour!(axis, x, y, h.weights, levels=bounds)#, colormap=colormap, linewidth=1)
-    #bandwidth=(.01, .01)
-    ###N=100
-    ###bandwidth=((ranges1[2] - ranges1[1]), (ranges2[2] - ranges2[1]))./N
+    heatmap!(axis, x, y, h.weights, colormap=:dense)
+    contour!(axis, x, y, h.weights, levels=bounds, color=(:black, 0.5))
 
-    ####boundary=((ranges1[1]*0.5, ranges1[2]*2), (ranges2[1]*.5, ranges2[2]*2))
-    ####boundary=((ranges1[1], ranges1[2]*1.2), (ranges2[1], ranges2[2]*1.2))
-    ###boundary=( (min(minimum(values1), ranges1[1]*.7), max(maximum(values1), ranges1[2])*1.3), 
-    ###           (min(minimum(values2), ranges2[1]*.7), max(maximum(values2), ranges2[2])*1.3))
-    ###println(bandwidth)
-    ###println(boundary)
-    ###np = 2048
-    ###bivar_kde = kde((values1, values2), bandwidth=bandwidth, boundary=boundary, npoints=(np, np))
-    #contour!(axis, y, x, h.weights, levels=bounds, colormap=colormap, linewidth=1)
-    # VS THIS ONE
-    #heatmap!(axis, bivar_kde.x, bivar_kde.y, bivar_kde.density, colormap=colormap)
-    #colormap = [:green, :green, :green]
-    #colormap_contour = :solar
-    #colorscale = log
-    #println(maximum(bivar_kde.density))
-    #println(minimum(bivar_kde.density))
-    
-    #contour!(axis, x, y, pdf(bivar_kde, x, y), levels=bounds, colormap=colormap_contour, linewidth=3)
-    #contour!(axis, bivar_kde.x, bivar_kde.y, bivar_kde.density, levels=bounds, colormap=colormap_contour, linewidth=3)
-   
-    #contour!(axis, bivar_kde.x, bivar_kde.y, bivar_kde.density, levels=bounds, colormap=[(:black, 0.5)], linewidth=1)
-              #extendlow=:white)#, extendhigh=:auto)
-              #colorscale=colorscale, 
 end  
 
 """
