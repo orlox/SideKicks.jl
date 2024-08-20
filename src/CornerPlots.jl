@@ -1,5 +1,6 @@
 using StatsBase
 using CairoMakie
+using KernelDensity
 
 export create_corner_plot 
 
@@ -42,7 +43,6 @@ function addPlottingProp(props_matrix::PlottingProps, new_prop::Vector{Any})
         names  = names)
 end
 
-
 """
     create_corner_plot(results, plotting_props; 
         observations=nothing, fig=Figure(), supertitle=nothing,
@@ -72,7 +72,6 @@ Function to create corner plot for selected (sub-)set of parameters from the MCM
 # Output:
 - fig:                 the newly created figure 
 """
-
 function create_corner_plot(results, plotting_props; 
         observations=nothing,
         fig=Figure(), supertitle=nothing,
@@ -117,22 +116,24 @@ function create_corner_plot(results, plotting_props;
     end
     # Create 2D density plots
     num_col = num_props
-    for ii in 1:num_col-1
-        for  jj in ii+1:num_col
-            axis = Axis(fig[jj+1,ii], xtickalign=1, xtickcolor = :black, ytickalign=1, ytickcolor = :black, 
-                        aspect=1,
+    for ii in 1:num_col-1         # ii is the x-coord param
+        for  jj in ii+1:num_col   # jj is the y-coord param
+            println(props[ii])
+            println(props[jj])
+            axis = Axis(fig[jj+1,ii], xtickalign=1, xtickcolor = :black, ytickalign=1, ytickcolor = :black, aspect=1,
                         xlabel=names[ii], ylabel=names[jj], 
                         xlabelsize=labelfontsize, ylabelsize=labelfontsize,
                         xticklabelrotation=xticklabelrotation,
                         xticklabelsize=tickfontsize, yticklabelsize=tickfontsize)
             create_2D_density(axis, vec(results[props[ii]])/units[ii], ranges[ii], vec(results[props[jj]])/units[jj], ranges[jj], vec(results[:weights]), fractions_2D, nbins)
-            #create_2D_density(axis, vec(results[props[ii]])/units[ii], ranges[ii], vec(results[props[jj]])/units[jj], ranges[jj], vec(results[:weights]), nbins)
             if ii>1
                 hideydecorations!(axis, ticks=false, minorticks=false)
             end
             if jj!=num_col
                 hidexdecorations!(axis,ticks=false, minorticks=false)
             end         
+            xlims!(axis, (ranges[ii][1], ranges[ii][2]))
+            ylims!(axis, (ranges[jj][1], ranges[jj][2]))
         end  
     end 
     # Create 1D PDFs along the diagonal
@@ -203,67 +204,6 @@ function create_corner_plot(results, plotting_props;
 end
 
 """
-    create_2D_density(axis, values1, ranges1, values2, ranges2, chain_weights, fractions, nbins)
-
-Description
-Make the 2D density plots given the parameter values, ranges, and weights.
-
-# TODO: check that x- and y- descripters are correct, here and in below functions
-
-# Arguments:
-- axis:           the axis to make the plot
-- values1:        the values for the x-coordinate        
-- ranges1:        the ranges for the x-coordinate        
-- values2:        the values for the y-coordinate        
-- ranges2:        the ranges for the y-coordinate        
-- chain_weights:  the sample weighting from the MCMC
-- fractions:      area fractions for defining contours
-- nbins:          number of bins, identical for all parameters   
-"""
-function create_2D_density(axis, values1, ranges1, values2, ranges2, chain_weights, fractions, nbins)
-
-    filter1 = values1 .> ranges1[1] .&& values1 .< ranges1[2] 
-    filter2 = values2 .> ranges2[1] .&& values2 .< ranges2[2]
-    # RTW: make this check more robust
-    if sum(filter1) == 0
-        println("problem with 1")
-        println(ranges1, " ", minimum(values1), " ", maximum(values1))
-        return
-    end
-    if sum(filter2) == 0
-        println("problem with 2")
-        println(ranges2, " ", minimum(values2), " ", maximum(values2))
-        return
-    end
-    filter = filter1 .&& filter2
-    values1 = values1[filter]
-    values2 = values2[filter]
-    chain_weights = weights(chain_weights[filter]) # weights is a StatsBase function
-    
-    h = fit(Histogram, (values1, values2), chain_weights, nbins=nbins)
-    x = (h.edges[2][2:end] .+ h.edges[2][1:end-1])./2
-    y = (h.edges[1][2:end] .+ h.edges[1][1:end-1])./2
-    bounds = get_bounds_for_fractions(h, fractions)
-    contour_matrix = zeros(size(h.weights))
-    nbounds = length(bounds)
-    for ii in 1:nbounds
-        contour_matrix[h.weights .> bounds[ii]] .= (ii-1)/(nbounds-1)
-    end
-    #colormap=(Reverse(:dense), 0.2) # 2nd number is alpha
-    colormap=(:dense, 1.0) # 2nd number is alpha
-    #contourf!(axis, y, x, contour_matrix, colormap=colormap, colorrange=(0,1), extendlow=:white)
-    println(maximum(h.weights))
-    println(minimum(h.weights))
-    println(bounds)
-    #contourf!(axis, h.weights, levels=bounds, colormap=colormap, 
-    #heatmap!(axis, y, x, h.weights, colormap=:dense)
-    heatmap!(axis, y, x, h.weights, colormap=colormap)
-    colormap = [:red, :red, :red]
-    contour!(axis, y, x, h.weights, levels=bounds, colormap=colormap, linewidth=1)
-              #extendlow=:white)#, extendhigh=:auto)
-end  
-
-"""
     get_bounds_for_fractions(h, fractions)
 
 Description
@@ -297,6 +237,115 @@ function get_bounds_for_fractions(h, fractions)
     end 
     return sort(bounds)
 end
+
+"""
+    create_2D_density(axis, values1, ranges1, values2, ranges2, chain_weights, fractions, nbins)
+
+Description
+Make the 2D density plots given the parameter values, ranges, and weights.
+
+# TODO: check that x- and y- descripters are correct, here and in below functions
+
+# Arguments:
+- axis:           the axis to make the plot
+- values1:        the values for the x-coordinate        
+- ranges1:        the ranges for the x-coordinate        
+- values2:        the values for the y-coordinate        
+- ranges2:        the ranges for the y-coordinate        
+- chain_weights:  the sample weighting from the MCMC
+- fractions:      area fractions for defining contours
+- nbins:          number of bins, identical for all parameters   
+"""
+function create_2D_density(axis, values1, ranges1, values2, ranges2, chain_weights, fractions, nbins)
+
+    #filter1 = values1 .> ranges1[1] .&& values1 .< ranges1[2] 
+    #filter2 = values2 .> ranges2[1] .&& values2 .< ranges2[2]
+    ## RTW: make this check more robust
+    #if sum(filter1) == 0
+    #    println("problem with 1")
+    #    println(ranges1, " ", minimum(values1), " ", maximum(values1))
+    #    return
+    #end
+    #if sum(filter2) == 0
+    #    println("problem with 2")
+    #    println(ranges2, " ", minimum(values2), " ", maximum(values2))
+    #    return
+    #end
+    #filter = filter1 .&& filter2
+    #values1 = values1[filter]
+    #values2 = values2[filter]
+    #chain_weights = weights(chain_weights[filter]) # weights is a StatsBase function
+    
+
+    xwidth = ranges1[2]-ranges1[1]
+    newlox = ranges1[1] - xwidth/2
+    newhix = ranges1[2] + xwidth/2
+    x = LinRange(newlox, newhix, nbins*2)
+    #x = LinRange(ranges1[1], ranges1[2], nbins)
+    #println(x)
+    ywidth = ranges2[2]-ranges2[1]
+    newloy = ranges2[1] - ywidth/2
+    newhiy = ranges2[2] + ywidth/2
+    y = LinRange(newloy, newhiy, nbins*2)
+    #y = LinRange(ranges2[1], ranges2[2], nbins)
+    h = fit(Histogram, (values1, values2), weights(chain_weights), (x,y))
+    #x = (h.edges[2][2:end] .+ h.edges[2][1:end-1])./2
+    #y = (h.edges[1][2:end] .+ h.edges[1][1:end-1])./2
+    #x = (h.edges[2][2:end] .+ h.edges[2][1:end-1])./2
+    #y = (h.edges[1][2:end] .+ h.edges[1][1:end-1])./2
+    bounds = get_bounds_for_fractions(h, fractions)
+    #contour_matrix = zeros(size(h.weights))
+    nbounds = length(bounds)
+    #colormap_contour = [ (:green, 0.5), (:green, 0.5), (:green, 1.0), (:green, 1.0), (:green, 1.0)]
+    #colormap_contour = [ (:green, 0.3), (:green, 0.5), (:green, 1.0)] #, (:green, 1.0), (:green, 1.0)]
+    println(bounds)
+    #for ii in 1:nbounds
+    #    #contour_matrix[h.weights .> bounds[ii]] .= (ii-1)/(nbounds-1)
+    #    #myval = ((nbounds-ii+1)/nbounds)^2
+    #    myval = bounds[ii]/bounds[nbounds]
+    #    #println(ii, " ", myval, " ", nbounds)
+    #    #colormap_contour[ii] = (:blue, myval)
+    #end
+    #colormap=(Reverse(:dense), 0.2) # 2nd number is alpha
+    colormap=(:dense, 1.0) # 2nd number is alpha
+    #contourf!(axis, y, x, contour_matrix, colormap=colormap, colorrange=(0,1), extendlow=:white)
+    #println(maximum(h.weights))
+    #println(minimum(h.weights))
+    #println(bounds)
+    #contourf!(axis, h.weights, levels=bounds, colormap=colormap, 
+    #heatmap!(axis, y, x, h.weights, colormap=:dense)
+    #
+    # THIS ONE
+    heatmap!(axis, x, y, h.weights, colormap=colormap)
+    contour!(axis, x, y, h.weights, levels=bounds)#, colormap=colormap, linewidth=1)
+    #bandwidth=(.01, .01)
+    ###N=100
+    ###bandwidth=((ranges1[2] - ranges1[1]), (ranges2[2] - ranges2[1]))./N
+
+    ####boundary=((ranges1[1]*0.5, ranges1[2]*2), (ranges2[1]*.5, ranges2[2]*2))
+    ####boundary=((ranges1[1], ranges1[2]*1.2), (ranges2[1], ranges2[2]*1.2))
+    ###boundary=( (min(minimum(values1), ranges1[1]*.7), max(maximum(values1), ranges1[2])*1.3), 
+    ###           (min(minimum(values2), ranges2[1]*.7), max(maximum(values2), ranges2[2])*1.3))
+    ###println(bandwidth)
+    ###println(boundary)
+    ###np = 2048
+    ###bivar_kde = kde((values1, values2), bandwidth=bandwidth, boundary=boundary, npoints=(np, np))
+    #contour!(axis, y, x, h.weights, levels=bounds, colormap=colormap, linewidth=1)
+    # VS THIS ONE
+    #heatmap!(axis, bivar_kde.x, bivar_kde.y, bivar_kde.density, colormap=colormap)
+    #colormap = [:green, :green, :green]
+    #colormap_contour = :solar
+    #colorscale = log
+    #println(maximum(bivar_kde.density))
+    #println(minimum(bivar_kde.density))
+    
+    #contour!(axis, x, y, pdf(bivar_kde, x, y), levels=bounds, colormap=colormap_contour, linewidth=3)
+    #contour!(axis, bivar_kde.x, bivar_kde.y, bivar_kde.density, levels=bounds, colormap=colormap_contour, linewidth=3)
+   
+    #contour!(axis, bivar_kde.x, bivar_kde.y, bivar_kde.density, levels=bounds, colormap=[(:black, 0.5)], linewidth=1)
+              #extendlow=:white)#, extendhigh=:auto)
+              #colorscale=colorscale, 
+end  
 
 """
     create_1D_density(axis, values, range, chain_weights, fraction_1D, nbins; color, linewidth)
@@ -387,4 +436,3 @@ function create_compound_1D_densities(axis, values_matrix, range, chain_weights_
     return (xmin, xmode, xmax)
    
 end
- 
