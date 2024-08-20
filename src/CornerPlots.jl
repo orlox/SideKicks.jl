@@ -75,7 +75,7 @@ Function to create corner plot for selected (sub-)set of parameters from the MCM
 function create_corner_plot(results, plotting_props; 
         observations=nothing,
         fig=Figure(), supertitle=nothing,
-        fractions_2D=[0.68,0.95,0.997], fraction_1D=0.68, 
+        fraction_1D=0.9, fractions_2D=[0.9], 
         show_CIs=true, nbins=100,
         rowcolgap=10, xticklabelrotation=pi/4,
         labelfontsize=16, tickfontsize=10, supertitlefontsize=30)
@@ -118,8 +118,6 @@ function create_corner_plot(results, plotting_props;
     num_col = num_props
     for ii in 1:num_col-1         # ii is the x-coord param
         for  jj in ii+1:num_col   # jj is the y-coord param
-            println(props[ii])
-            println(props[jj])
             axis = Axis(fig[jj+1,ii], xtickalign=1, xtickcolor = :black, ytickalign=1, ytickcolor = :black, aspect=1,
                         xlabel=names[ii], ylabel=names[jj], 
                         xlabelsize=labelfontsize, ylabelsize=labelfontsize,

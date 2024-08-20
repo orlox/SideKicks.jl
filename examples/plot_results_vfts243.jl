@@ -29,13 +29,7 @@ plotting_props_obs_check = SideKicks.createPlottingProps([
 ])
 
 f = create_corner_plot(results, plotting_props_obs_check,
-    tickfontsize=10 ,
-    xticklabelrotation=pi/4, 
-    show_CIs=true,
     rowcolgap=8,
-    fraction_1D = 0.9,
-    nbins=100,
-    fractions_2D = [0.393, 0.865, 0.989], #, .9999, .99999 ], 
     supertitle="VFTS 243 - observables",
     )
 save("vfts243_observables.png", f)
@@ -49,20 +43,15 @@ consequences for explosion itself.
 =#
 
 plotting_props = SideKicks.createPlottingProps([
-    [:m2,     m_sun,    [0,25],         L"M_2  \;[M_{\odot}]"],
+    [:m2_f,     m_sun,    [0,25],         L"M_2  \;[M_{\odot}]"],
     [:dm2,    m_sun,    [0, 4],        L"ΔM_2  \;[M_{\odot}]"],
-    [:P,      day,      [8,12],        L"P  \;[\mathrm{days}]"],
+    [:P_f,   day,      [10.3,10.45],    L"P_f\;[\mathrm{days}]"],
     [:vkick, km_per_s,  [0,50],         L"v_{kick}  \;[\mathrm{km s}^{-1}]"],
     [:vsys,  km_per_s, [0,50],        L"v_{\mathrm{sys}} \;[\mathrm{km s}^{-1}]"],
 ])
 
 f = create_corner_plot(results, plotting_props,
-    tickfontsize=10 ,
-    xticklabelrotation=pi/4, 
-    show_CIs=true,
     supertitle="VFTS 243 - derived quantities",
-    fraction_1D = 0.9,
-    fractions_2D = [0.393, 0.865, 0.989], #, .9999, .99999 ], 
     )
 
 save("vfts243_derived.png", f)
