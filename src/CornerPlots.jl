@@ -47,7 +47,7 @@ end
     create_corner_plot(results, plotting_props; 
         observations=nothing, fig=Figure(), supertitle=nothing,
         fractions=[0.68,0.95,0.997], fraction_1D=0.68, 
-        show_CIs=true, nbins=100, rowcolgap=10, 
+        show_CIs=true, nbins=100, nbins_contour=20, rowcolgap=10, 
         xticklabelrotation=pi/4, labelfontsize=16, tickfontsize=10, supertitlefontsize=30)
 
 Description
@@ -63,6 +63,7 @@ Function to create corner plot for selected (sub-)set of parameters from the MCM
 - fraction_1D:         the area fraction to include in the confidence interval bounds
 - show_CIs:            whether to include confidence intervals
 - nbins:               number of bins, identical for all parameters   
+- nbins_contour:       number of bins for the contour plots
 - rowcolgap:           spacing between the axes
 - xticklabelrotation:  rotating (in rad) of the x-axis tick labels                
 - labelfontsize:       fontsize of the parameter labels           
@@ -76,7 +77,7 @@ function create_corner_plot(results, plotting_props;
         observations=nothing,
         fig=Figure(), supertitle=nothing,
         fraction_1D=0.9, fractions_2D=[0.9], 
-        show_CIs=true, nbins=100,
+        show_CIs=true, nbins=100, nbins_contour=20,
         rowcolgap=10, xticklabelrotation=pi/4,
         labelfontsize=16, tickfontsize=10, supertitlefontsize=30)
  
@@ -123,7 +124,7 @@ function create_corner_plot(results, plotting_props;
                         xlabelsize=labelfontsize, ylabelsize=labelfontsize,
                         xticklabelrotation=xticklabelrotation,
                         xticklabelsize=tickfontsize, yticklabelsize=tickfontsize)
-            create_2D_density(axis, vec(results[props[ii]])/units[ii], ranges[ii], vec(results[props[jj]])/units[jj], ranges[jj], vec(results[:weights]), fractions_2D, nbins)
+            create_2D_density(axis, vec(results[props[ii]])/units[ii], ranges[ii], vec(results[props[jj]])/units[jj], ranges[jj], vec(results[:weights]), fractions_2D, nbins_heatmap=nbins, nbins_contour=nbins_contour)
             if ii>1
                 hideydecorations!(axis, ticks=false, minorticks=false)
             end
@@ -153,7 +154,7 @@ function create_corner_plot(results, plotting_props;
                 mean = observations.vals[idx]
                 errs = observations.errs[idx]
                 xarr = LinRange(ranges[ii][1], ranges[ii][2], 100)
-                lines!(axis, xarr, pdf(Normal(mean, errs), xarr), color=(:red, 0.4), linewidth=3) # linestyle=:dot, 
+                lines!(axis, xarr, pdf(Normal(mean, errs), xarr), color=(:red, 0.4), linewidth=3) 
             end
         end
 
@@ -254,16 +255,30 @@ Make the 2D density plots given the parameter values, ranges, and weights.
 - fractions:      area fractions for defining contours
 - nbins:          number of bins, identical for all parameters   
 """
-function create_2D_density(axis, values1, ranges1, values2, ranges2, chain_weights, fractions, nbins)
+function create_2D_density(axis, values1, ranges1, values2, ranges2, chain_weights, fractions; nbins_heatmap, nbins_contour)
 
-    # User should supply ranges and nbins, assuming nbins span the provided range.
-    # Internally, we wish to evaluate the histogram over the full domain of the data, 
-    # in order to correctly calculate the relevant enclosed area. Thus we calculate 
-    # a histogram over the specified range, divided into nbins, with additional bin 
-    # edges appended to the front and back of the array, if the data exceeds these limits.
-    # Thus in these cases, the outermost bins may be much different sizes than those within
-    # the range, but this corrects for the normalization.
+    ### Calculate the heatmap using only the data that fits within the range window
+    filter1 = values1 .> ranges1[1] .&& values1 .< ranges1[2] 
+    filter2 = values2 .> ranges2[1] .&& values2 .< ranges2[2]
+    # RTW: make this check more robust
+    if sum(filter1) == 0
+        println("problem with 1")
+        println(ranges1, " ", minimum(values1), " ", maximum(values1))
+        return
+    end
+    if sum(filter2) == 0
+        println("problem with 2")
+        println(ranges2, " ", minimum(values2), " ", maximum(values2))
+        return
+    end
+    filter = filter1 .&& filter2
 
+    h_hm = fit(Histogram, (values1[filter], values2[filter]), weights(chain_weights[filter]), nbins=nbins_heatmap) 
+    x_hm = (h_hm.edges[1][2:end] .+ h_hm.edges[1][1:end-1])./2
+    y_hm = (h_hm.edges[2][2:end] .+ h_hm.edges[2][1:end-1])./2
+    heatmap!(axis, x_hm, y_hm, h_hm.weights, colormap=:dense)
+
+    ### Calculate the contours using the full set of data, so the areas come out right
     x_lo = []
     x_hi = []
     y_lo = []
@@ -280,24 +295,15 @@ function create_2D_density(axis, values1, ranges1, values2, ranges2, chain_weigh
     if maximum(values2) > ranges2[2] 
         y_hi = [maximum(values2)]
     end
-    x_edges = cat(x_lo, LinRange(ranges1[1], ranges1[2], nbins+1), x_hi, dims=1)
-    y_edges = cat(y_lo, LinRange(ranges2[1], ranges2[2], nbins+1), y_hi, dims=1)
+    x_edges = cat(x_lo, LinRange(ranges1[1], ranges1[2], nbins_contour+1), x_hi, dims=1)
+    y_edges = cat(y_lo, LinRange(ranges2[1], ranges2[2], nbins_contour+1), y_hi, dims=1)
 
-    h = fit(Histogram, (values1, values2), weights(chain_weights), (x_edges,y_edges))
-    x = (h.edges[1][2:end] .+ h.edges[1][1:end-1])./2
-    y = (h.edges[2][2:end] .+ h.edges[2][1:end-1])./2
-    z = h.weights
+    h_ct = fit(Histogram, (values1, values2), weights(chain_weights), (x_edges,y_edges))
+    x_ct = (h_ct.edges[1][2:end] .+ h_ct.edges[1][1:end-1])./2
+    y_ct = (h_ct.edges[2][2:end] .+ h_ct.edges[2][1:end-1])./2
+    bounds = get_bounds_for_fractions(h_ct, fractions)
+    contour!(axis, x_ct, y_ct, h_ct.weights, levels=bounds, color=(:black, 0.5))
 
-    # make heatmap
-    heatmap!(axis, x, y, z, colormap=:dense)
-    # make contours - use interpolation to smooth them
-    bounds = get_bounds_for_fractions(h, fractions)
-    itp = LinearInterpolation((x, y), z, extrapolation_bc=Line())
-    x2 = range(start=ranges1[1], stop=ranges1[2], length=20)
-    y2 = range(start=ranges2[1], stop=ranges2[2], length=20)
-    z2 = [itp(x,y) for y in y2, x in x2]
-    #contour!(axis, x, y, h.weights, levels=bounds, color=(:black, 0.5))
-    contour!(axis, x2, y2, transpose(z2), levels=bounds, color=(:black, 0.5))
 
 end  
 
