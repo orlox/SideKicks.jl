@@ -1,6 +1,5 @@
 using StatsBase
 using CairoMakie
-using Interpolations
 
 export create_corner_plot 
 

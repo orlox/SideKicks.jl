@@ -9,7 +9,7 @@ using CairoMakie
 using SideKicks
 
 #results, observations, priors, metadata = SideKicks.ExtractResults("/home/rwillcox/astro/sidekicks/SideKicks.jl/examples/vfts243_results_100k.hdf5")
-results, observations, priors, metadata = SideKicks.ExtractResults("/home/rwillcox/astro/sidekicks/SideKicks.jl/examples/vfts243_results.hdf5")
+results, observations, priors, metadata = SideKicks.ExtractResults("vfts243_results.hdf5")
 
 ##
 #=
