@@ -10,6 +10,7 @@ using SideKicks
 
 #results, observations, priors, metadata = SideKicks.ExtractResults("/home/rwillcox/astro/sidekicks/SideKicks.jl/examples/vfts243_results_100k.hdf5")
 results, observations, priors, metadata = SideKicks.ExtractResults(String(@__DIR__) * "/vfts243_results.hdf5")
+#results, observations, priors, metadata = SideKicks.ExtractResults("vfts243_results.hdf5")
 
 ##
 #=
@@ -19,18 +20,12 @@ consistency check is to verify these are consistent with the MCMC samples.
 
 plotting_props_obs_check = SideKicks.createPlottingProps([
     [:m1_f,    m_sun,    [15,40],        L"M_1\;[M_{\odot}]"],
-    #[:P_f,   day,      [10.3,10.5],    L"P_f\;[\mathrm{days}]"],
-    [:P_f,   day,      [10.3,10.45],    L"P_f\;[\mathrm{days}]"],
+    [:P_f,   day,      [10.35,10.45],    L"P_f\;[\mathrm{days}]"],
     [:e_f,   1,        [0,0.1],        L"e_f"],
     [:K1,    km_per_s, [77,90],        L"K_1  \;[\mathrm{km s}^{-1}]"],
-    #[:v_N,    km_per_s, [130,170],        L"v_N  \;[\mathrm{km s}^{-1}]"],
-    #[:v_E,    km_per_s, [380,430],        L"v_E  \;[\mathrm{km s}^{-1}]"],
-    #[:v_r,    km_per_s, [257,263],        L"v_r  \;[\mathrm{km s}^{-1}]"],
-    #[:ω_f,   degree, [0,360],        L"\omega_f  \;[\mathrm{rad}]"],
 ])
 
 f = create_corner_plot(results, plotting_props_obs_check,
-    rowcolgap=8,
     supertitle="VFTS 243 - observables",
     )
 save("vfts243_observables.png", f)
@@ -43,12 +38,15 @@ And, after verifying the samples do correspond to our observational constraints,
 consequences for explosion itself.
 =#
 
+# Try each one individually
 plotting_props = SideKicks.createPlottingProps([
-    [:m2_f,     m_sun,    [0,25],         L"M_2  \;[M_{\odot}]"],
-    [:dm2,    m_sun,    [0, 4],        L"ΔM_2  \;[M_{\odot}]"],
-    [:P_f,   day,      [10.3,10.45],    L"P_f\;[\mathrm{days}]"],
-    [:vkick, km_per_s,  [0,50],         L"v_{kick}  \;[\mathrm{km s}^{-1}]"],
-    [:vsys,  km_per_s, [0,50],        L"v_{\mathrm{sys}} \;[\mathrm{km s}^{-1}]"],
+    [:m1_f,    m_sun,    [15,40],        L"M_1\;[M_{\odot}]"],
+    [:P_f,   day,      [10.35,10.45],    L"P_f\;[\mathrm{days}]"],
+    [:e_f,   1,        [0,0.1],        L"e_f"],
+    [:m2_f,   m_sun,    [0,40],         L"M_2  \;[M_{\odot}]"],
+    #[:dm2,    m_sun,    [0, 10],        L"ΔM_2  \;[M_{\odot}]"],
+    #[:vsys,   km_per_s, [0,50],        L"v_{\mathrm{sys}} \;[\mathrm{km s}^{-1}]"],
+    #[:vkick,  km_per_s, [0,50],         L"v_{kick}  \;[\mathrm{km s}^{-1}]"],
 ])
 
 f = create_corner_plot(results, plotting_props,
