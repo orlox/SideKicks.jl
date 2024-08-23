@@ -184,7 +184,6 @@ function create_simplified_mcmc_model(;
     return [create_mcmc_model(observations.props, obs_vals_cgs, obs_errs_cgs), return_props]
 end
 
-
 """
     create_general_mcmc_model(observations, observed_values, observed_errors)
 

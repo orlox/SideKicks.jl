@@ -27,6 +27,9 @@ end
 ##
 
 function ExtractResults(fname)
+    if ~isfile(fname)
+        throw(ArgumentError("File not found"))
+    end
     fid = h5open(fname, "r") 
     extracted_results = fid["results"]
     results = Dict()

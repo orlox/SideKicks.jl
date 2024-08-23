@@ -2,7 +2,8 @@ using SideKicks
 using CairoMakie
 
 system_id = last(split(@__DIR__, "/"))
-results_file = String(@__DIR__) * "/results.hdf5"
+#results_file = String(@__DIR__) * "/results.hdf5"
+results_file = "/home/rwillcox/astro/sidekicks/transport/vfts243_results.hdf5" 
 
 results, observations, priors, metadata = SideKicks.ExtractResults(results_file)
 
