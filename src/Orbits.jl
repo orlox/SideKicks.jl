@@ -236,19 +236,19 @@ using equations from [Marchant, Willcox, Vigna-Gomez] TODO
 - ϕ:     azimuthal kick angle (off of e_perp)            [rad]
 - vimp:  imparted kick velocity on companion             [cm/s]     
 - Initial orbital orientation angles: 
-    - ν_i: true anomaly                                    [rad]
-    - Ω_i: pre-explosion longitude of the ascending node   [rad]
-    - ω_i: pre-explosion argument of periastron            [rad]
-    - i_i: pre-explosion inclination                       [rad]
+    - ν_i: true anomaly                                       [rad]
+    - Ω_i: pre-explosion longitude of the ascending node      [rad]
+    - ω_i: pre-explosion argument of periastron               [rad]
+    - i_i: pre-explosion inclination                          [rad]
     
-- a_f:     post-explosion orbital separation               [cm]
-- e_f:     post-explosion orbital eccentricity             [-]
-- Ω_f:     post-explosion longitude of ascending node      [rad]      
-- ω_f:     post-explosion argument of periastron           [rad]    
-- i_f:     post-explosion inclination                      [rad]     
-- vCM_n:   post-explosion systemic velocity, toward N      [rad]
-- vCM_w:   post-explosion systemic velocity, toward W      [rad]      
-- vCM_rad: post-explosion radial velocity, toward O        [rad]      
+- a_f:     post-explosion orbital separation                  [cm]
+- e_f:     post-explosion orbital eccentricity                [-]
+- Ω_f:     post-explosion longitude of ascending node         [rad]      
+- ω_f:     post-explosion argument of periastron              [rad]    
+- i_f:     post-explosion inclination                         [rad]     
+- vCM_n:   post-explosion systemic velocity, toward N         [rad]
+- vCM_w:   post-explosion systemic velocity, toward W         [rad]      
+- vCM_rad: post-explosion radial velocity, toward negative O  [rad]      
 """
 function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-1, m2_f, vkick=0, 
         θ=0, ϕ=0, vimp=0, ν_i=0, Ω_i=0, ω_i=0, i_i=0)
@@ -334,9 +334,9 @@ function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-
     vCM_rad = -vCM_o 
 
     # obtain inclination from direction of orbital angular momentum vector
-    L_par = j_ν*α*sinθ*sinϕ/L_vec_bracket_norm
-    L_per = -h_ν*α*sinθ*sinϕ/L_vec_bracket_norm
-    L_z = (h_ν*α*sinθ*cosϕ - j_ν*(1 + α*cosθ))/L_vec_bracket_norm
+    L_par = -j_ν*α*sinθ*sinϕ/L_vec_bracket_norm
+    L_per = h_ν*α*sinθ*sinϕ/L_vec_bracket_norm
+    L_z = -(h_ν*α*sinθ*cosϕ - j_ν*(1 + α*cosθ))/L_vec_bracket_norm
 
     L_w = R_w_par*L_par + R_w_per*L_per + R_w_z*L_z
     L_n = R_n_par*L_par + R_n_per*L_per + R_n_z*L_z
