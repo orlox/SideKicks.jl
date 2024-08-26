@@ -286,7 +286,6 @@ function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-
     ξ = f_νi*g_νi^2*M_i/M_f*v_rel_ratio
     if ξ>2
         return (NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN)
-        # TODO: check length of this
     end
 
     a_f = f_νi*a_i/(2 - ξ)
