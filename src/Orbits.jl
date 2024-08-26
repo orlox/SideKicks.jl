@@ -241,15 +241,14 @@ using equations from [Marchant, Willcox, Vigna-Gomez] TODO
     - ω_i: pre-explosion argument of periastron            [rad]
     - i_i: pre-explosion inclination                       [rad]
     
-# Output: RTW: check! 
-- a_f:   post-explosion orbital separation               [cm]
-- e_f:   post-explosion orbital eccentricity             [-]
-- Ω_f:   post-explosion longitude of ascending node      [rad]      
-- ω_f:   post-explosion argument of periastron           [rad]    
-- i_f:   post-explosion inclination                      [rad]     
-- v_n:   post-explosion systemic velocity, toward N      [rad]
-- v_w:   post-explosion systemic velocity, toward W      [rad]      
-- v_rad: post-explosion radial velocity, toward O        [rad]      
+- a_f:     post-explosion orbital separation               [cm]
+- e_f:     post-explosion orbital eccentricity             [-]
+- Ω_f:     post-explosion longitude of ascending node      [rad]      
+- ω_f:     post-explosion argument of periastron           [rad]    
+- i_f:     post-explosion inclination                      [rad]     
+- vCM_n:   post-explosion systemic velocity, toward N      [rad]
+- vCM_w:   post-explosion systemic velocity, toward W      [rad]      
+- vCM_rad: post-explosion radial velocity, toward O        [rad]      
 """
 function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-1, m2_f, vkick=0, 
         θ=0, ϕ=0, vimp=0, ν_i=0, Ω_i=0, ω_i=0, i_i=0)
@@ -394,9 +393,6 @@ function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-
         ω_f = 2π + ω_f
     end
 
-    return (a_f, e_f, Ω_f, ω_f, i_f, v_ra, v_dec, v_rad)
+    return (a_f, e_f, Ω_f, ω_f, i_f, vCM_ra, vCM_dec, vCM_rad)
 end
-
-
-
 
