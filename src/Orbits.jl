@@ -298,14 +298,9 @@ function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-
     if (sinν < 0)
         τ = -τ
     end
-    #δ = ω + ν - τ
-    cosτ = cos(τ)
-    sinτ = sin(τ)
-    cosδ = cosν*sinτ*sinω - sinν*cosτ*sinω + sinν*sinτ*cosω + cosν*cosτ*cosω
-    sinδ = sinν*sinτ*sinω + cosν*cosτ*sinω - cosν*sinτ*cosω + sinν*cosτ*cosω
-    #δ = ω_i + ν_i - τ # RTW TODO: this is identical, check later if its faster
-    #cosδ_alt = cos(δ)
-    #sinδ_alt = sin(δ)
+    δ = ω_i + ν_i - τ
+    cosδ = cos(δ)
+    sinδ = sin(δ)
 
     # Elements of rotation matrix, to convert from (e_par, e_per, e_z) basis to
     # (W, N, O) basis, corresponding to celestial west and north, and O towards the observer.
