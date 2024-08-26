@@ -362,12 +362,12 @@ function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-
     if vcm_1f_dot_y<0
         ν_f = 2π - ν_f
     end
-    # compute the angle from current location to ascending node
-    # in the rotated frame. This is Rot(\hat{y})
+    # These are the components of \hat{y} in the w,n,o frame
     yrot_w = R_w_par*h_ν + R_w_per*j_ν
     yrot_n = R_n_par*h_ν + R_n_per*j_ν
     yrot_o = R_o_par*h_ν + R_o_per*j_ν 
     dot_prod = (Ω_w*yrot_w + Ω_n*yrot_n)/Ω_norm
+    # compute the angle from current location of m1 to ascending node
     λ = acos(max(-1, min(1, dot_prod)))
     # We need to know if ν is before or after the ascending node.
     # To do this we take the cross product of the vector pointing from the COM
@@ -379,7 +379,7 @@ function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-
     cross_vec_o =  yrot_w*Ω_n - yrot_n*Ω_w
     cross_vec_dot_L = cross_vec_w*L_w + cross_vec_n*L_n + cross_vec_o*L_o
 
-    if cross_vec_dot_L > 0
+    if cross_vec_dot_L < 0
         ω_f = λ - ν_f
     else
         ω_f = 2π - (λ + ν_f)
