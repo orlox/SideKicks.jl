@@ -236,20 +236,19 @@ using equations from [Marchant, Willcox, Vigna-Gomez] TODO
 - ϕ:     azimuthal kick angle (off of e_perp)            [rad]
 - vimp:  imparted kick velocity on companion             [cm/s]     
 - Initial orbital orientation angles: 
-    - ν_i: true anomaly                                    [rad]
-    - Ω_i: pre-explosion longitude of the ascending node   [rad]
-    - ω_i: pre-explosion argument of periastron            [rad]
-    - i_i: pre-explosion inclination                       [rad]
+    - ν_i: true anomaly                                       [rad]
+    - Ω_i: pre-explosion longitude of the ascending node      [rad]
+    - ω_i: pre-explosion argument of periastron               [rad]
+    - i_i: pre-explosion inclination                          [rad]
     
-# Output: RTW: check! 
-- a_f:   post-explosion orbital separation               [cm]
-- e_f:   post-explosion orbital eccentricity             [-]
-- Ω_f:   post-explosion longitude of ascending node      [rad]      
-- ω_f:   post-explosion argument of periastron           [rad]    
-- i_f:   post-explosion inclination                      [rad]     
-- v_n:   post-explosion systemic velocity, toward N      [rad]
-- v_w:   post-explosion systemic velocity, toward W      [rad]      
-- v_rad: post-explosion radial velocity, toward O        [rad]      
+- a_f:     post-explosion orbital separation                  [cm]
+- e_f:     post-explosion orbital eccentricity                [-]
+- Ω_f:     post-explosion longitude of ascending node         [rad]      
+- ω_f:     post-explosion argument of periastron              [rad]    
+- i_f:     post-explosion inclination                         [rad]     
+- vCM_n:   post-explosion systemic velocity, toward N         [rad]
+- vCM_w:   post-explosion systemic velocity, toward W         [rad]      
+- vCM_rad: post-explosion radial velocity, toward negative O  [rad]      
 """
 function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-1, m2_f, vkick=0, 
         θ=0, ϕ=0, vimp=0, ν_i=0, Ω_i=0, ω_i=0, i_i=0)
@@ -274,23 +273,24 @@ function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-
     sinΩ = sin(Ω_i)
 
     # construct useful intermediary parameters
-    f_ν = (1 - e_i^2)/(1 + e_i*cosν)
-    g_ν = sqrt((1 + 2*e_i*cosν + e_i^2)/(1 - e_i^2))
+    f_νi = (1 - e_i^2)/(1 + e_i*cosν)
+    g_νi = sqrt((1 + 2*e_i*cosν + e_i^2)/(1 - e_i^2))
     h_ν = -e_i*sinν/sqrt(1 + 2*e_i*cosν + e_i^2)
     j_ν = (1 + e_i*cosν)/sqrt(1 + 2*e_i*cosν + e_i^2)
 
-    v_rel = g_ν*sqrt(cgrav*M_i/a_i)
-    α = vkick/v_rel
-    β = vimp/v_rel
-    ξ = f_ν*g_ν^2*M_i/M_f* (1 + α^2 + β^2 + 2* (α*cosθ - h_ν*β* (1 + α*cosθ) - j_ν*β*α*sinθ*cosϕ))
+    v_reli = g_νi*sqrt(cgrav*M_i/a_i)
+    α = vkick/v_reli
+    β = vimp/v_reli
+    v_rel_ratio = 1 + α^2 + β^2 + 2* (α*cosθ - h_ν*β* (1 + α*cosθ) - j_ν*β*α*sinθ*cosϕ)
+    ξ = f_νi*g_νi^2*M_i/M_f*v_rel_ratio
     if ξ>2
         return (NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN)
     end
 
-    a_f = f_ν*a_i/(2 - ξ)
-    Lvec_norm = sqrt(α^2*sinθ^2*sinϕ^2 + (h_ν*α*sinθ*cosϕ - j_ν*(1 + α*cosθ))^2)
-    η = f_ν*g_ν^2*M_i/M_f*Lvec_norm^2
-    e_f = sqrt(1 + (ξ-2)*η + 1e-10) # including safety floor
+    a_f = f_νi*a_i/(2 - ξ)
+    L_vec_bracket_norm = sqrt(α^2*sinθ^2*sinϕ^2 + (h_ν*α*sinθ*cosϕ - j_ν*(1 + α*cosθ))^2)    # Eq. A.27
+    η = f_νi*g_νi^2*M_i/M_f*L_vec_bracket_norm^2
+    e_f = sqrt(1 + (ξ - 2)*η + 1e-10) # including safety floor
 
     #angle between x and direction of motion
     # perhaps can be skipped to save some time, just get directly cos and sin
@@ -298,13 +298,12 @@ function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-
     if (sinν < 0)
         τ = -τ
     end
-    #δ = ω + ν - τ
-    cosτ = cos(τ)
-    sinτ = sin(τ)
-    cosδ = cosν*sinτ*sinω - sinν*cosτ*sinω + sinν*sinτ*cosω + cosν*cosτ*cosω
-    sinδ = sinν*sinτ*sinω + cosν*cosτ*sinω - cosν*sinτ*cosω + sinν*cosτ*cosω
+    δ = ω_i + ν_i - τ
+    cosδ = cos(δ)
+    sinδ = sin(δ)
 
-    # Elements of rotation matrix
+    # Elements of rotation matrix, to convert from (e_par, e_per, e_z) basis to
+    # (W, N, O) basis, corresponding to celestial west and north, and O towards the observer.
     R_w_par =  cosi*cosΩ*cosδ - sinΩ*sinδ
     R_w_per = -cosi*cosΩ*sinδ - sinΩ*cosδ
     R_w_z   = -sini*cosΩ
@@ -316,23 +315,23 @@ function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-
     R_o_z   =  cosi
 
     # velocity, simply compute from change in momentum
-    v_par = (-(m2_i - m2_f)*m1_i/M_i*v_rel + (m1_i - m1_f)*m2_i/M_i*v_rel
-             + m2_f*vkick*cosθ + h_ν*m1_f*vimp)/M_f
-    v_per = (m2_f*vkick*sinθ*cosϕ + j_ν*m1_f*vimp)/M_f
-    v_z   = m2_f*vkick*sinθ*sinϕ/M_f
+    vCM_par = 1/M_f* (v_reli/M_i* (m1_i*m2_f - m1_f*m2_i)
+                      + m2_f*vkick*cosθ + h_ν*m1_f*vimp)
+    vCM_per = 1/M_f* (m2_f*vkick*sinθ*cosϕ + j_ν*m1_f*vimp)
+    vCM_z   = 1/M_f* (m2_f*vkick*sinθ*sinϕ)
 
-    v_w = R_w_par*v_par + R_w_per*v_per + R_w_z*v_z
-    v_n = R_n_par*v_par + R_n_per*v_per + R_n_z*v_z
-    v_o = R_o_par*v_par + R_o_per*v_per + R_o_z*v_z
+    vCM_w = R_w_par*vCM_par + R_w_per*vCM_per + R_w_z*vCM_z
+    vCM_n = R_n_par*vCM_par + R_n_per*vCM_per + R_n_z*vCM_z
+    vCM_o = R_o_par*vCM_par + R_o_per*vCM_per + R_o_z*vCM_z
     # Swap into RA, Dec, Radial velocity reference frame
-    v_ra =  -v_w
-    v_dec =  v_n
-    v_rad = -v_o 
+    vCM_ra =  -vCM_w
+    vCM_dec =  vCM_n
+    vCM_rad = -vCM_o 
 
     # obtain inclination from direction of orbital angular momentum vector
-    L_par = j_ν*α*sinθ*sinϕ/Lvec_norm
-    L_per = -h_ν*α*sinθ*sinϕ/Lvec_norm
-    L_z = (h_ν*α*sinθ*cosϕ - j_ν*(1 + α*cosθ))/Lvec_norm
+    L_par = -j_ν*α*sinθ*sinϕ/L_vec_bracket_norm
+    L_per = h_ν*α*sinθ*sinϕ/L_vec_bracket_norm
+    L_z = -(h_ν*α*sinθ*cosϕ - j_ν*(1 + α*cosθ))/L_vec_bracket_norm
 
     L_w = R_w_par*L_par + R_w_per*L_per + R_w_z*L_z
     L_n = R_n_par*L_par + R_n_per*L_per + R_n_z*L_z
@@ -341,57 +340,54 @@ function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-
     i_f = acos(min(1, abs(L_o)))
 
     # compute longitude of the ascending node
-    # this is obtained by taking the vector n = L × \hat{O}, which points to the observer
-    # then n = (n_w, n_n, 0) points to the ascending node
-    # TODO RTW: need to check the code below, the subscripts look wrong
-    n_w = -L_n
-    n_n = L_w
-    n_norm = sqrt(n_w^2 + n_n^2)
-    Ω_f = acos(max(-1, min(1, n_n/n_norm)))
-    if n_w>0
+    # this is obtained by taking the vector Ωvec_f = Lvec_f × \hat{O} 
+    # which is L_n*\hat{W} - L_w*\hat(N). Then Ωvec_f = (Ω_w, Ω_n, 0) 
+    # points to the ascending node, and we have,
+    Ω_w = L_n 
+    Ω_n = -L_w
+    Ω_norm = sqrt(Ω_w^2 + Ω_n^2)
+    Ω_f = acos(max(-1, min(1, Ω_n/Ω_norm)))
+    if Ω_w>0
         Ω_f = 2π - Ω_f
     end
     # compute post-explosion argument of periastron
     ν_f = 0 
     if (e_f > 0)
-        ν_f = acos(max(-1, min(1, 1/e_f*(a_f*(1 - e_f^2)/(a_i*f_ν) - 1))))
+        ν_f = acos(max(-1, min(1, 1/e_f*(a_f*(1 - e_f^2)/(a_i*f_νi) - 1))))
     end
     # The periastron angle is the same as the true anomaly if the star is moving
     # away from periastron. Otherwise we need to correct for this by computing the 
     # component of velocity along the line joining both objects (in the COM frame).
-    v1y_cm = vimp - h_ν*(m2_i/M_i*v_rel + v_par) - j_ν*v_per
-    if v1y_cm<0
+    vcm_1f_dot_y = vimp - h_ν*(m2_i/M_i*v_reli + vCM_par) - j_ν*vCM_per
+    if vcm_1f_dot_y<0
         ν_f = 2π - ν_f
     end
-    # compute the angle from current location to ascending node
-    # in the rotated frame. This is R*\hat{y}
-    rvec_w = R_w_par*h_ν + R_w_per*j_ν
-    rvec_n = R_n_par*h_ν + R_n_per*j_ν
-    rvec_o = R_o_par*h_ν + R_o_per*j_ν
-    dot_prod = (n_w*rvec_w + n_n*rvec_n)/n_norm
-    angle_to_asc_node = acos(max(-1, min(1, dot_prod)))
+    # These are the components of \hat{y} in the w,n,o frame
+    yrot_w = R_w_par*h_ν + R_w_per*j_ν
+    yrot_n = R_n_par*h_ν + R_n_per*j_ν
+    yrot_o = R_o_par*h_ν + R_o_per*j_ν 
+    dot_prod = (Ω_w*yrot_w + Ω_n*yrot_n)/Ω_norm
+    # compute the angle from current location of m1 to ascending node
+    λ = acos(max(-1, min(1, dot_prod)))
     # We need to know if ν is before or after the ascending node.
     # To do this we take the cross product of the vector pointing from the COM
     # to star 1, and that pointing to the ascending node. If this points in
     # the direction of the orbital angular momentum, then we have not
     # overtaken the ascending node
-    cross_vec_w = -rvec_o*n_n
-    cross_vec_n =  rvec_o*n_w
-    cross_vec_o =  rvec_w*n_n - rvec_n*n_w
+    cross_vec_w = -yrot_o*Ω_n
+    cross_vec_n =  yrot_o*Ω_w
+    cross_vec_o =  yrot_w*Ω_n - yrot_n*Ω_w
     cross_vec_dot_L = cross_vec_w*L_w + cross_vec_n*L_n + cross_vec_o*L_o
 
-    if cross_vec_dot_L > 0
-        ω_f = angle_to_asc_node - ν_f
+    if cross_vec_dot_L < 0
+        ω_f = λ - ν_f
     else
-        ω_f = 2π - (angle_to_asc_node + ν_f)
+        ω_f = 2π - (λ + ν_f)
     end
     if ω_f < 0
         ω_f = 2π + ω_f
     end
 
-    return (a_f, e_f, Ω_f, ω_f, i_f, v_ra, v_dec, v_rad)
+    return (a_f, e_f, Ω_f, ω_f, i_f, vCM_ra, vCM_dec, vCM_rad)
 end
-
-
-
 
