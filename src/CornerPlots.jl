@@ -76,7 +76,7 @@ function create_corner_plot(results, plotting_props;
         observations=nothing,
         fig=Figure(), supertitle=nothing,
         fraction_1D=0.9, fractions_2D=[0.9], 
-        show_CIs=true, nbins=100, nbins_contour=20,
+        show_CIs=true, nbins=100, nbins_contour=30,
         rowcolgap=10, xticklabelrotation=pi/4,
         labelfontsize=16, tickfontsize=10, supertitlefontsize=30)
  
@@ -115,9 +115,10 @@ function create_corner_plot(results, plotting_props;
         end
     end
     # Create 2D density plots
+
     num_col = num_props
     for ii in 1:num_col-1         # ii is the x-coord param
-        for  jj in ii+1:num_col   # jj is the y-coord param
+        for jj in ii+1:num_col   # jj is the y-coord param
             axis = Axis(fig[jj+1,ii], xtickalign=1, xtickcolor = :black, ytickalign=1, ytickcolor = :black, aspect=1,
                         xlabel=names[ii], ylabel=names[jj], 
                         xlabelsize=labelfontsize, ylabelsize=labelfontsize,
@@ -188,6 +189,7 @@ function create_corner_plot(results, plotting_props;
         end
     end     
 
+
     # Readjust rows and columns
     rowgap!(fig.layout, rowcolgap)
     colgap!(fig.layout, rowcolgap)
@@ -214,16 +216,16 @@ Calculate the bounds containing the specified fraction(s) of area.
 # Output:
 - bounds:    the limits of the bounding area
 """
-function get_bounds_for_fractions(h, fractions)
-    integral = sum(h.weights)
+function get_bounds_for_fractions(weights, fractions)
+    integral = sum(weights)
     bounds =zeros(length(fractions))
     for (jj,fraction) in enumerate(fractions)
         minbound = 0
-        maxbound = maximum(h.weights)
+        maxbound = maximum(weights)
         newbound = 0
         for ii in 1:15
             newbound = 0.5*(minbound+maxbound)
-            integral2 = sum(h.weights[h.weights.>newbound])
+            integral2 = sum(weights[weights.>newbound])
             newfraction = integral2/integral
             if newfraction>fraction
                 minbound = newbound
@@ -277,33 +279,13 @@ function create_2D_density(axis, values1, ranges1, values2, ranges2, chain_weigh
     y_hm = (h_hm.edges[2][2:end] .+ h_hm.edges[2][1:end-1])./2
     heatmap!(axis, x_hm, y_hm, h_hm.weights, colormap=:dense)
 
-    ### Calculate the contours using the full set of data, so the areas come out right
-    x_lo = []
-    x_hi = []
-    y_lo = []
-    y_hi = []
-    if minimum(values1) < ranges1[1] 
-        x_lo = [minimum(values1)]
-    end
-    if minimum(values2) < ranges2[1] 
-        y_lo = [minimum(values2)]
-    end
-    if maximum(values1) > ranges1[2] 
-        x_hi = [maximum(values1)]
-    end
-    if maximum(values2) > ranges2[2] 
-        y_hi = [maximum(values2)]
-    end
-    x_edges = cat(x_lo, LinRange(ranges1[1], ranges1[2], nbins_contour+1), x_hi, dims=1)
-    y_edges = cat(y_lo, LinRange(ranges2[1], ranges2[2], nbins_contour+1), y_hi, dims=1)
-
-    h_ct = fit(Histogram, (values1, values2), weights(chain_weights), (x_edges,y_edges))
+    ### Recalculate the contours using smaller number of bins, to aid in the smoothing
+    h_ct = fit(Histogram, (values1[filter], values2[filter]), weights(chain_weights[filter]), nbins=nbins_contour) 
     x_ct = (h_ct.edges[1][2:end] .+ h_ct.edges[1][1:end-1])./2
     y_ct = (h_ct.edges[2][2:end] .+ h_ct.edges[2][1:end-1])./2
-    bounds = get_bounds_for_fractions(h_ct, fractions)
-    contour!(axis, x_ct, y_ct, h_ct.weights, levels=bounds, color=(:black, 0.5))
-
-
+    hist_weights = h_ct.weights/maximum(h_ct.weights)
+    bounds = get_bounds_for_fractions(hist_weights, fractions)
+    contour!(axis, x_ct, y_ct, hist_weights, levels=bounds, color=(:black, 0.5))
 end  
 
 """
@@ -376,7 +358,7 @@ function create_compound_1D_densities(axis, values_matrix, range, chain_weights_
     # Plot once for all the values
     x, h, y, dx = create_1D_density(axis, vec(values_matrix), range, vec(chain_weights_matrix), fraction_1D, nbins, color=(:blue, 1.0), linewidth=1)
 
-    bound = get_bounds_for_fractions(h, [fraction_1D])[1]
+    bound = get_bounds_for_fractions(h.weights, [fraction_1D])[1]
     xmin = minimum(x[h.weights .>= bound]) - dx/2 # get left most value of bin
     xmax = maximum(x[h.weights .>= bound]) + dx/2
     xmode = x[argmax(h.weights)]
