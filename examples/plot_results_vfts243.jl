@@ -54,9 +54,9 @@ f = create_corner_plot(results, plotting_props,
 
 println("Temporary issue with docs not showing derived quantities")
 
-save("vfts243_derived.pdf", f)
-
-f
+#save("vfts243_derived.pdf", f)
+#
+#f
 
 ##
 #=
