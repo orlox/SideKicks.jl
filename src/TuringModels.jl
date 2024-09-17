@@ -343,7 +343,7 @@ function create_general_mcmc_model(;
             elseif obs_symbol == :ω_f
                 use_cauchy ?
                     obs_vals[ii] ~ WrappedCauchy(ω_f, obs_errs[ii]) :
-                    obs_vals[ii] ~ ModVonMises(Ω_f, 1/obs_errs[ii]^2)
+                    obs_vals[ii] ~ ModVonMises(ω_f, 1/obs_errs[ii]^2)
             elseif obs_symbol == :v_N
                 use_cauchy ?
                     obs_vals[ii] ~ Cauchy(v_N, obs_errs[ii]) :
@@ -360,9 +360,9 @@ function create_general_mcmc_model(;
         end
 
         dm2 = m2_i - m2_f
-        return     ( m1_i,  m2_i,  P_i,  e_i,  a_i,  ν_i,  vkick, θ, ϕ,  frac,  dm2,  i_f,  ω_f,  Ω_f,  m1_f, m2_f,  a_f,  P_f,  e_f,  K1,  K2,  v_N,  v_E,  v_r,  vsys)
+        return     ( m1_i,  m2_i,  P_i,  e_i,  a_i,  ν_i,  vkick,  θ,  ϕ,  frac,  dm2,  i_f,  ω_f,  Ω_f,  m1_f,  m2_f,  a_f,  P_f,  e_f,  K1,  K2,  v_N,  v_E,  v_r,  vsys)
     end
-    return_props = [:m1_i, :m2_i, :P_i, :e_i, :a_i, :ν_i, :vkick, :θ, :ϕ, :frac, :dm2, :i_f, :ω_f, :Ω_f, :m1_f,:m2_f, :a_f, :P_f, :e_f, :K1, :K2, :v_N, :v_E, :v_r, :vsys]
+    return_props = [:m1_i, :m2_i, :P_i, :e_i, :a_i, :ν_i, :vkick, :θ, :ϕ, :frac, :dm2, :i_f, :ω_f, :Ω_f, :m1_f, :m2_f, :a_f, :P_f, :e_f, :K1, :K2, :v_N, :v_E, :v_r, :vsys]
 
     # Need to combine some of the observations to compare against the predicted output
     obs_vals_cgs = observations.vals .* observations.units
