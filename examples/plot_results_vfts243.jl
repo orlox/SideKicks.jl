@@ -26,9 +26,9 @@ plotting_props_obs_check = SideKicks.createPlottingProps([
 f = create_corner_plot(results, plotting_props_obs_check,
     supertitle="VFTS 243 - observables",
     )
-save("vfts243_observables.png", f)
-
-f
+#save("vfts243_observables.png", f)
+#
+#f
 
 ##
 #=
