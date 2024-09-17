@@ -1,7 +1,7 @@
 name = "SideKicks"
 uuid = "ae7baef6-f8d7-4188-9988-8bf5c4952615"
 authors = ["Pablo Marchant ", "Reinhold Willcox "]
-version = "0.3.1"
+version = "0.3.2"
 
 [deps]
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
