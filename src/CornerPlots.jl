@@ -1,5 +1,6 @@
 using StatsBase
 using CairoMakie
+using CornerPlotting
 
 export create_corner_plot 
 
@@ -73,28 +74,31 @@ Function to create corner plot for selected (sub-)set of parameters from the MCM
 - fig:                 the newly created figure 
 """
 function create_corner_plot(results, plotting_props; 
-        observations=nothing,
+        dists_to_plot=nothing,
         fig=Figure(), supertitle=nothing,
         fraction_1D=0.9, fractions_2D=[0.9], 
         show_CIs=true, nbins=100, nbins_contour=30,
-        rowcolgap=10, xticklabelrotation=pi/4,
-        labelfontsize=16, tickfontsize=10, supertitlefontsize=30)
+        supertitlefontsize=30, use_corner_plotting_theme=true)
  
     # TODO: Is there a way to add the priors? They are often modified
     # versions of the plotted parameters, this may be very non-trivial
-    props  = [] 
-    units  = [] 
-    names  = [] 
-    ranges = [] 
+    props::Vector{Symbol}  = [] 
+    units  = Dict() 
+    names  = Dict()
+    ranges = Dict()
     # If extra plotting props are included that can't be used, scrap these and only plot the good ones. 
     available_props = keys(results)
     print_avail = false
+    @show available_props
     for ii in eachindex(plotting_props.props)
         if plotting_props.props[ii] ∈ available_props
-            push!(props,  plotting_props.props[ii])
-            push!(units,  plotting_props.units[ii])
-            push!(names,  plotting_props.names[ii])
-            push!(ranges, plotting_props.ranges[ii]) 
+            prop = plotting_props.props[ii]
+            push!(props,  prop)
+            units[prop] = plotting_props.units[ii]
+            names[prop] = plotting_props.names[ii]
+            if !ismissing(plotting_props.ranges[ii])
+                ranges[prop] = plotting_props.ranges[ii] 
+            end
         else
             println("Prop "*string(plotting_props.props[ii])*" ignored")
             print_avail = true
@@ -103,277 +107,20 @@ function create_corner_plot(results, plotting_props;
     if print_avail
         println("Available props are "*string(available_props))
     end
-    # Add ranges if none supplied
-    num_props = length(props)
-    for ii in 1:num_props
-        values = vec(results[props[ii]])/units[ii]
-        minval = minimum(values)
-        maxval = maximum(values)
-        if ismissing(ranges[ii]) || minval > ranges[ii][2] || maxval < ranges[ii][1]
-            ranges[ii] = [minval, maxval]
-            println("Range set for ", props[ii], ": ", ranges[ii])
+    if use_corner_plotting_theme
+        set_theme!(CornerPlotting.default_theme())
+    end
+    corner_plot = CornerPlotting.CornerPlot(results,props;labels=names,scaling=units)
+
+    if !isnothing(dists_to_plot)
+        for name in keys(dists_to_plot)
+            CornerPlotting.plot_extra_1D_distribution(corner_plot, name, dists_to_plot[name])
         end
     end
-    # Create 2D density plots
-
-    num_col = num_props
-    for ii in 1:num_col-1         # ii is the x-coord param
-        for jj in ii+1:num_col   # jj is the y-coord param
-            axis = Axis(fig[jj+1,ii], xtickalign=1, xtickcolor = :black, ytickalign=1, ytickcolor = :black, aspect=1,
-                        xlabel=names[ii], ylabel=names[jj], 
-                        xlabelsize=labelfontsize, ylabelsize=labelfontsize,
-                        xticklabelrotation=xticklabelrotation,
-                        xticklabelsize=tickfontsize, yticklabelsize=tickfontsize)
-            create_2D_density(axis, vec(results[props[ii]])/units[ii], ranges[ii], vec(results[props[jj]])/units[jj], ranges[jj], vec(results[:weights]), fractions_2D, nbins_heatmap=nbins, nbins_contour=nbins_contour)
-            if ii>1
-                hideydecorations!(axis, ticks=false, minorticks=false)
-            end
-            if jj!=num_col
-                hidexdecorations!(axis,ticks=false, minorticks=false)
-            end         
-            xlims!(axis, (ranges[ii][1], ranges[ii][2]))
-            ylims!(axis, (ranges[jj][1], ranges[jj][2]))
-        end  
-    end 
-    # Create 1D PDFs along the diagonal
-    latex_bounds_array = Array{AbstractString}(undef, num_col)
-    for ii in 1:num_col
-        axis = Axis(fig[ii+1,ii], xgridvisible = false, ygridvisible = false, xtickalign=1, xlabel=names[ii],
-                    aspect=1,
-                        xlabelsize=labelfontsize, ylabelsize=labelfontsize,
-                        xticklabelrotation=xticklabelrotation,
-                        xticklabelsize=tickfontsize, yticklabelsize=tickfontsize)
-        (xmin, xmode, xmax) = create_compound_1D_densities(axis, results[props[ii]]/units[ii], ranges[ii], results[:weights], fraction_1D, nbins)
-        
-        # Add observations
-        if !isnothing(observations)
-            if props[ii] ∈ observations.props
-                println("adding obs for "*String(props[ii]))
-                # find index of prop and get mean and std
-                idx = findall(x->x==props[ii], observations.props)[1]
-                mean = observations.vals[idx]
-                errs = observations.errs[idx]
-                xarr = LinRange(ranges[ii][1], ranges[ii][2], 100)
-                lines!(axis, xarr, pdf(Normal(mean, errs), xarr), color=(:red, 0.4), linewidth=3) 
-            end
-        end
-
-        # Remove labels on the diagonals, except xlabel on the bottom right
-        hideydecorations!(axis)
-        if ii !=num_col
-            hidexdecorations!(axis,ticks=false, minorticks=false)
-        end
-        # Configure confidence intervals
-        str_xmode = round(xmode, sigdigits=3)
-        str_upp = round(xmax-xmode, sigdigits=3)
-        str_low = round(xmode-xmin, sigdigits=3)
-        latex_bounds = L"%$(str_xmode)^{+%$(str_upp)}_{-%$(str_low)}"
-        latex_bounds_array[ii] = latex_bounds
-        println(names[ii]*"="*latex_bounds)
-        if show_CIs
-            if ii == 1
-                Label(fig[ii,ii], latex_bounds, 
-                      valign=:bottom, fontsize=20,
-                      tellwidth=false)
-                aspect=3
-            else
-                Label(fig[ii,ii], latex_bounds, 
-                      valign=:bottom, fontsize=20,
-                      tellwidth=false, tellheight=false)
-                aspect=1
-            end
-            axis = Axis(fig[ii,ii], aspect=aspect,
-                xgridvisible = false, ygridvisible = false)
-            hidedecorations!(axis)
-            hidespines!(axis)
-        end
-    end     
-
-
-    # Readjust rows and columns
-    rowgap!(fig.layout, rowcolgap)
-    colgap!(fig.layout, rowcolgap)
 
     if !isnothing(supertitle)
-        Label(fig[0,:], text=supertitle, fontsize=supertitlefontsize)
+        Label(corner_plot.fig[0,:], text=supertitle, fontsize=supertitlefontsize)
     end
 
-    resolution=600 .*(1,1.12) # This accounts for the extra height of the title
-    resize!(fig.scene, resolution)
-    return fig
-end
-
-"""
-    get_bounds_for_fractions(h, fractions)
-
-Description
-Calculate the bounds containing the specified fraction(s) of area.
-
-# Arguments:
-- h:         the densities contained in the bins
-- fractions: the fractional area that should be bounded
-
-# Output:
-- bounds:    the limits of the bounding area
-"""
-function get_bounds_for_fractions(weights, fractions)
-    integral = sum(weights)
-    bounds =zeros(length(fractions))
-    for (jj,fraction) in enumerate(fractions)
-        minbound = 0
-        maxbound = maximum(weights)
-        newbound = 0
-        for ii in 1:15
-            newbound = 0.5*(minbound+maxbound)
-            integral2 = sum(weights[weights.>newbound])
-            newfraction = integral2/integral
-            if newfraction>fraction
-                minbound = newbound
-            else
-                maxbound = newbound
-            end
-        end
-        bounds[jj] = newbound
-    end 
-    return sort(bounds)
-end
-
-"""
-    create_2D_density(axis, values1, ranges1, values2, ranges2, chain_weights, fractions, nbins)
-
-Description
-Make the 2D density plots given the parameter values, ranges, and weights.
-
-# TODO: check that x- and y- descripters are correct, here and in below functions
-
-# Arguments:
-- axis:           the axis to make the plot
-- values1:        the values for the x-coordinate        
-- ranges1:        the ranges for the x-coordinate        
-- values2:        the values for the y-coordinate        
-- ranges2:        the ranges for the y-coordinate        
-- chain_weights:  the sample weighting from the MCMC
-- fractions:      area fractions for defining contours
-- nbins:          number of bins, identical for all parameters   
-"""
-function create_2D_density(axis, values1, ranges1, values2, ranges2, chain_weights, fractions; nbins_heatmap, nbins_contour)
-
-    ### Calculate the heatmap using only the data that fits within the range window
-    filter1 = values1 .> ranges1[1] .&& values1 .< ranges1[2] 
-    filter2 = values2 .> ranges2[1] .&& values2 .< ranges2[2]
-    # RTW: make this check more robust
-    if sum(filter1) == 0
-        println("problem with 1")
-        println(ranges1, " ", minimum(values1), " ", maximum(values1))
-        return
-    end
-    if sum(filter2) == 0
-        println("problem with 2")
-        println(ranges2, " ", minimum(values2), " ", maximum(values2))
-        return
-    end
-    filter = filter1 .&& filter2
-
-    h_hm = fit(Histogram, (values1[filter], values2[filter]), weights(chain_weights[filter]), nbins=nbins_heatmap) 
-    x_hm = (h_hm.edges[1][2:end] .+ h_hm.edges[1][1:end-1])./2
-    y_hm = (h_hm.edges[2][2:end] .+ h_hm.edges[2][1:end-1])./2
-    heatmap!(axis, x_hm, y_hm, h_hm.weights, colormap=:dense)
-
-    ### Recalculate the contours using smaller number of bins, to aid in the smoothing
-    h_ct = fit(Histogram, (values1[filter], values2[filter]), weights(chain_weights[filter]), nbins=nbins_contour) 
-    x_ct = (h_ct.edges[1][2:end] .+ h_ct.edges[1][1:end-1])./2
-    y_ct = (h_ct.edges[2][2:end] .+ h_ct.edges[2][1:end-1])./2
-    hist_weights = h_ct.weights/maximum(h_ct.weights)
-    bounds = get_bounds_for_fractions(hist_weights, fractions)
-    contour!(axis, x_ct, y_ct, hist_weights, levels=bounds, color=(:black, 0.5))
-end  
-
-"""
-    create_1D_density(axis, values, range, chain_weights, fraction_1D, nbins; color, linewidth)
-
-Description
-Make the 1D density plots given the parameter values, ranges, and weights.
-
-# Arguments:
-- axis:           the axis to make the plot
-- values:         the values for the x-coordinate        
-- range:          the ranges for the x-coordinate        
-- chain_weights:  the sample weighting from the MCMC
-- fraction_1D:    the fractional area from which to compute the confidence intervals
-- nbins:          number of bins, identical for all parameters   
-- color:          the color of the density curve
-- linewidth:      the linewidth of the density curve
-
-# Output:
-- x:              the x-coordinates of the density plot
-- h:              the heights of the density plot
-- y:              the normalized heights of the density plot
-"""
-function create_1D_density(axis, values, range, chain_weights, fraction_1D, nbins; color, linewidth)
-
-    filter = values .> range[1] .&& values .< range[2]
-    values = values[filter]
-    chain_weights = weights(chain_weights[filter]) # weights is a StatsBase function
-    
-    h = fit(Histogram, values, chain_weights, nbins=nbins)
-    x =(h.edges[1][2:end] .+ h.edges[1][1:end-1])./2
-    dx = 1
-    if length(x) > 1
-        if x[2]-x[1] > 0
-            dx = x[2]-x[1]
-        end
-    end
-    y = h.weights/sum(h.weights*dx)
-    lines!(axis, x, y, color=color, linewidth=linewidth)
-    return x, h, y, dx
-end
-
-"""
-    create_compound_1D_densities(axis, values_matrix, range, chain_weights_matrix, fraction_1D, nbins)
-
-#TODO Description
-
-# Arguments:
-- axis:                 the axis to make the plot
-- values_matrix:        the values for each chain of the parameter 
-- range:                the ranges for the x-coordinate        
-- chain_weights_matrix: the sample weighting for each chain 
-- fraction_1D:          the fractional area from which to compute the confidence intervals
-- nbins:                number of bins, identical for all parameters   
-
-# Output:
-- xmin:                 the left boundary of the fraction_1D area interval
-- xmode:                the mode of the data, within the provided range
-- xmax:                 the right boundary of the fraction_1D area interval
-"""
-function create_compound_1D_densities(axis, values_matrix, range, chain_weights_matrix, fraction_1D, nbins)
-
-    # Iterate over the different chains
-    for ii in 1:size(values_matrix)[1] # nchains
-        values = values_matrix[ii,:]
-        chain_weights = chain_weights_matrix[ii,:]
-        create_1D_density(axis, values, range, chain_weights, fraction_1D, nbins, color=(:gray, 0.25), linewidth=1)
-    end
-
-    # Plot once for all the values
-    x, h, y, dx = create_1D_density(axis, vec(values_matrix), range, vec(chain_weights_matrix), fraction_1D, nbins, color=(:blue, 1.0), linewidth=1)
-
-    bound = get_bounds_for_fractions(h.weights, [fraction_1D])[1]
-    xmin = minimum(x[h.weights .>= bound]) - dx/2 # get left most value of bin
-    xmax = maximum(x[h.weights .>= bound]) + dx/2
-    xmode = x[argmax(h.weights)]
-    if xmode - dx/2 < range[1]
-        xmode = range[1]
-    elseif xmode + dx/2 > range[2]
-        xmode = range[2]
-    end
-
-    filter = x .>= xmin .&& x .<= xmax
-    band!(axis, x[filter], zeros(length(x[filter])), y[filter], color=(:gray, 0.4))
-    vlines!(axis, xmode, color=(:black, 1.0), linewidth=1)
-    xlims!(axis, range[1], range[2])
-    ylims!(axis, -.1*maximum(y), 5/3*maximum(y))
-
-    return (xmin, xmode, xmax)
-   
+    return corner_plot
 end

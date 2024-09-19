@@ -26,7 +26,7 @@ end
 
 ##
 
-function ExtractResults(fname)
+function ExtractResults(fname;transpose_results=false)
     if ~isfile(fname)
         throw(ArgumentError("File not found"))
     end
@@ -35,6 +35,9 @@ function ExtractResults(fname)
     results = Dict()
     for key ∈ keys(extracted_results)
         results[Symbol(key)] = extracted_results[key][]
+        if(transpose_results && ndims(results[Symbol(key)])==2)
+            results[Symbol(key)] = transpose(results[Symbol(key)])
+        end
     end
     strings = fid["strings"]
     obs_string = strings["observations"][]

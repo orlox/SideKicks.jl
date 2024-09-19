@@ -7,8 +7,9 @@ the previous example. We start by loading up
 
 using CairoMakie
 using SideKicks
+using Distributions
 
-results, observations, priors, metadata = SideKicks.ExtractResults("vfts243_results.hdf5")
+results, observations, priors, metadata = SideKicks.ExtractResults("vfts243_results.hdf5", transpose_results=true)
 
 ##
 #=
@@ -23,12 +24,18 @@ plotting_props_obs_check = SideKicks.createPlottingProps([
     [:K1,    km_per_s, [77,90],        L"K_1  \;[\mathrm{km s}^{-1}]"],
 ])
 
-f = create_corner_plot(results, plotting_props_obs_check,
+cp = create_corner_plot(results, plotting_props_obs_check,
     supertitle="VFTS 243 - observables",
+    dists_to_plot = Dict(
+            :m1_f => Normal(25.0,2.3),
+            :e_f => Normal(0.017,0.012),
+            :K1 => Normal(81.4, 1.3),
+            :P_f => Normal(10.4031, 0.01)
+        )
     )
-save("vfts243_observables.png", f)
+save("vfts243_observables.png", cp.fig)
 
-f
+cp.fig
 
 ##
 #=
