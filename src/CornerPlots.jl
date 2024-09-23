@@ -78,7 +78,7 @@ function create_corner_plot(results, plotting_props;
         fig=Figure(), supertitle=nothing,
         fraction_1D=0.9, fractions_2D=[0.9], 
         show_CIs=true, nbins=100, nbins_contour=30,
-        supertitlefontsize=30, use_corner_plotting_theme=true)
+        supertitlefontsize=25, use_corner_plotting_theme=true)
  
     # TODO: Is there a way to add the priors? They are often modified
     # versions of the plotted parameters, this may be very non-trivial
@@ -110,7 +110,10 @@ function create_corner_plot(results, plotting_props;
     if use_corner_plotting_theme
         set_theme!(CornerPlotting.default_theme())
     end
-    corner_plot = CornerPlotting.CornerPlot(results,props;labels=names,scaling=units)
+    f = Figure(figure_padding=30)
+    corner_plot = CornerPlotting.CornerPlot(results,props;
+                                    fig=f,ranges=ranges,labels=names,scaling=units, 
+                                    nbins=nbins, nbins_contour=nbins_contour)
 
     if !isnothing(dists_to_plot)
         for name in keys(dists_to_plot)

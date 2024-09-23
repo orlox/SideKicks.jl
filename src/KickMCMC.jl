@@ -61,18 +61,18 @@ function KickMCMC(; which_model, observations::Tuple{Observations, String}, prio
         chain_array = zeros(Float64, nsamples, nchains) # Matrix (nsample x nchain)
         for i_chain in 1:nchains
             for i_sample in 1:nsamples
-                chain_array[i_sample, i_chain] .= output_values[i_sample, i_chain][i_prop]
+                chain_array[i_sample, i_chain] = output_values[i_sample, i_chain][i_prop]
             end
         end
         results[prop] = chain_array
     end
     # Add weights to dict
-    logweights = zeros(Float64, nchains, nsamples) # Matrix (nsample x nchain)
+    logweights = zeros(Float64, nsamples, nchains) # Matrix (nsample x nchain)
     for i_chain in 1:nchains
         for i_sample in 1:nsamples
             for dict_key in keys(loglikelihoods_cauchy)
                 logweights[i_sample, i_chain] += 
-                   loglikelihoods_normal[dict_key][i_chain, i_chain] - loglikelihoods_cauchy[dict_key][i_chain, i_chain]
+                   loglikelihoods_normal[dict_key][i_sample, i_chain] - loglikelihoods_cauchy[dict_key][i_sample, i_chain]
             end
         end
     end
