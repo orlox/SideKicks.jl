@@ -57,9 +57,9 @@ kick_mcmc = SideKicks.KickMCMC(
         which_model = :general,
         observations = obs,
         priors = priors,
-        nuts_warmup_count = 200,
+        nuts_warmup_count = 500,
         nuts_acceptance_rate = 0.8,
-        nsamples = 200,
+        nsamples = 1000,
         nchains = 4)
 
 ##

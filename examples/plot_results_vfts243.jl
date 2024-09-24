@@ -7,6 +7,7 @@ the previous example. We start by loading up
 
 using CairoMakie
 using SideKicks
+using Distributions
 
 results, observations, priors, metadata = SideKicks.ExtractResults("vfts243_results.hdf5")
 
@@ -23,12 +24,19 @@ plotting_props_obs_check = SideKicks.createPlottingProps([
     [:K1,    km_per_s, [77,90],        L"K_1  \;[\mathrm{km s}^{-1}]"],
 ])
 
-f = create_corner_plot(results, plotting_props_obs_check,
+cp = create_corner_plot(results, plotting_props_obs_check,
     supertitle="VFTS 243 - observables",
+    dists_to_plot = Dict(
+            :m1_f => Normal(25.0,2.3),
+            :e_f => Normal(0.017,0.012),
+            :K1 => Normal(81.4, 1.3),
+            :P_f => Normal(10.4031, 0.01)
+        ),
+    nbins = 20, nbins_contour = 10
     )
-save("vfts243_observables.png", f)
+save("vfts243_observables.png", cp.fig)
 
-f
+cp.fig
 
 ##
 #=
@@ -38,25 +46,22 @@ consequences for explosion itself.
 
 plotting_props = SideKicks.createPlottingProps([
     [:m2,     m_sun,    [0,25],         L"M_2  \;[M_{\odot}]"],
-    [:dm2,    m_sun,    [0, 4],        L"ΔM_2  \;[M_{\odot}]"],
+    [:dm2,    m_sun,    [0, 6],        L"ΔM_2  \;[M_{\odot}]"],
     [:P,      day,      [8,12],        L"P  \;[\mathrm{days}]"],
     [:vkick, km_per_s,  [0,50],         L"v_{kick}  \;[\mathrm{km s}^{-1}]"],
     [:vsys,  km_per_s, [0,50],        L"v_{\mathrm{sys}} \;[\mathrm{km s}^{-1}]"],
 ])
 
-f = create_corner_plot(results, plotting_props,
-    tickfontsize=10 ,
-    xticklabelrotation=pi/4, 
+cp = create_corner_plot(results, plotting_props,
     show_CIs=true,
     supertitle="VFTS 243 - derived quantities",
     fraction_1D = 0.9,
+    nbins = 20, nbins_contour = 10
     )
 
-println("Temporary issue with docs not showing derived quantities")
+save("vfts243_derived.png", cp.fig)
 
-save("vfts243_derived.pdf", f)
-
-f
+cp.fig
 
 ##
 #=
