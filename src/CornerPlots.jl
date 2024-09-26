@@ -18,8 +18,14 @@ for each property to plot.
     names::Vector{AbstractString}
 end
 
+# TODO: need to make this return names, labels, ranges, scaling
 function createPlottingProps(props_matrix::Vector{Vector{Any}})
     props_matrix = stack(props_matrix) # make into actual matrix
+    names   = props_matrix[1,:]
+    #scaling = Dict(zip(names, props_matrix[2,:]))
+    #ranges  = Dict(zip(names, props_matrix[3,:]))
+    #labels  = Dict(zip(names, props_matrix[4,:]))
+    #return [names, scaling, ranges, labels]
     return PlottingProps(
         props  = props_matrix[1,:],
         units  = props_matrix[2,:],
