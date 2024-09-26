@@ -1,6 +1,7 @@
 using Turing
 using Distributions
 using Logging
+using MCMCDiagnosticTools
 
 """
     mutable struct KickMCMC
@@ -20,6 +21,8 @@ mutable struct KickMCMC
     nuts_warmup_count::Int
     nuts_acceptance_rate::Float64
     nsamples::Int
+    ess::Dict{Symbol, Float64}
+    rhat::Dict{Symbol, Float64}
 end
 
 function KickMCMC(; which_model, observations::Tuple{Observations, String}, priors::Tuple{Priors, String},
@@ -88,6 +91,31 @@ function KickMCMC(; which_model, observations::Tuple{Observations, String}, prio
     if which_model==:general
         results[:weights] .= results[:weights].*sqrt.(1 .- results[:e_i].^2).^3 ./ (1 .+ results[:e_i].*cos.(results[:ν_i])).^2
     end
+
+    # Add the summary statistics for Rhat and Effective Sample Size (ESS)
+    ess = Dict()
+    rhat = Dict()
+    nchains = size(results[:weights])[2] # TODO: double check this
+    
+    for key in keys(results)
+        if key ∈ [:results_keys, :weights]
+            continue
+        end
+        # update dicts
+        ess_i = MCMCDiagnosticTools.ess(results[key])
+        rhat_i = MCMCDiagnosticTools.rhat(results[key])
+        # If estimands are outside the recommended range, print warning - see VehtariGelman2021
+        if ess_i < 100 * nchains
+            print("Effective Sample Size is low for "*String(key)*": ")
+            println(ess_i)
+        end
+        if rhat_i > 1.01
+            print("Rhat is high for "*String(key)*": ")
+            println(rhat_i)
+        end
+        ess[key]  = ess_i
+        rhat[key] = rhat_i
+    end
     
     return KickMCMC(
         mcmc_cauchy, 
@@ -100,6 +128,8 @@ function KickMCMC(; which_model, observations::Tuple{Observations, String}, prio
         chains,
         nuts_warmup_count,
         nuts_acceptance_rate,
-        nsamples
+        nsamples,
+        ess,
+        rhat
     )
 end
