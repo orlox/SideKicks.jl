@@ -20,18 +20,15 @@ function SaveResults(fname, kick_mcmc)
         meta["nuts_warmup_count"] = kick_mcmc.nuts_warmup_count
         meta["nuts_acceptance_rate"] = kick_mcmc.nuts_acceptance_rate
         meta["nsamples"] = kick_mcmc.nsamples
-
-        #stats = create_group(fid, "stats")
-        #stats["ess"]
-        
-        ess = create_group(fid, "ess")
+        # Add summary statistics in subgroup of metadata
+        stats = create_group(meta, "stats")
+        ess = create_group(stats, "ess")
         dict_keys = keys(kick_mcmc.ess)
         ess["ess_keys"] = String.(dict_keys)
         for key in dict_keys
             ess[String(key)] = kick_mcmc.ess[key]
         end
-        
-        rhat = create_group(fid, "rhat")
+        rhat = create_group(stats, "rhat")
         dict_keys = keys(kick_mcmc.rhat)
         rhat["rhat_keys"] = String.(dict_keys)
         for key in dict_keys
@@ -62,19 +59,7 @@ function ExtractResults(fname;transpose_results=false)
     priors_string = strings["priors"][]
     priors = eval(Meta.parse(priors_string))
     metadata = fid["metadata"]
-
-    extracted_ess = fid["ess"]
-    ess = Dict()
-    for key ∈ keys(extracted_ess)
-        ess[Symbol(key)] = extracted_ess[key][]
-    end
-    extracted_rhat = fid["ess"]
-    rhat = Dict()
-    for key ∈ keys(extracted_rhat)
-        rhat[Symbol(key)] = extracted_ess[key][]
-    end
-    close(fid)
-    return [results, observations, priors, metadata, ess, rhat]
+    return [results, observations, priors, metadata] 
 end
 
 
