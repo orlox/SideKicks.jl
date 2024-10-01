@@ -95,7 +95,6 @@ function KickMCMC(; which_model, observations::Tuple{Observations, String}, prio
     # Add the summary statistics for Rhat and Effective Sample Size (ESS)
     ess = Dict()
     rhat = Dict()
-    nchains = size(results[:weights])[2] # TODO: double check this
     
     for key in keys(results)
         if key ∈ [:results_keys, :weights]
