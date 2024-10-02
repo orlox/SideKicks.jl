@@ -388,6 +388,6 @@ function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-
         ω_f = 2π + ω_f
     end
 
-    return (a_f, e_f, Ω_f, ω_f, i_f, vCM_ra, vCM_dec, vCM_rad)
+    return (a_f, e_f, Ω_f, ω_f, ν_f, i_f, vCM_ra, vCM_dec, vCM_rad)
 end
 
