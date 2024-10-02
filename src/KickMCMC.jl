@@ -38,7 +38,6 @@ function KickMCMC(; which_model, observations::Tuple{Observations, String}, prio
         throw(ArgumentError("which_model=:$which_model is an invalid option. Can be either :simplified or :general"))
     end
 
-    println(props_cauchy)
     # Run the MCMC - this is the slow step!
     chains = sample(mcmc_cauchy,
                     NUTS(nuts_warmup_count,nuts_acceptance_rate),
