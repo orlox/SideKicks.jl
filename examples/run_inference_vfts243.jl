@@ -5,7 +5,6 @@ In this example we try to match the observed properties of VFTS 243. We start by
 up the SideKicks package, as well the Distributions package which we use to define the priors.
 =#
 
-using Revise
 using SideKicks
 using Distributions
 
