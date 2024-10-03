@@ -18,7 +18,6 @@ As an initial check, we can plot the quantities that were used as observations. 
 consistency check is to verify these are consistent with the MCMC samples.
 =#
 
-#plotting_props_obs_check = SideKicks.createPlottingProps([
 names = [:m1_f, :P_f, :e_f, :K1]
 scaling = Dict( :m1_f => m_sun, 
                 :P_f  => day,     
