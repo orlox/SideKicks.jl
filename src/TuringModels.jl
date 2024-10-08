@@ -360,14 +360,15 @@ function create_general_mcmc_model(;
         end
 
         dm2 = m2_i - m2_f
+        sum_ωi_νi = ω_i + ν_i
 
-        return     ( m1_i,  m2_i,  P_i,  e_i,  a_i,  Ω_i,  ω_i,  i_i,
+        return     ( m1_i,  m2_i,  P_i,  e_i,  a_i,  Ω_i,  ω_i,  i_i,  sum_ωi_νi,
                      vkick,  θ,  ϕ,  dm2,  frac,  ν_i, 
                      m1_f,  m2_f,  P_f,  e_f,  a_f,  Ω_f,  ω_f,  i_f, 
                      K1,  K2,  v_N,  v_E,  v_r,  vsys, 
                      venv_N,  venv_E,  venv_r,  vsys_N,  vsys_E,  vsys_r )
     end
-    return_props = [:m1_i, :m2_i, :P_i, :e_i, :a_i, :Ω_i, :ω_i, :i_i,
+    return_props = [:m1_i, :m2_i, :P_i, :e_i, :a_i, :Ω_i, :ω_i, :i_i, :sum_ωi_νi,
                     :vkick, :θ, :ϕ, :dm2, :frac, :ν_i, 
                     :m1_f, :m2_f, :P_f, :e_f, :a_f, :Ω_f, :ω_f, :i_f, 
                     :K1, :K2, :v_N, :v_E, :v_r, :vsys, 

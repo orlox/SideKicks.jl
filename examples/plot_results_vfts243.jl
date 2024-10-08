@@ -7,6 +7,7 @@ the previous example. We start by loading up
 
 using CairoMakie
 using SideKicks
+using CornerPlotting
 using Distributions
 
 results, observations, priors, metadata = SideKicks.ExtractResults("vfts243_results.hdf5")
@@ -17,23 +18,26 @@ As an initial check, we can plot the quantities that were used as observations. 
 consistency check is to verify these are consistent with the MCMC samples.
 =#
 
-plotting_props_obs_check = SideKicks.createPlottingProps([
-    [:m1_f,    m_sun,    [15,40],        L"M_1\;[M_{\odot}]"],
-    [:P_f,   day,      [10.35,10.45],    L"P_f\;[\mathrm{days}]"],
-    [:e_f,   1,        [0,0.1],        L"e_f"],
-    [:K1,    km_per_s, [77,90],        L"K_1  \;[\mathrm{km s}^{-1}]"],
-])
+names = [:m1_f, :P_f, :e_f, :K1]
+scaling = Dict( :m1_f => m_sun, 
+                :P_f  => day,     
+                :e_f  => 1,       
+                :K1   => km_per_s
+               )
+labels  = Dict( :m1_f => L"M_{1f}\;[M_{\odot}]",
+                :P_f  => L"P_f\;[\mathrm{days}]",
+                :e_f  => L"e_f",
+                :K1   => L"K_1  \;[\mathrm{km s}^{-1}]",
+               )
 
-cp = create_corner_plot(results, plotting_props_obs_check,
-    supertitle="VFTS 243 - observables",
-    dists_to_plot = Dict(
-            :m1_f => Normal(25.0,2.3),
-            :e_f => Normal(0.017,0.012),
-            :K1 => Normal(81.4, 1.3),
-            :P_f => Normal(10.4031, 0.01)
-        ),
-    nbins = 20, nbins_contour = 10
-    )
+set_theme!(CornerPlotting.default_theme())
+cp = CornerPlotting.CornerPlot(results, names, scaling=scaling, labels=labels)
+
+CornerPlotting.plot_extra_1D_distribution(cp, :m1_f, Normal(25.0,2.3))
+CornerPlotting.plot_extra_1D_distribution(cp, :e_f,  Normal(0.017,0.012))
+CornerPlotting.plot_extra_1D_distribution(cp, :K1,   Normal(81.4, 1.3))
+CornerPlotting.plot_extra_1D_distribution(cp, :P_f,  Normal(10.4031, 0.01))
+
 save("vfts243_observables.png", cp.fig)
 
 cp.fig
@@ -44,20 +48,23 @@ And, after verifying the samples do correspond to our observational constraints,
 consequences for explosion itself.
 =#
 
-plotting_props = SideKicks.createPlottingProps([
-    [:m2,     m_sun,    [0,25],         L"M_2  \;[M_{\odot}]"],
-    [:dm2,    m_sun,    [0, 6],        L"ΔM_2  \;[M_{\odot}]"],
-    [:P,      day,      [8,12],        L"P  \;[\mathrm{days}]"],
-    [:vkick, km_per_s,  [0,50],         L"v_{kick}  \;[\mathrm{km s}^{-1}]"],
-    [:vsys,  km_per_s, [0,50],        L"v_{\mathrm{sys}} \;[\mathrm{km s}^{-1}]"],
-])
+names = [:m2_i, :dm2, :P_i, :vkick, :vsys]
+scaling = Dict( :m2_i  => m_sun,    
+                :dm2   => m_sun,    
+                :P_i   => day,      
+                :vkick => km_per_s, 
+                :vsys  => km_per_s, 
+               )
+labels = Dict( :m2_i => L"M_{2f}\;[M_{\odot}]",
+               :dm2   =>  L"ΔM_2  \;[M_{\odot}]",
+               :P_i   =>  L"P_i \;[\mathrm{days}]",
+               :vkick =>  L"v_{kick}  \;[\mathrm{km s}^{-1}]",
+               :vsys  =>  L"v_{\mathrm{sys}} \;[\mathrm{km s}^{-1}]",
+              )
 
-cp = create_corner_plot(results, plotting_props,
-    show_CIs=true,
-    supertitle="VFTS 243 - derived quantities",
-    fraction_1D = 0.9,
-    nbins = 20, nbins_contour = 10
-    )
+
+set_theme!(CornerPlotting.default_theme())
+cp = CornerPlotting.CornerPlot(results, names, scaling=scaling, labels=labels)
 
 save("vfts243_derived.png", cp.fig)
 

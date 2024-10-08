@@ -11,43 +11,17 @@ PlottingProps contains the props, units, ranges, and names (latex encouraged)
 for each property to plot.
 """
 
-@kwdef mutable struct PlottingProps
-    props::Vector{Symbol}
-    units::Vector{Float64}
-    ranges::Vector{Any}    # RTW TODO
-    names::Vector{AbstractString}
-end
 
 # TODO: need to make this return names, labels, ranges, scaling
 function createPlottingProps(props_matrix::Vector{Vector{Any}})
     props_matrix = stack(props_matrix) # make into actual matrix
-    names   = props_matrix[1,:]
-    #scaling = Dict(zip(names, props_matrix[2,:]))
-    #ranges  = Dict(zip(names, props_matrix[3,:]))
-    #labels  = Dict(zip(names, props_matrix[4,:]))
-    #return [names, scaling, ranges, labels]
-    return PlottingProps(
-        props  = props_matrix[1,:],
-        units  = props_matrix[2,:],
-        ranges = props_matrix[3,:],
-        names  = props_matrix[4,:])
+    names   = convert(Vector{Symbol}, props_matrix[1,:])
+    scaling = Dict(zip(names, props_matrix[2,:]))
+    ranges  = Dict(zip(names, props_matrix[3,:]))
+    labels  = Dict(zip(names, props_matrix[4,:]))
+    return [names, scaling, ranges, labels]
 end
 
-function addPlottingProp(props_matrix::PlottingProps, new_prop::Vector{Any})
-    props  = props_matrix.props
-    units  = props_matrix.units 
-    ranges = props_matrix.ranges 
-    names  = props_matrix.names
-    push!(props,  new_prop[1])
-    push!(units , new_prop[2])
-    push!(ranges, new_prop[3])
-    push!(names,  new_prop[4])
-    return PlottingProps(
-        props  = props,
-        units  = units,
-        ranges = ranges,
-        names  = names)
-end
 
 """
     create_corner_plot(results, plotting_props; 
