@@ -246,6 +246,9 @@ function create_general_mcmc_model(;
         normν = 1/sqrt(xν^2+yν^2)
         cosν = xν*normν
         ν_i = acos(cosν)
+        if yν < 0
+            ν_i = 2π - ν_i
+        end
         xΩ ~ Normal()
         yΩ ~ Normal()
         normΩ = 1/sqrt(xΩ^2+yΩ^2)
