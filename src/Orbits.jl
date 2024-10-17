@@ -337,7 +337,7 @@ function post_supernova_general_orbit_parameters(;m1_i, m2_i, a_i, e_i=0, m1_f=-
     L_n = R_n_par*L_par + R_n_per*L_per + R_n_z*L_z
     L_o = R_o_par*L_par + R_o_per*L_per + R_o_z*L_z
 
-    i_f = acos(min(1, abs(L_o)))
+    i_f = acos(min(1, L_o))
 
     # compute longitude of the ascending node
     # this is obtained by taking the vector Ωvec_f = Lvec_f × \hat{O} 
