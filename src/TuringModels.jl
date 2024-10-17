@@ -363,7 +363,7 @@ function create_general_mcmc_model(;
         end
 
         dm2 = m2_i - m2_f
-        sum_ωi_νi = (ω_i + ν_i) % 360 # should be between 0 and 360 deg
+        sum_ωi_νi = (ω_i + ν_i) % 2π # should be between 0 and 2π
 
         return     ( m1_i,  m2_i,  P_i,  e_i,  a_i,  Ω_i,  ω_i,  i_i,  sum_ωi_νi,
                      vkick,  θ,  ϕ,  dm2,  frac,  ν_i, 
