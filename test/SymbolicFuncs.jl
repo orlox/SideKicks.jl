@@ -112,7 +112,7 @@ function symbolic_kick_functions_vcm_and_orbital_elements()
         uncorrected_ω_final, 2*π+uncorrected_ω_final)
 
     #orbital inclination is an easy one
-    ι_final = acos(min(1,Lvec_rot[3]/sqrt(L_x^2+L_y^2+L_z^2)))
+    ι_final = acos(max(-1,min(1,Lvec_rot[3]/sqrt(L_x^2+L_y^2+L_z^2))))
 
     #motion of the center of mass
     v_cm_rot = Rtotal*[v_xcm,v_ycm,v_zcm]
