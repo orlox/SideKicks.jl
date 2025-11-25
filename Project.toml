@@ -1,6 +1,6 @@
 name = "SideKicks"
 uuid = "ae7baef6-f8d7-4188-9988-8bf5c4952615"
-version = "0.3.8"
+version = "0.3.9"
 authors = ["Pablo Marchant ", "Reinhold Willcox "]
 
 [deps]
@@ -17,7 +17,7 @@ Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
 [compat]
 CairoMakie = "0.11, 0.12, 0.15"
-CornerPlotting = "0.2"
+CornerPlotting = "0.2.0"
 Distributions = "0.25"
 HDF5 = "0.17"
 MCMCDiagnosticTools = "0.3"
