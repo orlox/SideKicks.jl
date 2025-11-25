@@ -26,4 +26,273 @@ using Distributions</code></pre><p>We set up our observations using the @Observa
         nuts_warmup_count = 500,
         nuts_acceptance_rate = 0.8,
         nsamples = 1000,
-        nchains = 4)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">SideKicks.KickMCMC(DynamicPPL.Model{SideKicks.var&quot;#create_mcmc_model#15&quot;{Symbol, typeof(SideKicks.arbitraryEjectaBH), Distributions.Normal{Float64}, Distributions.Normal{Float64}, Distributions.Normal{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}}, (:props, :obs_vals, :obs_errs), (), (), Tuple{Vector{Symbol}, Vector{Float64}, Vector{Float64}}, Tuple{}, DynamicPPL.DefaultContext}(SideKicks.var&quot;#create_mcmc_model#15&quot;{Symbol, typeof(SideKicks.arbitraryEjectaBH), Distributions.Normal{Float64}, Distributions.Normal{Float64}, Distributions.Normal{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}}(:Cauchy, SideKicks.arbitraryEjectaBH, Distributions.Normal{Float64}(μ=2.7030000000000003, σ=0.111), Distributions.Normal{Float64}(μ=3.93, σ=0.42), Distributions.Normal{Float64}(μ=1.46, σ=0.4), Distributions.Uniform{Float64}(a=0.0, b=1.0), Distributions.Uniform{Float64}(a=0.0, b=4.0), Distributions.Uniform{Float64}(a=0.0, b=0.01), Distributions.Uniform{Float64}(a=-1.0, b=3.0), Distributions.Uniform{Float64}(a=0.1, b=3.0), Distributions.Uniform{Float64}(a=0.1, b=3.0), Core.Box(SideKicks.var&quot;#create_mcmc_model#15&quot;{Symbol, typeof(SideKicks.arbitraryEjectaBH), Distributions.Normal{Float64}, Distributions.Normal{Float64}, Distributions.Normal{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}}(#= circular reference @-2 =#))), (props = [:P_f, :e_f, :m1_f, :K1, :v_N, :v_E, :v_r, :ω_f], obs_vals = [898827.84, 0.017, 4.971024676745126e34, 8.140000000000001e6, 1.3880000000000002e7, 4.093e7, 2.615e7, 1.1519173063162575], obs_errs = [864.0, 0.012, 4.5733427026055155e33, 130000.0, 760000.0, 930000.0000000001, 42000.0, 0.9250245035569946]), NamedTuple(), DynamicPPL.DefaultContext()), DynamicPPL.Model{SideKicks.var&quot;#create_mcmc_model#15&quot;{Symbol, typeof(SideKicks.arbitraryEjectaBH), Distributions.Normal{Float64}, Distributions.Normal{Float64}, Distributions.Normal{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}}, (:props, :obs_vals, :obs_errs), (), (), Tuple{Vector{Symbol}, Vector{Float64}, Vector{Float64}}, Tuple{}, DynamicPPL.DefaultContext}(SideKicks.var&quot;#create_mcmc_model#15&quot;{Symbol, typeof(SideKicks.arbitraryEjectaBH), Distributions.Normal{Float64}, Distributions.Normal{Float64}, Distributions.Normal{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}}(:Normal, SideKicks.arbitraryEjectaBH, Distributions.Normal{Float64}(μ=2.7030000000000003, σ=0.111), Distributions.Normal{Float64}(μ=3.93, σ=0.42), Distributions.Normal{Float64}(μ=1.46, σ=0.4), Distributions.Uniform{Float64}(a=0.0, b=1.0), Distributions.Uniform{Float64}(a=0.0, b=4.0), Distributions.Uniform{Float64}(a=0.0, b=0.01), Distributions.Uniform{Float64}(a=-1.0, b=3.0), Distributions.Uniform{Float64}(a=0.1, b=3.0), Distributions.Uniform{Float64}(a=0.1, b=3.0), Core.Box(SideKicks.var&quot;#create_mcmc_model#15&quot;{Symbol, typeof(SideKicks.arbitraryEjectaBH), Distributions.Normal{Float64}, Distributions.Normal{Float64}, Distributions.Normal{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}, Distributions.Uniform{Float64}}(#= circular reference @-2 =#))), (props = [:P_f, :e_f, :m1_f, :K1, :v_N, :v_E, :v_r, :ω_f], obs_vals = [898827.84, 0.017, 4.971024676745126e34, 8.140000000000001e6, 1.3880000000000002e7, 4.093e7, 2.615e7, 1.1519173063162575], obs_errs = [864.0, 0.012, 4.5733427026055155e33, 130000.0, 760000.0, 930000.0000000001, 42000.0, 0.9250245035569946]), NamedTuple(), DynamicPPL.DefaultContext()), SideKicks.Observations([:P_f, :e_f, :m1_f, :K1, :v_N, :v_E, :v_r, :ω_f], [10.4031, 0.017, 25.0, 81.4, 138.8, 409.3, 261.5, 66.0], [0.01, 0.012, 2.3, 1.3, 7.6, 9.3, 0.42, 53.0], [86400.0, 1.0, 1.9884098706980504e33, 100000.0, 100000.0, 100000.0, 100000.0, 0.017453292519943295]), &quot;(SideKicks.Observations)([[:P_f, 10.4031, 0.01, day], [:e_f, 0.017, 0.012, 1], [:m1_f, 25.0, 2.3, m_sun], [:K1, 81.4, 1.3, km_per_s], [:v_N, 138.8, 7.6, km_per_s], [:v_E, 409.3, 9.3, km_per_s], [:v_r, 261.5, 0.42, km_per_s], [:ω_f, 66, 53, degree]])&quot;, SideKicks.Priors(Distributions.Uniform{Float64}(a=0.1, b=3.0), Distributions.Uniform{Float64}(a=0.1, b=3.0), Distributions.Uniform{Float64}(a=-1.0, b=3.0), Distributions.Uniform{Float64}(a=0.0, b=4.0), Distributions.Uniform{Float64}(a=0.0, b=1.0), Distributions.Uniform{Float64}(a=0.0, b=0.01), Distributions.Normal{Float64}(μ=1.46, σ=0.4), Distributions.Normal{Float64}(μ=3.93, σ=0.42), Distributions.Normal{Float64}(μ=2.7030000000000003, σ=0.111), missing, missing, missing, missing), &quot;SideKicks.Priors(logm1_dist = Uniform(0.1, 3), logm2_dist = Uniform(0.1, 3), logP_dist = Uniform(-1, 3), vkick_dist = Uniform(0, 4), frac_dist = Uniform(0, 1.0), e_dist = Uniform(0, 0.01), venv_N_100kms_dist = Normal(146 / 100, 40 / 100), venv_E_100kms_dist = Normal(393 / 100, 42 / 100), venv_r_100kms_dist = Normal(270.3 / 100, 11.1 / 100))&quot;, Dict(:P_f =&gt; [899631.9031002622 899128.2365316936 899567.7176608172 899274.2186061341; 897420.9590948492 898364.0776499602 899280.8119107054 898661.5158801406; … ; 899853.3482188154 902558.2047020107 898875.7129623046 896802.1472756597; 899667.0430973007 897347.7153521972 898940.5618871566 907406.0788773461], :venv_N =&gt; [1.3876483202127969e7 1.2621530687144091e7 1.4068447071361382e7 1.2572763598337747e7; 1.4297599649547035e7 1.2681803314372845e7 1.4013590948218038e7 1.5102794465687463e7; … ; 1.5956360603457477e7 1.7627150018358894e7 1.2305354307782372e7 9.722302898470417e6; 1.4216782827237887e7 1.7964819484936602e7 1.393845812017831e7 9.90533834806879e6], :ϕ =&gt; [1.1855987607820342 0.34423732021334685 0.22719236136917054 6.059693841940314; 1.1800452040065998 0.2710937181347743 4.247340964941075 4.9401887733347305; … ; 2.4468645221823544 2.295664622174951 1.2973145884130466 0.6384852168876669; 2.107615085076962 2.131552186127755 1.6707341096559 0.6983512516108324], :vsys =&gt; [2.4459897203830904e6 4.74591727359189e6 810096.3371508452 164273.80881000054; 2.252121160849232e6 4.598989648369307e6 466188.0807210991 1.0971275371248862e6; … ; 2.1120811611542227e6 3.5189278072270844e6 2.4411074574470157e6 1.7674036107103191e6; 1.7807666745114257e6 3.206321547812187e6 1.4435516203253793e6 1.8567173424360012e6], :a_f =&gt; [3.974197911516519e12 4.3219480324469956e12 5.336350505940822e12 4.187743135025976e12; 4.07599781431358e12 4.2924732257835117e12 4.449246065584152e12 4.2589297315169077e12; … ; 3.9624942503117715e12 4.527507089729218e12 4.925581015847777e12 4.752289113594853e12; 4.418765925615615e12 4.49279148936757e12 3.917708057959593e12 4.866225974013546e12], :m2_i =&gt; [4.5420429663070215e33 1.0255206550372551e34 6.529789111609211e34 9.055041353242428e33; 4.472022577130002e33 9.72492981954303e33 1.8589692075620655e34 4.613751095292726e33; … ; 5.375767771195607e33 2.112189025645653e34 2.853017619425047e34 3.222067675326792e34; 5.501945541574509e33 1.9356664733722574e34 1.6782648171627284e34 3.581508898025151e34], :m2_f =&gt; [3.658346955348851e32 1.0189180748545276e34 6.006584974215178e34 8.982047826105577e33; 3.4680697658736314e32 9.639946375569758e33 1.7325265225037192e34 2.4240092352998267e33; … ; 1.6777356685227182e33 1.7502680402613544e34 2.845474641511032e34 2.685617910056339e34; 1.664468978164774e33 1.6287018641077607e34 1.5345771063226315e34 2.9765933782810635e34], :e_i =&gt; [0.003283606870221012 0.0015448147167173942 0.00238191766586427 0.0019022910718393565; 0.003370977828596793 0.0017171465728704183 0.007984786172564953 0.00876975643743151; … ; 0.0079152573677324 0.006566989623737115 0.007984928979181561 0.001226729868378267; 0.007824588410649536 0.006410373704541231 0.0026614356894650287 0.00279881089829437], :vsys_r =&gt; [-1.114922850497939e6 -1.2981358022188311e6 -62372.49692616431 -10262.22165019547; -805673.2861609499 -1.6713906647240615e6 -79873.29706496377 -367949.3551159365; … ; -532037.7174065365 -1.8906511514613263e6 -1.6932254290861562e6 -913211.4145697725; -421278.13856933184 -1.521111855904251e6 -861526.348945061 -964913.2511110031], :K2 =&gt; [1.830420922286099e7 3.800748217623164e7 7.439969989771869e6 2.3018731464705925e7; 2.1233625634853058e7 3.7718798881862886e7 2.223512577914477e7 2.0512358588310216e7; … ; 9.9445515838298e6 2.4050177549604084e7 1.7427862623049874e7 1.5631269031815333e7; 1.1236761356232785e7 2.419777516199235e7 1.5328656177662924e7 1.4676130614657408e7]…), MCMC chain (1000×31×4 Array{Float64, 3}), 500, 0.8, 1000, Dict(:P_f =&gt; 4176.165226362999, :venv_N =&gt; 138.28239556854203, :v_r =&gt; 3518.0964044340976, :vsys =&gt; 17.3480710278482, :a_f =&gt; 28.824220868751226, :m2_i =&gt; 13.834183346058104, :m2_f =&gt; 12.185202576460457, :e_i =&gt; 37.5077489258474, :vsys_r =&gt; 27.872405218894887, :K2 =&gt; 14.293181560986527…), Dict(:P_f =&gt; 1.0035902366146248, :venv_N =&gt; 1.0306699918103055, :v_r =&gt; 1.0083754407418068, :vsys =&gt; 1.340889606629902, :a_f =&gt; 1.2019148561293034, :m2_i =&gt; 1.542710465554965, :m2_f =&gt; 1.7386735129863196, :e_i =&gt; 1.123414614732654, :vsys_r =&gt; 1.1459085197754773, :K2 =&gt; 1.4875062807392396…))</code></pre><p>Results from the MCMC can be saved to an HDF5 file. In practice, it is ideal to separate the computation of the MCMC and its analysis, so plotting of the results is done separetely.</p><pre><code class="language-julia hljs">SideKicks.SaveResults(&quot;vfts243_results.hdf5&quot;, kick_mcmc)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../2_plot_results/">Plotting MCMC results from VFTS 243 »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Thursday 17 October 2024 16:35">Thursday 17 October 2024</span>. Using Julia version 1.11.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+        nchains = 4);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr33"><span class="sgr1">┌ Warning: </span></span>Only a single thread available: MCMC chains are not sampled in parallel
+<span class="sgr33"><span class="sgr1">└ </span></span><span class="sgr90">@ AbstractMCMC ~/.julia/packages/AbstractMCMC/mcqES/src/sample.jl:432</span>
+<span class="sgr32">Sampling (1 thread)   0%|                               |  ETA: N/A</span>
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>Found initial step size
+<span class="sgr36"><span class="sgr1">└ </span></span>  ϵ = 0.4
+<span class="sgr32">Sampling (1 thread)   0%|▏                              |  ETA: 5:00:12</span>
+<span class="sgr32">Sampling (1 thread)   1%|▎                              |  ETA: 2:35:40</span>
+<span class="sgr32">Sampling (1 thread)   2%|▌                              |  ETA: 1:47:39</span>
+<span class="sgr32">Sampling (1 thread)   2%|▋                              |  ETA: 1:23:36</span>
+<span class="sgr32">Sampling (1 thread)   2%|▊                              |  ETA: 1:09:06</span>
+<span class="sgr32">Sampling (1 thread)   3%|▉                              |  ETA: 0:59:27</span>
+<span class="sgr32">Sampling (1 thread)   4%|█▏                             |  ETA: 0:52:33</span>
+<span class="sgr32">Sampling (1 thread)   4%|█▎                             |  ETA: 0:47:20</span>
+<span class="sgr32">Sampling (1 thread)   4%|█▍                             |  ETA: 0:43:06</span>
+<span class="sgr32">Sampling (1 thread)   5%|█▌                             |  ETA: 0:39:44</span>
+<span class="sgr32">Sampling (1 thread)   6%|█▊                             |  ETA: 0:36:56</span>
+<span class="sgr32">Sampling (1 thread)   6%|█▉                             |  ETA: 0:34:44</span>
+<span class="sgr32">Sampling (1 thread)   6%|██                             |  ETA: 0:32:51</span>
+<span class="sgr32">Sampling (1 thread)   7%|██▏                            |  ETA: 0:31:13</span>
+<span class="sgr32">Sampling (1 thread)   8%|██▍                            |  ETA: 0:29:41</span>
+<span class="sgr32">Sampling (1 thread)   8%|██▌                            |  ETA: 0:28:18</span>
+<span class="sgr32">Sampling (1 thread)   8%|██▋                            |  ETA: 0:27:12</span>
+<span class="sgr32">Sampling (1 thread)   9%|██▊                            |  ETA: 0:26:14</span>
+<span class="sgr32">Sampling (1 thread)  10%|███                            |  ETA: 0:25:21</span>
+<span class="sgr32">Sampling (1 thread)  10%|███▏                           |  ETA: 0:24:33</span>
+<span class="sgr32">Sampling (1 thread)  10%|███▎                           |  ETA: 0:23:49</span>
+<span class="sgr32">Sampling (1 thread)  11%|███▍                           |  ETA: 0:23:09</span>
+<span class="sgr32">Sampling (1 thread)  12%|███▋                           |  ETA: 0:22:31</span>
+<span class="sgr32">Sampling (1 thread)  12%|███▊                           |  ETA: 0:21:56</span>
+<span class="sgr32">Sampling (1 thread)  12%|███▉                           |  ETA: 0:21:24</span>
+<span class="sgr32">Sampling (1 thread)  13%|████                           |  ETA: 0:20:54</span>
+<span class="sgr32">Sampling (1 thread)  14%|████▏                          |  ETA: 0:20:26</span>
+<span class="sgr32">Sampling (1 thread)  14%|████▍                          |  ETA: 0:19:59</span>
+<span class="sgr32">Sampling (1 thread)  14%|████▌                          |  ETA: 0:19:33</span>
+<span class="sgr32">Sampling (1 thread)  15%|████▋                          |  ETA: 0:19:10</span>
+<span class="sgr32">Sampling (1 thread)  16%|████▊                          |  ETA: 0:18:48</span>
+<span class="sgr32">Sampling (1 thread)  16%|█████                          |  ETA: 0:18:27</span>
+<span class="sgr32">Sampling (1 thread)  16%|█████▏                         |  ETA: 0:18:07</span>
+<span class="sgr32">Sampling (1 thread)  17%|█████▎                         |  ETA: 0:17:47</span>
+<span class="sgr32">Sampling (1 thread)  18%|█████▍                         |  ETA: 0:17:30</span>
+<span class="sgr32">Sampling (1 thread)  18%|█████▋                         |  ETA: 0:17:12</span>
+<span class="sgr32">Sampling (1 thread)  18%|█████▊                         |  ETA: 0:16:56</span>
+<span class="sgr32">Sampling (1 thread)  19%|█████▉                         |  ETA: 0:16:40</span>
+<span class="sgr32">Sampling (1 thread)  20%|██████                         |  ETA: 0:16:25</span>
+<span class="sgr32">Sampling (1 thread)  20%|██████▎                        |  ETA: 0:16:10</span>
+<span class="sgr32">Sampling (1 thread)  20%|██████▍                        |  ETA: 0:15:56</span>
+<span class="sgr32">Sampling (1 thread)  21%|██████▌                        |  ETA: 0:15:42</span>
+<span class="sgr32">Sampling (1 thread)  22%|██████▋                        |  ETA: 0:15:29</span>
+<span class="sgr32">Sampling (1 thread)  22%|██████▉                        |  ETA: 0:15:16</span>
+<span class="sgr32">Sampling (1 thread)  22%|███████                        |  ETA: 0:15:04</span>
+<span class="sgr32">Sampling (1 thread)  23%|███████▏                       |  ETA: 0:14:52</span>
+<span class="sgr32">Sampling (1 thread)  24%|███████▎                       |  ETA: 0:14:40</span>
+<span class="sgr32">Sampling (1 thread)  24%|███████▌                       |  ETA: 0:14:28</span>
+<span class="sgr32">Sampling (1 thread)  24%|███████▋                       |  ETA: 0:14:17</span>
+<span class="sgr32">Sampling (1 thread)  25%|███████▊                       |  ETA: 0:14:06</span>
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>Found initial step size
+<span class="sgr36"><span class="sgr1">└ </span></span>  ϵ = 0.4
+<span class="sgr32">Sampling (1 thread)  26%|███████▉                       |  ETA: 0:14:20</span>
+<span class="sgr32">Sampling (1 thread)  26%|████████                       |  ETA: 0:14:09</span>
+<span class="sgr32">Sampling (1 thread)  26%|████████▎                      |  ETA: 0:13:58</span>
+<span class="sgr32">Sampling (1 thread)  27%|████████▍                      |  ETA: 0:13:48</span>
+<span class="sgr32">Sampling (1 thread)  28%|████████▌                      |  ETA: 0:13:38</span>
+<span class="sgr32">Sampling (1 thread)  28%|████████▋                      |  ETA: 0:13:26</span>
+<span class="sgr32">Sampling (1 thread)  28%|████████▉                      |  ETA: 0:13:16</span>
+<span class="sgr32">Sampling (1 thread)  29%|█████████                      |  ETA: 0:13:07</span>
+<span class="sgr32">Sampling (1 thread)  30%|█████████▏                     |  ETA: 0:12:57</span>
+<span class="sgr32">Sampling (1 thread)  30%|█████████▎                     |  ETA: 0:12:48</span>
+<span class="sgr32">Sampling (1 thread)  30%|█████████▌                     |  ETA: 0:12:38</span>
+<span class="sgr32">Sampling (1 thread)  31%|█████████▋                     |  ETA: 0:12:29</span>
+<span class="sgr32">Sampling (1 thread)  32%|█████████▊                     |  ETA: 0:12:20</span>
+<span class="sgr32">Sampling (1 thread)  32%|█████████▉                     |  ETA: 0:12:12</span>
+<span class="sgr32">Sampling (1 thread)  32%|██████████▏                    |  ETA: 0:12:03</span>
+<span class="sgr32">Sampling (1 thread)  33%|██████████▎                    |  ETA: 0:11:54</span>
+<span class="sgr32">Sampling (1 thread)  34%|██████████▍                    |  ETA: 0:11:45</span>
+<span class="sgr32">Sampling (1 thread)  34%|██████████▌                    |  ETA: 0:11:37</span>
+<span class="sgr32">Sampling (1 thread)  34%|██████████▊                    |  ETA: 0:11:29</span>
+<span class="sgr32">Sampling (1 thread)  35%|██████████▉                    |  ETA: 0:11:21</span>
+<span class="sgr32">Sampling (1 thread)  36%|███████████                    |  ETA: 0:11:13</span>
+<span class="sgr32">Sampling (1 thread)  36%|███████████▏                   |  ETA: 0:11:06</span>
+<span class="sgr32">Sampling (1 thread)  36%|███████████▍                   |  ETA: 0:10:58</span>
+<span class="sgr32">Sampling (1 thread)  37%|███████████▌                   |  ETA: 0:10:51</span>
+<span class="sgr32">Sampling (1 thread)  38%|███████████▋                   |  ETA: 0:10:44</span>
+<span class="sgr32">Sampling (1 thread)  38%|███████████▊                   |  ETA: 0:10:37</span>
+<span class="sgr32">Sampling (1 thread)  38%|███████████▉                   |  ETA: 0:10:30</span>
+<span class="sgr32">Sampling (1 thread)  39%|████████████▏                  |  ETA: 0:10:23</span>
+<span class="sgr32">Sampling (1 thread)  40%|████████████▎                  |  ETA: 0:10:16</span>
+<span class="sgr32">Sampling (1 thread)  40%|████████████▍                  |  ETA: 0:10:09</span>
+<span class="sgr32">Sampling (1 thread)  40%|████████████▌                  |  ETA: 0:10:02</span>
+<span class="sgr32">Sampling (1 thread)  41%|████████████▊                  |  ETA: 0:09:55</span>
+<span class="sgr32">Sampling (1 thread)  42%|████████████▉                  |  ETA: 0:09:49</span>
+<span class="sgr32">Sampling (1 thread)  42%|█████████████                  |  ETA: 0:09:42</span>
+<span class="sgr32">Sampling (1 thread)  42%|█████████████▏                 |  ETA: 0:09:36</span>
+<span class="sgr32">Sampling (1 thread)  43%|█████████████▍                 |  ETA: 0:09:29</span>
+<span class="sgr32">Sampling (1 thread)  44%|█████████████▌                 |  ETA: 0:09:23</span>
+<span class="sgr32">Sampling (1 thread)  44%|█████████████▋                 |  ETA: 0:09:16</span>
+<span class="sgr32">Sampling (1 thread)  44%|█████████████▊                 |  ETA: 0:09:10</span>
+<span class="sgr32">Sampling (1 thread)  45%|██████████████                 |  ETA: 0:09:04</span>
+<span class="sgr32">Sampling (1 thread)  46%|██████████████▏                |  ETA: 0:08:57</span>
+<span class="sgr32">Sampling (1 thread)  46%|██████████████▎                |  ETA: 0:08:51</span>
+<span class="sgr32">Sampling (1 thread)  46%|██████████████▍                |  ETA: 0:08:45</span>
+<span class="sgr32">Sampling (1 thread)  47%|██████████████▋                |  ETA: 0:08:39</span>
+<span class="sgr32">Sampling (1 thread)  48%|██████████████▊                |  ETA: 0:08:33</span>
+<span class="sgr32">Sampling (1 thread)  48%|██████████████▉                |  ETA: 0:08:27</span>
+<span class="sgr32">Sampling (1 thread)  48%|███████████████                |  ETA: 0:08:21</span>
+<span class="sgr32">Sampling (1 thread)  49%|███████████████▎               |  ETA: 0:08:15</span>
+<span class="sgr32">Sampling (1 thread)  50%|███████████████▍               |  ETA: 0:08:10</span>
+<span class="sgr32">Sampling (1 thread)  50%|███████████████▌               |  ETA: 0:08:04</span>
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>Found initial step size
+<span class="sgr36"><span class="sgr1">└ </span></span>  ϵ = 0.4
+<span class="sgr32">Sampling (1 thread)  50%|███████████████▋               |  ETA: 0:07:57</span>
+<span class="sgr32">Sampling (1 thread)  51%|███████████████▊               |  ETA: 0:07:52</span>
+<span class="sgr32">Sampling (1 thread)  52%|████████████████               |  ETA: 0:07:46</span>
+<span class="sgr32">Sampling (1 thread)  52%|████████████████▏              |  ETA: 0:07:40</span>
+<span class="sgr32">Sampling (1 thread)  52%|████████████████▎              |  ETA: 0:07:35</span>
+<span class="sgr32">Sampling (1 thread)  53%|████████████████▍              |  ETA: 0:07:29</span>
+<span class="sgr32">Sampling (1 thread)  54%|████████████████▋              |  ETA: 0:07:24</span>
+<span class="sgr32">Sampling (1 thread)  54%|████████████████▊              |  ETA: 0:07:18</span>
+<span class="sgr32">Sampling (1 thread)  55%|████████████████▉              |  ETA: 0:07:13</span>
+<span class="sgr32">Sampling (1 thread)  55%|█████████████████              |  ETA: 0:07:07</span>
+<span class="sgr32">Sampling (1 thread)  56%|█████████████████▎             |  ETA: 0:07:02</span>
+<span class="sgr32">Sampling (1 thread)  56%|█████████████████▍             |  ETA: 0:06:57</span>
+<span class="sgr32">Sampling (1 thread)  56%|█████████████████▌             |  ETA: 0:06:51</span>
+<span class="sgr32">Sampling (1 thread)  57%|█████████████████▋             |  ETA: 0:06:46</span>
+<span class="sgr32">Sampling (1 thread)  57%|█████████████████▉             |  ETA: 0:06:41</span>
+<span class="sgr32">Sampling (1 thread)  58%|██████████████████             |  ETA: 0:06:36</span>
+<span class="sgr32">Sampling (1 thread)  58%|██████████████████▏            |  ETA: 0:06:30</span>
+<span class="sgr32">Sampling (1 thread)  59%|██████████████████▎            |  ETA: 0:06:25</span>
+<span class="sgr32">Sampling (1 thread)  60%|██████████████████▌            |  ETA: 0:06:20</span>
+<span class="sgr32">Sampling (1 thread)  60%|██████████████████▋            |  ETA: 0:06:15</span>
+<span class="sgr32">Sampling (1 thread)  60%|██████████████████▊            |  ETA: 0:06:09</span>
+<span class="sgr32">Sampling (1 thread)  61%|██████████████████▉            |  ETA: 0:06:04</span>
+<span class="sgr32">Sampling (1 thread)  62%|███████████████████▏           |  ETA: 0:05:59</span>
+<span class="sgr32">Sampling (1 thread)  62%|███████████████████▎           |  ETA: 0:05:54</span>
+<span class="sgr32">Sampling (1 thread)  62%|███████████████████▍           |  ETA: 0:05:49</span>
+<span class="sgr32">Sampling (1 thread)  63%|███████████████████▌           |  ETA: 0:05:44</span>
+<span class="sgr32">Sampling (1 thread)  64%|███████████████████▋           |  ETA: 0:05:39</span>
+<span class="sgr32">Sampling (1 thread)  64%|███████████████████▉           |  ETA: 0:05:34</span>
+<span class="sgr32">Sampling (1 thread)  64%|████████████████████           |  ETA: 0:05:29</span>
+<span class="sgr32">Sampling (1 thread)  65%|████████████████████▏          |  ETA: 0:05:24</span>
+<span class="sgr32">Sampling (1 thread)  66%|████████████████████▎          |  ETA: 0:05:19</span>
+<span class="sgr32">Sampling (1 thread)  66%|████████████████████▌          |  ETA: 0:05:14</span>
+<span class="sgr32">Sampling (1 thread)  66%|████████████████████▋          |  ETA: 0:05:09</span>
+<span class="sgr32">Sampling (1 thread)  67%|████████████████████▊          |  ETA: 0:05:04</span>
+<span class="sgr32">Sampling (1 thread)  68%|████████████████████▉          |  ETA: 0:04:59</span>
+<span class="sgr32">Sampling (1 thread)  68%|█████████████████████▏         |  ETA: 0:04:54</span>
+<span class="sgr32">Sampling (1 thread)  68%|█████████████████████▎         |  ETA: 0:04:49</span>
+<span class="sgr32">Sampling (1 thread)  69%|█████████████████████▍         |  ETA: 0:04:44</span>
+<span class="sgr32">Sampling (1 thread)  70%|█████████████████████▌         |  ETA: 0:04:40</span>
+<span class="sgr32">Sampling (1 thread)  70%|█████████████████████▊         |  ETA: 0:04:35</span>
+<span class="sgr32">Sampling (1 thread)  70%|█████████████████████▉         |  ETA: 0:04:30</span>
+<span class="sgr32">Sampling (1 thread)  71%|██████████████████████         |  ETA: 0:04:25</span>
+<span class="sgr32">Sampling (1 thread)  72%|██████████████████████▏        |  ETA: 0:04:20</span>
+<span class="sgr32">Sampling (1 thread)  72%|██████████████████████▍        |  ETA: 0:04:15</span>
+<span class="sgr32">Sampling (1 thread)  72%|██████████████████████▌        |  ETA: 0:04:11</span>
+<span class="sgr32">Sampling (1 thread)  73%|██████████████████████▋        |  ETA: 0:04:06</span>
+<span class="sgr32">Sampling (1 thread)  74%|██████████████████████▊        |  ETA: 0:04:01</span>
+<span class="sgr32">Sampling (1 thread)  74%|███████████████████████        |  ETA: 0:03:56</span>
+<span class="sgr32">Sampling (1 thread)  74%|███████████████████████▏       |  ETA: 0:03:51</span>
+<span class="sgr32">Sampling (1 thread)  75%|███████████████████████▎       |  ETA: 0:03:47</span>
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>Found initial step size
+<span class="sgr36"><span class="sgr1">└ </span></span>  ϵ = 0.4
+<span class="sgr32">Sampling (1 thread)  76%|███████████████████████▍       |  ETA: 0:03:42</span>
+<span class="sgr32">Sampling (1 thread)  76%|███████████████████████▌       |  ETA: 0:03:37</span>
+<span class="sgr32">Sampling (1 thread)  76%|███████████████████████▊       |  ETA: 0:03:32</span>
+<span class="sgr32">Sampling (1 thread)  77%|███████████████████████▉       |  ETA: 0:03:28</span>
+<span class="sgr32">Sampling (1 thread)  78%|████████████████████████       |  ETA: 0:03:23</span>
+<span class="sgr32">Sampling (1 thread)  78%|████████████████████████▏      |  ETA: 0:03:18</span>
+<span class="sgr32">Sampling (1 thread)  78%|████████████████████████▍      |  ETA: 0:03:14</span>
+<span class="sgr32">Sampling (1 thread)  79%|████████████████████████▌      |  ETA: 0:03:09</span>
+<span class="sgr32">Sampling (1 thread)  80%|████████████████████████▋      |  ETA: 0:03:04</span>
+<span class="sgr32">Sampling (1 thread)  80%|████████████████████████▊      |  ETA: 0:03:00</span>
+<span class="sgr32">Sampling (1 thread)  80%|█████████████████████████      |  ETA: 0:02:55</span>
+<span class="sgr32">Sampling (1 thread)  81%|█████████████████████████▏     |  ETA: 0:02:50</span>
+<span class="sgr32">Sampling (1 thread)  82%|█████████████████████████▎     |  ETA: 0:02:46</span>
+<span class="sgr32">Sampling (1 thread)  82%|█████████████████████████▍     |  ETA: 0:02:41</span>
+<span class="sgr32">Sampling (1 thread)  82%|█████████████████████████▋     |  ETA: 0:02:36</span>
+<span class="sgr32">Sampling (1 thread)  83%|█████████████████████████▊     |  ETA: 0:02:32</span>
+<span class="sgr32">Sampling (1 thread)  84%|█████████████████████████▉     |  ETA: 0:02:27</span>
+<span class="sgr32">Sampling (1 thread)  84%|██████████████████████████     |  ETA: 0:02:23</span>
+<span class="sgr32">Sampling (1 thread)  84%|██████████████████████████▎    |  ETA: 0:02:18</span>
+<span class="sgr32">Sampling (1 thread)  85%|██████████████████████████▍    |  ETA: 0:02:13</span>
+<span class="sgr32">Sampling (1 thread)  86%|██████████████████████████▌    |  ETA: 0:02:09</span>
+<span class="sgr32">Sampling (1 thread)  86%|██████████████████████████▋    |  ETA: 0:02:04</span>
+<span class="sgr32">Sampling (1 thread)  86%|██████████████████████████▉    |  ETA: 0:02:00</span>
+<span class="sgr32">Sampling (1 thread)  87%|███████████████████████████    |  ETA: 0:01:55</span>
+<span class="sgr32">Sampling (1 thread)  88%|███████████████████████████▏   |  ETA: 0:01:51</span>
+<span class="sgr32">Sampling (1 thread)  88%|███████████████████████████▎   |  ETA: 0:01:46</span>
+<span class="sgr32">Sampling (1 thread)  88%|███████████████████████████▍   |  ETA: 0:01:42</span>
+<span class="sgr32">Sampling (1 thread)  89%|███████████████████████████▋   |  ETA: 0:01:37</span>
+<span class="sgr32">Sampling (1 thread)  90%|███████████████████████████▊   |  ETA: 0:01:33</span>
+<span class="sgr32">Sampling (1 thread)  90%|███████████████████████████▉   |  ETA: 0:01:28</span>
+<span class="sgr32">Sampling (1 thread)  90%|████████████████████████████   |  ETA: 0:01:24</span>
+<span class="sgr32">Sampling (1 thread)  91%|████████████████████████████▎  |  ETA: 0:01:19</span>
+<span class="sgr32">Sampling (1 thread)  92%|████████████████████████████▍  |  ETA: 0:01:15</span>
+<span class="sgr32">Sampling (1 thread)  92%|████████████████████████████▌  |  ETA: 0:01:10</span>
+<span class="sgr32">Sampling (1 thread)  92%|████████████████████████████▋  |  ETA: 0:01:06</span>
+<span class="sgr32">Sampling (1 thread)  93%|████████████████████████████▉  |  ETA: 0:01:01</span>
+<span class="sgr32">Sampling (1 thread)  94%|█████████████████████████████  |  ETA: 0:00:57</span>
+<span class="sgr32">Sampling (1 thread)  94%|█████████████████████████████▏ |  ETA: 0:00:53</span>
+<span class="sgr32">Sampling (1 thread)  94%|█████████████████████████████▎ |  ETA: 0:00:48</span>
+<span class="sgr32">Sampling (1 thread)  95%|█████████████████████████████▌ |  ETA: 0:00:44</span>
+<span class="sgr32">Sampling (1 thread)  96%|█████████████████████████████▋ |  ETA: 0:00:39</span>
+<span class="sgr32">Sampling (1 thread)  96%|█████████████████████████████▊ |  ETA: 0:00:35</span>
+<span class="sgr32">Sampling (1 thread)  96%|█████████████████████████████▉ |  ETA: 0:00:31</span>
+<span class="sgr32">Sampling (1 thread)  97%|██████████████████████████████▏|  ETA: 0:00:26</span>
+<span class="sgr32">Sampling (1 thread)  98%|██████████████████████████████▎|  ETA: 0:00:22</span>
+<span class="sgr32">Sampling (1 thread)  98%|██████████████████████████████▍|  ETA: 0:00:17</span>
+<span class="sgr32">Sampling (1 thread)  98%|██████████████████████████████▌|  ETA: 0:00:13</span>
+<span class="sgr32">Sampling (1 thread)  99%|██████████████████████████████▊|  ETA: 0:00:09</span>
+<span class="sgr32">Sampling (1 thread) 100%|██████████████████████████████▉|  ETA: 0:00:04</span>
+<span class="sgr32">Sampling (1 thread) 100%|███████████████████████████████| Time: 0:14:30</span>
+<span class="sgr90">Sampling (1 thread) 100%|███████████████████████████████| Time: 0:14:30</span>
+Effective Sample Size is low for venv_N: 43.518975330234376
+Rhat is high for venv_N: 1.0953739103352902
+Effective Sample Size is low for vsys: 25.384612440927654
+Rhat is high for vsys: 1.1959387087595659
+Effective Sample Size is low for a_f: 43.22192542786404
+Rhat is high for a_f: 1.118994866428558
+Effective Sample Size is low for m2_i: 103.89003310051648
+Rhat is high for m2_i: 1.0865892381936084
+Effective Sample Size is low for m2_f: 140.84882050810103
+Rhat is high for m2_f: 1.0752403702480127
+Effective Sample Size is low for e_i: 144.4804062720605
+Rhat is high for e_i: 1.0430905201281206
+Effective Sample Size is low for vsys_r: 64.94891812540868
+Rhat is high for vsys_r: 1.083982333026237
+Effective Sample Size is low for K2: 24.856079601418045
+Rhat is high for K2: 1.2247180973025495
+Effective Sample Size is low for Ω_i: 80.8752530362085
+Rhat is high for Ω_i: 1.189155888489391
+Rhat is high for i_i: 1.1487946219015026
+Effective Sample Size is low for vsys_N: 20.6166316720963
+Rhat is high for vsys_N: 1.2214782493663559
+Effective Sample Size is low for vsys_E: 64.79204402084328
+Rhat is high for vsys_E: 1.0813120242737637
+Effective Sample Size is low for m1_f: 21.582285512134845
+Rhat is high for m1_f: 1.2674757383151856
+Effective Sample Size is low for ω_i: 29.84879217967239
+Rhat is high for ω_i: 1.179309954225604
+Effective Sample Size is low for venv_E: 362.6215396078327
+Rhat is high for venv_E: 1.0145516028523973
+Effective Sample Size is low for a_i: 31.07164834981575
+Rhat is high for a_i: 1.1391111797623195
+Effective Sample Size is low for P_i: 33.000497694690424
+Rhat is high for P_i: 1.1220130986522636
+Effective Sample Size is low for dm2: 32.212381729768964
+Rhat is high for dm2: 1.145574371618523
+Effective Sample Size is low for ω_f: 295.539831122511
+Rhat is high for ω_f: 1.027818302755306
+Rhat is high for i_f: 1.1189249496613198
+Effective Sample Size is low for frac: 28.6797857476032
+Rhat is high for frac: 1.1751988108078157
+Effective Sample Size is low for θ: 249.4453714054519
+Rhat is high for θ: 1.0985020422856633
+Effective Sample Size is low for Ω_f: 84.49829902441114
+Rhat is high for Ω_f: 1.1578778807291485
+Rhat is high for ν_i: 1.2074859051957576
+Effective Sample Size is low for e_f: 28.809867915968823
+Rhat is high for e_f: 1.1628331040842528
+Effective Sample Size is low for m1_i: 21.582285512134845
+Rhat is high for m1_i: 1.2674757383151856
+Effective Sample Size is low for venv_r: 75.56589213531522
+Rhat is high for venv_r: 1.0756851630131474
+Rhat is high for sum_ωi_νi: 1.157898013565221
+Effective Sample Size is low for vkick: 17.888635438863176
+Rhat is high for vkick: 1.3188665875491294
+Effective Sample Size is low for v_E: 352.10211161782814
+Rhat is high for v_E: 1.0261415095163757
+Effective Sample Size is low for ϕ: 123.23531703782204
+Rhat is high for ϕ: 1.1203455104067428</code></pre><p>Results from the MCMC can be saved to an HDF5 file. In practice, it is ideal to separate the computation of the MCMC and its analysis, so plotting of the results is done separetely.</p><pre><code class="language-julia hljs">SideKicks.SaveResults(&quot;vfts243_results.hdf5&quot;, kick_mcmc)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../2_plot_results/">Plotting MCMC results from VFTS 243 »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Tuesday 25 November 2025 15:23">Tuesday 25 November 2025</span>. Using Julia version 1.12.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
