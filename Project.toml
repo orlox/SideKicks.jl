@@ -16,7 +16,7 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
 [compat]
-CairoMakie = "0.11, 0.12"
+CairoMakie = "0.11, 0.12, 0.15"
 CornerPlotting = "0.1"
 Distributions = "0.25"
 HDF5 = "0.17"
