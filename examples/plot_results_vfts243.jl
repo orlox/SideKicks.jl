@@ -10,7 +10,7 @@ using SideKicks
 using CornerPlotting
 using Distributions
 
-results, observations, priors, metadata = SideKicks.ExtractResults("vfts243_results.hdf5")
+results, observations, priors, metadata = SideKicks.ExtractResults("vfts243_results.hdf5");
 
 ##
 #=
@@ -31,7 +31,7 @@ labels  = Dict( :m1_f => L"M_{1f}\;[M_{\odot}]",
                )
 
 set_theme!(CornerPlotting.default_theme())
-cp = CornerPlotting.CornerPlot(results, names, scaling=scaling, labels=labels)
+cp = CornerPlotting.CornerPlot(results, names, scaling=scaling, labels=labels, nbins=10, nbins_contour=10)
 
 CornerPlotting.plot_extra_1D_distribution(cp, :m1_f, Normal(25.0,2.3))
 CornerPlotting.plot_extra_1D_distribution(cp, :e_f,  Normal(0.017,0.012))
@@ -64,7 +64,7 @@ labels = Dict( :m2_i => L"M_{2f}\;[M_{\odot}]",
 
 
 set_theme!(CornerPlotting.default_theme())
-cp = CornerPlotting.CornerPlot(results, names, scaling=scaling, labels=labels)
+cp = CornerPlotting.CornerPlot(results, names, scaling=scaling, labels=labels, nbins=10, nbins_contour=10)
 
 save("vfts243_derived.png", cp.fig)
 
