@@ -81,10 +81,10 @@ function KickMCMC(; which_model, observations::Tuple{Observations, String}, prio
     end
     logweights = logweights .- maximum(logweights) # set max weights = 1
     weights = exp.(logweights)
-    if (all(isfinite(weights)))
+    if (all(isfinite.(weights)))
         results[:weights] = weights 
     else
-        throw(ErrorException("Failed to reweight samples"))
+        throw(ErrorException("Failed to reweigh samples"))
     end
 
     # for the general model, need to reweight by the true anomaly

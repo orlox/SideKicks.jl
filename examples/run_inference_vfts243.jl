@@ -59,8 +59,8 @@ kick_mcmc = SideKicks.KickMCMC(
         priors = priors,
         nuts_warmup_count = 500,
         nuts_acceptance_rate = 0.8,
-        nsamples = 1000,
-        nchains = 4)
+        nsamples = 100,
+        nchains = 4);
 
 ##
 #=
