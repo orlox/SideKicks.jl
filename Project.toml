@@ -1,7 +1,7 @@
 name = "SideKicks"
 uuid = "ae7baef6-f8d7-4188-9988-8bf5c4952615"
-authors = ["Pablo Marchant ", "Reinhold Willcox "]
 version = "0.3.8"
+authors = ["Pablo Marchant ", "Reinhold Willcox "]
 
 [deps]
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
@@ -23,5 +23,5 @@ HDF5 = "0.17"
 MCMCDiagnosticTools = "0.3"
 MathTeXEngine = "0.6"
 StatsBase = "0.34"
-Turing = "0.30, 0.32, 0.33, 0.34"
+Turing = "0.30, 0.32, 0.33, 0.34, 0.41"
 julia = "1.10"
